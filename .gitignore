@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Builds & caches
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+certs/
+secrets/
+
+# Local spike / temp artifacts
+tmp/
+tmp/spikes/**
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
