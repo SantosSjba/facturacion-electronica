@@ -25,5 +25,9 @@ describe("AppError factories", () => {
     expect(AppError.forbidden().httpStatus).toBe(403);
     expect(AppError.rateLimited().httpStatus).toBe(429);
     expect(AppError.internal("boom").retryable).toBe(true);
+    expect(AppError.idempotencyConflict().code).toBe(
+      AppErrorCode.IDEMPOTENCY_CONFLICT,
+    );
+    expect(AppError.idempotencyConflict().httpStatus).toBe(409);
   });
 });

@@ -126,6 +126,19 @@ export class AppError extends Error {
     });
   }
 
+  static idempotencyConflict(
+    message = "Idempotency-Key reused with a different request body",
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      stage: "request",
+      ...extras,
+      code: AppErrorCode.IDEMPOTENCY_CONFLICT,
+      message,
+      httpStatus: 409,
+    });
+  }
+
   static internal(
     message: string,
     extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus" | "retryable">,

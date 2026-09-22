@@ -29,6 +29,7 @@ export const envSchema = z.object({
   MINIO_SECRET_KEY: z.string().min(1).default("factosysdev"),
   MINIO_BUCKET: z.string().min(1).default("factosys-dev"),
   MINIO_REGION: z.string().min(1).default("us-east-1"),
+  MINIO_PRESIGN_TTL_SEC: z.coerce.number().int().positive().default(300),
   CREDENTIALS_MASTER_KEY: z
     .string()
     .min(1)

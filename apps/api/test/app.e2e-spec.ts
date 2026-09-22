@@ -47,7 +47,9 @@ describe("API e2e", () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it("GET /health returns 200 JSON", async () => {
@@ -250,5 +252,77 @@ describe("API e2e", () => {
     });
     expect(new Set(numbers).size).toBe(8);
     expect(Math.max(...numbers) - Math.min(...numbers)).toBe(7);
+  });
+
+  it("idempotency: same key+body replays; different body conflicts 409", async () => {
+    let probeCompanyId = companyId;
+    if (!probeCompanyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      expect(first).toBeTruthy();
+      if (!first) throw new Error("no company for idempotency probe");
+      probeCompanyId = first.id;
+    }
+
+    const key = `e2e-idem-${Date.now()}`;
+    const body = { company_id: probeCompanyId, value: "alpha" };
+
+    const first = await request(server)
+      .post("/__test/idempotency")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Idempotency-Key", key)
+      .send(body)
+      .expect(200);
+    expect(first.body.echo).toBe("processed:alpha");
+
+    const replay = await request(server)
+      .post("/__test/idempotency")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Idempotency-Key", key)
+      .send(body)
+      .expect(200);
+    expect(replay.body).toEqual(first.body);
+
+    const conflict = await request(server)
+      .post("/__test/idempotency")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Idempotency-Key", key)
+      .send({ company_id: probeCompanyId, value: "beta" })
+      .expect(409);
+    expect(conflict.body.code).toBe("FACTOSYS_IDEMPOTENCY_CONFLICT");
+  });
+
+  it("BullMQ noop worker finishes pdf-render job", async () => {
+    const { QueueEvents } = await import("bullmq");
+    const { QueueProducer } = await import(
+      "../src/infrastructure/queues/queue.producer"
+    );
+    const { BULLMQ_CONNECTION } = await import(
+      "../src/infrastructure/queues/queue.tokens"
+    );
+    const producer = app.get(QueueProducer);
+    const connection = app.get(BULLMQ_CONNECTION);
+    const queue = producer.getQueue("pdf-render");
+    const events = new QueueEvents("pdf-render", { connection });
+    await events.waitUntilReady();
+
+    try {
+      const { jobId } = await producer.enqueue("pdf-render", {
+        organizationId: "00000000-0000-0000-0000-000000000001",
+        companyId: "00000000-0000-0000-0000-000000000002",
+        documentId: "00000000-0000-0000-0000-000000000003",
+      });
+
+      const job = await queue.getJob(jobId);
+      expect(job).toBeTruthy();
+      if (!job) throw new Error("job missing");
+      const result = await job.waitUntilFinished(events, 15_000);
+      expect(result).toEqual({ ok: true, queue: "pdf-render" });
+    } finally {
+      await events.close();
+    }
   });
 });
