@@ -117,7 +117,9 @@ export async function apiRequest<T>(
 
   const headers = new Headers(initHeaders);
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
-  if (body !== undefined && !headers.has("Content-Type")) {
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   if (auth) {
@@ -128,7 +130,12 @@ export async function apiRequest<T>(
   const res = await fetch(`${apiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`, {
     ...rest,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined
+        ? undefined
+        : isFormData
+          ? (body as FormData)
+          : JSON.stringify(body),
   });
 
   if (res.status === 401 && auth && !skipRefresh) {

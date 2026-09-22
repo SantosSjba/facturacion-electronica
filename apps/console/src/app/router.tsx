@@ -1,7 +1,15 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
-import { CompaniesStub } from "@/modules/companies/pages/CompaniesStub";
+import { CertificateTab } from "@/modules/companies/components/tabs/CertificateTab";
+import { GreTab } from "@/modules/companies/components/tabs/GreTab";
+import { OverviewTab } from "@/modules/companies/components/tabs/OverviewTab";
+import { RulesetTab } from "@/modules/companies/components/tabs/RulesetTab";
+import { SeriesTab } from "@/modules/companies/components/tabs/SeriesTab";
+import { SolTab } from "@/modules/companies/components/tabs/SolTab";
+import { CompaniesListPage } from "@/modules/companies/pages/CompaniesListPage";
+import { CompanyDetailPage } from "@/modules/companies/pages/CompanyDetailPage";
+import { CompanyFormPage } from "@/modules/companies/pages/CompanyFormPage";
 import {
   ApiKeysStub,
   AuditStub,
@@ -34,9 +42,29 @@ export function AppRouter() {
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route index element={<HomeRedirect />} />
-              <Route path="companies" element={<CompaniesStub />} />
+              <Route path="companies" element={<CompaniesListPage />} />
+              <Route
+                path="companies/new"
+                element={<CompanyFormPage mode="create" />}
+              />
+              <Route
+                path="companies/:id/edit"
+                element={<CompanyFormPage mode="edit" />}
+              />
+              <Route path="companies/:id" element={<CompanyDetailPage />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<OverviewTab />} />
+                <Route path="certificate" element={<CertificateTab />} />
+                <Route path="sol" element={<SolTab />} />
+                <Route path="gre" element={<GreTab />} />
+                <Route path="series" element={<SeriesTab />} />
+                <Route path="ruleset" element={<RulesetTab />} />
+              </Route>
               <Route path="users" element={<UsersListPage />} />
-              <Route path="users/permissions" element={<PermissionsMatrixPage />} />
+              <Route
+                path="users/permissions"
+                element={<PermissionsMatrixPage />}
+              />
               <Route path="users/:id" element={<UserDetailPage />} />
               <Route path="documents" element={<DocumentsStub />} />
               <Route path="gre" element={<GreStub />} />

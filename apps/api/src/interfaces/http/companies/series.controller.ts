@@ -14,7 +14,7 @@ import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
 const createSchema = z.object({
   document_type: z.enum(DOCUMENT_TYPES),
-  serie: z.string().min(1).max(4),
+  serie: z.string().min(1).max(8),
   next_number: z.number().int().positive().optional(),
   padding: z.number().int().positive().optional(),
   is_active: z.boolean().optional(),
@@ -27,7 +27,7 @@ const patchSchema = z.object({
 
 const allocateSchema = z.object({
   document_type: z.enum(DOCUMENT_TYPES),
-  serie: z.string().min(1).max(4),
+  serie: z.string().min(1).max(8),
 });
 
 type CreateBody = z.infer<typeof createSchema>;
