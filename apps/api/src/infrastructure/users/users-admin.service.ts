@@ -2,6 +2,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   newId,
+  permissions,
+  rolePermissions,
   roles,
   userRoles,
   users,
@@ -21,7 +23,7 @@ export class UsersAdminService {
   ) {}
 
   async listRoles() {
-    return this.db
+    const roleRows = await this.db
       .select({
         id: roles.id,
         code: roles.code,
@@ -30,6 +32,21 @@ export class UsersAdminService {
       })
       .from(roles)
       .orderBy(asc(roles.code));
+
+    const result = [];
+    for (const role of roleRows) {
+      const perms = await this.db
+        .select({ code: permissions.code })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+        .where(eq(rolePermissions.roleId, role.id))
+        .orderBy(asc(permissions.code));
+      result.push({
+        ...role,
+        permissions: perms.map((p) => p.code),
+      });
+    }
+    return result;
   }
 
   async listUsers(organizationId: string) {

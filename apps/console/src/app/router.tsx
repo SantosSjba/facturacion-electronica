@@ -10,7 +10,9 @@ import {
 } from "@/modules/developers/pages/DevelopersStubs";
 import { DocumentsStub } from "@/modules/documents/pages/DocumentsStub";
 import { GreStub } from "@/modules/gre/pages/GreStub";
-import { UsersStub } from "@/modules/users/pages/UsersStub";
+import { PermissionsMatrixPage } from "@/modules/users/pages/PermissionsMatrixPage";
+import { UserDetailPage } from "@/modules/users/pages/UserDetailPage";
+import { UsersListPage } from "@/modules/users/pages/UsersListPage";
 
 import { AppShell } from "./AppShell";
 import { HomeRedirect, RedirectIfAuthed, RequireAuth } from "./guards";
@@ -33,7 +35,9 @@ export function AppRouter() {
             <Route element={<AppShell />}>
               <Route index element={<HomeRedirect />} />
               <Route path="companies" element={<CompaniesStub />} />
-              <Route path="users" element={<UsersStub />} />
+              <Route path="users" element={<UsersListPage />} />
+              <Route path="users/permissions" element={<PermissionsMatrixPage />} />
+              <Route path="users/:id" element={<UserDetailPage />} />
               <Route path="documents" element={<DocumentsStub />} />
               <Route path="gre" element={<GreStub />} />
               <Route path="developers/api-keys" element={<ApiKeysStub />} />

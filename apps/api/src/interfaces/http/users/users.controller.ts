@@ -39,7 +39,9 @@ export class UsersController {
 
   @Get("roles")
   @RequirePermissions("users:read")
-  @ApiOperation({ summary: "List RBAC roles catalog" })
+  @ApiOperation({
+    summary: "List RBAC roles catalog (includes permissions[] for read-only matrix)",
+  })
   listRoles(@CurrentAuth() auth: UserAuthContext) {
     this.assertUser(auth);
     return this.users.listRoles();
