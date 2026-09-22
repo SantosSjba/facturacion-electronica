@@ -9,7 +9,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Queue, Worker, type ConnectionOptions } from "bullmq";
 
 import type { Env } from "../config/env.schema";
-import { NoopProcessors, processNoopJob } from "./noop.processors";
+import { processNoopJob } from "./noop.processors";
 import { QueueProducer } from "./queue.producer";
 import {
   BULLMQ_CONNECTION,
@@ -53,7 +53,6 @@ function redisUrlToConnection(url: string): ConnectionOptions {
       },
     },
     QueueProducer,
-    NoopProcessors,
   ],
   exports: [BULLMQ_CONNECTION, BULLMQ_QUEUES, QueueProducer],
 })
@@ -68,7 +67,9 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
+    // sunat-send worker is registered by DocumentsModule (real processor).
     for (const name of QUEUE_NAMES) {
+      if (name === "sunat-send") continue;
       const worker = new Worker<QueueJobData>(
         name,
         async (job) => processNoopJob(name, job),

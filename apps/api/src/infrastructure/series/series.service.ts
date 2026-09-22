@@ -186,4 +186,41 @@ export class SeriesService {
       };
     });
   }
+
+  /**
+   * ADR-001 liberate: roll back next_number when allocation was unused (pre-wire failure).
+   */
+  async liberateNumber(input: {
+    organizationId: string;
+    companyId: string;
+    documentType: string;
+    serie: string;
+    number: number;
+  }): Promise<void> {
+    const serie = input.serie.toUpperCase();
+    await this.db.transaction(async (tx) => {
+      const locked = await tx
+        .select()
+        .from(documentSeries)
+        .where(
+          and(
+            eq(documentSeries.organizationId, input.organizationId),
+            eq(documentSeries.companyId, input.companyId),
+            eq(documentSeries.documentType, input.documentType),
+            eq(documentSeries.serie, serie),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      const series = locked[0];
+      if (!series) return;
+      // Only rewind if nothing else advanced past our number
+      if (series.nextNumber === input.number + 1) {
+        await tx
+          .update(documentSeries)
+          .set({ nextNumber: input.number, updatedAt: new Date() })
+          .where(eq(documentSeries.id, series.id));
+      }
+    });
+  }
 }

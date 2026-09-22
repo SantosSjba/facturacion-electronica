@@ -1,0 +1,232 @@
+import { createHash } from "node:crypto";
+
+import { Inject, Injectable } from "@nestjs/common";
+import { and, asc, eq } from "drizzle-orm";
+import {
+  documentArtifacts,
+  documentEvents,
+  documents,
+  newId,
+  type Db,
+} from "@factosys/db";
+import type { DocumentStatus } from "@factosys/domain";
+import { AppError } from "@factosys/shared";
+
+import { ObjectStorageService } from "../storage/object-storage.service";
+import { DB } from "../persistence/db.tokens";
+import { assertStatusTransition } from "./document-status";
+
+export interface DocumentPublic {
+  id: string;
+  company_id: string;
+  document_type: string;
+  serie_number: string | null;
+  status: string;
+  sunat_ticket: string | null;
+  sunat_code: string | null;
+  summary_status: null;
+  links: {
+    self: string;
+    xml: string;
+    cdr: string;
+    pdf: string;
+    trace: string;
+  };
+  created_at: Date;
+  updated_at: Date;
+}
+
+@Injectable()
+export class DocumentsService {
+  constructor(
+    @Inject(DB) private readonly db: Db,
+    private readonly storage: ObjectStorageService,
+  ) {}
+
+  toPublic(row: typeof documents.$inferSelect): DocumentPublic {
+    const id = row.id;
+    return {
+      id,
+      company_id: row.companyId,
+      document_type: row.documentType,
+      serie_number: row.serieNumber,
+      status: row.status,
+      sunat_ticket: row.sunatTicket,
+      sunat_code: row.sunatResponseCode,
+      summary_status: null,
+      links: {
+        self: `/v1/documents/${id}`,
+        xml: `/v1/documents/${id}/xml`,
+        cdr: `/v1/documents/${id}/cdr`,
+        pdf: `/v1/documents/${id}/pdf`,
+        trace: `/v1/documents/${id}/trace`,
+      },
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
+    };
+  }
+
+  async getById(
+    organizationId: string,
+    documentId: string,
+  ): Promise<typeof documents.$inferSelect> {
+    const rows = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.id, documentId),
+          eq(documents.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    if (!row) {
+      throw AppError.notFound("Document not found");
+    }
+    return row;
+  }
+
+  async listEvents(organizationId: string, documentId: string) {
+    await this.getById(organizationId, documentId);
+    return this.db
+      .select()
+      .from(documentEvents)
+      .where(
+        and(
+          eq(documentEvents.documentId, documentId),
+          eq(documentEvents.organizationId, organizationId),
+        ),
+      )
+      .orderBy(asc(documentEvents.at));
+  }
+
+  async getArtifact(
+    organizationId: string,
+    documentId: string,
+    kind: "xml_signed" | "cdr_xml" | "zip",
+  ) {
+    await this.getById(organizationId, documentId);
+    const rows = await this.db
+      .select()
+      .from(documentArtifacts)
+      .where(
+        and(
+          eq(documentArtifacts.documentId, documentId),
+          eq(documentArtifacts.kind, kind),
+          eq(documentArtifacts.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+    const art = rows[0];
+    if (!art?.objectKey) {
+      throw AppError.notFound(`Artifact ${kind} not found`);
+    }
+    const body = await this.storage.getObject(art.objectKey);
+    return {
+      body,
+      contentType: art.contentType ?? "application/octet-stream",
+      sha256: art.sha256,
+    };
+  }
+
+  async appendEvent(input: {
+    organizationId: string;
+    companyId: string;
+    documentId: string;
+    status: string;
+    fromStatus?: string | null;
+    detail?: string;
+    source: "api" | "worker" | "sunat" | "system";
+    data?: Record<string, unknown>;
+  }): Promise<void> {
+    await this.db.insert(documentEvents).values({
+      id: newId(),
+      organizationId: input.organizationId,
+      companyId: input.companyId,
+      documentId: input.documentId,
+      status: input.status,
+      fromStatus: input.fromStatus ?? null,
+      detail: input.detail ?? null,
+      source: input.source,
+      data: input.data ?? {},
+    });
+  }
+
+  async transitionStatus(
+    documentId: string,
+    from: DocumentStatus,
+    to: DocumentStatus,
+    patch: Partial<{
+      sunatResponseCode: string | null;
+      sunatResponseMessage: string | null;
+      sunatTicket: string | null;
+      error: Record<string, unknown> | null;
+      sentAt: Date | null;
+      completedAt: Date | null;
+      queuedAt: Date | null;
+    }> = {},
+  ): Promise<void> {
+    assertStatusTransition(from, to);
+    await this.db
+      .update(documents)
+      .set({
+        status: to,
+        updatedAt: new Date(),
+        ...patch,
+      })
+      .where(eq(documents.id, documentId));
+  }
+
+  async putArtifact(input: {
+    organizationId: string;
+    companyId: string;
+    documentId: string;
+    kind: "xml_signed" | "zip" | "cdr_xml" | "request_json";
+    body: Buffer;
+    contentType: string;
+    objectKey: string;
+  }): Promise<void> {
+    const sha256 = createHash("sha256").update(input.body).digest("hex");
+    await this.storage.putObject(input.objectKey, input.body, input.contentType);
+
+    const existing = await this.db
+      .select({ id: documentArtifacts.id })
+      .from(documentArtifacts)
+      .where(
+        and(
+          eq(documentArtifacts.documentId, input.documentId),
+          eq(documentArtifacts.kind, input.kind),
+        ),
+      )
+      .limit(1);
+
+    if (existing[0]) {
+      await this.db
+        .update(documentArtifacts)
+        .set({
+          objectKey: input.objectKey,
+          bucket: this.storage.getBucket(),
+          contentType: input.contentType,
+          sha256,
+          sizeBytes: input.body.length,
+        })
+        .where(eq(documentArtifacts.id, existing[0].id));
+      return;
+    }
+
+    await this.db.insert(documentArtifacts).values({
+      id: newId(),
+      organizationId: input.organizationId,
+      companyId: input.companyId,
+      documentId: input.documentId,
+      kind: input.kind,
+      storageBackend: "s3",
+      bucket: this.storage.getBucket(),
+      objectKey: input.objectKey,
+      contentType: input.contentType,
+      sha256,
+      sizeBytes: input.body.length,
+    });
+  }
+}

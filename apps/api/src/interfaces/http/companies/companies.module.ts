@@ -16,6 +16,6 @@ import { SeriesController } from "./series.controller";
     SeriesService,
     CredentialsVault,
   ],
-  exports: [CompaniesService, CredentialsService, SeriesService],
+  exports: [CompaniesService, CredentialsService, SeriesService, CredentialsVault],
 })
 export class CompaniesModule {}

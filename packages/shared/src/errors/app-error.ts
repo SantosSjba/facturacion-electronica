@@ -50,14 +50,14 @@ export class AppError extends Error {
   static validation(
     message: string,
     details?: AppErrorDetail[],
-    extras?: Omit<AppErrorParams, "code" | "message" | "details" | "httpStatus">,
+    extras?: Omit<AppErrorParams, "code" | "message" | "details">,
   ): AppError {
     return new AppError({
       stage: "request",
       ...extras,
       code: AppErrorCode.VALIDATION,
       message,
-      httpStatus: 400,
+      httpStatus: extras?.httpStatus ?? 400,
       details,
     });
   }

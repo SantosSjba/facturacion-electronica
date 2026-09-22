@@ -21,8 +21,10 @@ async function bootstrap(): Promise<void> {
   if (nodeEnv !== "production") {
     const swaggerConfig = new DocumentBuilder()
       .setTitle("Factosys API")
-      .setDescription("Electronic invoicing API — auth, API keys, RBAC (S3-AUTH)")
-      .setVersion("0.1.0")
+      .setDescription(
+        "Electronic invoicing API — auth, companies, Factura 01 emission (S4-EMIT)",
+      )
+      .setVersion("0.2.0")
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);

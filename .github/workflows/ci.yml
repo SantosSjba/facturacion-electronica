@@ -22,6 +22,7 @@ env:
   MINIO_BUCKET: factosys-dev
   MINIO_REGION: us-east-1
   CREDENTIALS_MASTER_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+  SUNAT_BILL_MODE: fake
 
 jobs:
   lint-test-build:

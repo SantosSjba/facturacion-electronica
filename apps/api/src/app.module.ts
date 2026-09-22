@@ -13,6 +13,7 @@ import { CompaniesModule } from "./interfaces/http/companies/companies.module";
 import { AppExceptionFilter } from "./interfaces/http/filters/app-exception.filter";
 import { HealthModule } from "./interfaces/http/health/health.module";
 import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.middleware";
+import { DocumentsModule } from "./interfaces/http/v1/documents.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.mid
     IdempotencyModule,
     AuthModule,
     CompaniesModule,
+    DocumentsModule,
     HealthModule,
   ],
   controllers: [],

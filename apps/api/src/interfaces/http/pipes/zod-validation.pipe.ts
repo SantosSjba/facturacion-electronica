@@ -4,7 +4,10 @@ import { AppError } from "@factosys/shared";
 
 @Injectable()
 export class ZodValidationPipe implements PipeTransform {
-  constructor(private readonly schema: ZodType) {}
+  constructor(
+    private readonly schema: ZodType,
+    private readonly httpStatus = 400,
+  ) {}
 
   transform(value: unknown): unknown {
     const parsed = this.schema.safeParse(value);
@@ -15,6 +18,7 @@ export class ZodValidationPipe implements PipeTransform {
           path: i.path.join(".") || undefined,
           issue: i.message,
         })),
+        { httpStatus: this.httpStatus },
       );
     }
     return parsed.data;

@@ -19,6 +19,8 @@
     "@factosys/domain": "workspace:*",
     "@factosys/shared": "workspace:*",
     "@factosys/sunat-sign": "workspace:*",
+    "@factosys/sunat-soap": "workspace:*",
+    "@factosys/sunat-ubl": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.1.6",

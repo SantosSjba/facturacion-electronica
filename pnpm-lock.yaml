@@ -68,6 +68,12 @@ importers:
       '@factosys/sunat-sign':
         specifier: workspace:*
         version: link:../../packages/sunat-sign
+      '@factosys/sunat-soap':
+        specifier: workspace:*
+        version: link:../../packages/sunat-soap
+      '@factosys/sunat-ubl':
+        specifier: workspace:*
+        version: link:../../packages/sunat-ubl
       '@nestjs/common':
         specifier: ^11.1.6
         version: 11.2.5(reflect-metadata@0.2.2)(rxjs@7.8.2)

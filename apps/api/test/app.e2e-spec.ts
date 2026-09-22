@@ -23,6 +23,7 @@ describe("API e2e", () => {
     process.env["CREDENTIALS_MASTER_KEY"] =
       process.env["CREDENTIALS_MASTER_KEY"] ??
       Buffer.alloc(32, 7).toString("base64");
+    process.env["SUNAT_BILL_MODE"] = "fake";
 
     const moduleRef = await Test.createTestingModule({
       imports: [E2eAppModule],
@@ -324,5 +325,131 @@ describe("API e2e", () => {
     } finally {
       await events.close();
     }
+  });
+
+  it("emits factura 01 via API key, worker accepts, xml/cdr downloadable", async () => {
+    // Ensure company + credentials from prior CRUD test
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    const emitKey = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `emit-${Date.now()}`,
+        scopes: ["documents:read", "documents:write"],
+      })
+      .expect(201);
+    const emitSecret = emitKey.body.secret as string;
+
+    // Ensure F001 series exists
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const hasF001 = (seriesList.body as { serie: string; documentType: string }[]).some(
+      (s) => s.serie === "F001" && s.documentType === "01",
+    );
+    if (!hasF001) {
+      await request(server)
+        .post(`/companies/${companyId}/series`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ document_type: "01", serie: "F001", next_number: 1 })
+        .expect(201);
+    }
+
+    const invoiceBody = {
+      company_id: companyId,
+      serie: "F001",
+      operation_type: "0101",
+      issue_date: "2026-09-17",
+      currency: "PEN",
+      totals_mode: "auto",
+      customer: {
+        identity_type: "6",
+        identity_number: "20123456789",
+        name: "ACME SAC",
+      },
+      lines: [
+        {
+          id: 1,
+          quantity: 1,
+          unit_code: "NIU",
+          description: "Servicio de consultoría",
+          unit_value: 100,
+          unit_price: 118,
+          tax_affectation: "10",
+          igv_percent: 18,
+          tax_scheme_id: "1000",
+        },
+      ],
+    };
+
+    const bad = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `bad-${Date.now()}`)
+      .send({ company_id: companyId })
+      .expect(422);
+    expect(bad.body.code).toBe("FACTOSYS_VALIDATION");
+
+    const idemKey = `inv-${Date.now()}`;
+    const created = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", idemKey)
+      .send(invoiceBody)
+      .expect(201);
+    expect(created.body.status).toBe("queued");
+    expect(created.body.document_type).toBe("01");
+    const documentId = created.body.id as string;
+
+    const replay = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", idemKey)
+      .send(invoiceBody)
+      .expect(201);
+    expect(replay.body.id).toBe(documentId);
+
+    let status = created.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (status === "queued" || status === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${documentId}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      status = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(status);
+
+    const trace = await request(server)
+      .get(`/v1/documents/${documentId}/trace`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(Array.isArray(trace.body)).toBe(true);
+    expect(trace.body.length).toBeGreaterThan(0);
+
+    const xml = await request(server)
+      .get(`/v1/documents/${documentId}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(xml.text).toContain("Invoice");
+
+    await request(server)
+      .get(`/v1/documents/${documentId}/cdr`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
   });
 });
