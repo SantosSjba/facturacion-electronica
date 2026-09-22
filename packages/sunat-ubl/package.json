@@ -13,7 +13,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "assets",
+    "testdata"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -22,10 +24,15 @@
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
   "dependencies": {
+    "@factosys/domain": "workspace:*",
     "@factosys/shared": "workspace:*",
-    "@factosys/domain": "workspace:*"
+    "@factosys/sunat-sign": "workspace:*",
+    "xmlbuilder2": "^4.0.3",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.1"
   }
 }

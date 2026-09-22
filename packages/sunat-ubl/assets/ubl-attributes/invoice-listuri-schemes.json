@@ -1,0 +1,838 @@
+{
+  "$comment": "Atributos UBL fijos (@listURI / @list* / @scheme* / @unitCodeList*) para Invoice Perú UBL 2.1. Valores literales exigidos por la Guía XML Factura; schemeID/unitCode/languageLocaleID dinámicos se documentan con placeholder.",
+  "document": "Invoice",
+  "source_primary": "docs/sunat-oficial/02-guias-xml/guia-xml-factura-ubl-2.1.pdf",
+  "extraction": {
+    "method": "pypdf text extract of guía (102 pp.) + cross-check ejemplos XML de la misma guía",
+    "xsd_checked": "docs/sunat-oficial/04-esquemas-validacion/xsd-ubl.zip — XSD solo tipa atributos; no fija literales SUNAT",
+    "confidence": "high for attrs present in tabla resumen (pp.6–19) and/or ejemplos; see gaps[] for inconsistencies"
+  },
+  "mappings": [
+    {
+      "ubl_path": "/Invoice/cbc:ProfileID",
+      "json_path": "operation_type",
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Tipo de Operación",
+      "notes": "Valor del elemento = Catálogo 51; attrs fijos. Catálogo 51 / schemeURI catalogo17 (así en guía)."
+    },
+    {
+      "ubl_path": "/Invoice/cbc:ProfileID",
+      "json_path": "operation_type",
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Tabla p.6 + ejemplos p.20/29/81"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:ProfileID",
+      "json_path": "operation_type",
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo17",
+      "notes": "Guía fija catalogo17 (no catalogo51). Confirmar vs reglas XSL vigentes al implementar."
+    },
+    {
+      "ubl_path": "/Invoice/cbc:InvoiceTypeCode",
+      "json_path": "document_type",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 01; p.6 / ejemplo p.20"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:InvoiceTypeCode",
+      "json_path": "document_type",
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de Tipo de Documento",
+      "notes": "Catálogo 01"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:InvoiceTypeCode",
+      "json_path": "document_type",
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01",
+      "notes": "Catálogo 01"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:Note",
+      "json_path": "legends[].code",
+      "attribute": "languageLocaleID",
+      "value": "<código Catálogo 52>",
+      "notes": "Dinámico (ej. 1000). Tabla p.6 mezcla URN catalogo52 en la celda; ejemplos usan el código de leyenda, no el URN. No hay @listURI en Note."
+    },
+    {
+      "ubl_path": "/Invoice/cbc:DocumentCurrencyCode",
+      "json_path": "currency",
+      "attribute": "listID",
+      "value": "ISO 4217 Alpha",
+      "notes": "Catálogo 02; p.6 / ejemplo p.21"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:DocumentCurrencyCode",
+      "json_path": "currency",
+      "attribute": "listName",
+      "value": "Currency",
+      "notes": "Catálogo 02"
+    },
+    {
+      "ubl_path": "/Invoice/cbc:DocumentCurrencyCode",
+      "json_path": "currency",
+      "attribute": "listAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 02; sin @listURI en guía"
+    },
+    {
+      "ubl_path": "/Invoice/cac:DespatchDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "despatch_documents[].document_type",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Valor Catálogo 01 (09/31…). Preferir ejemplos/detalle."
+    },
+    {
+      "ubl_path": "/Invoice/cac:DespatchDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "despatch_documents[].document_type",
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de guía relacionada",
+      "notes": "p.7 / ejemplo p.21"
+    },
+    {
+      "ubl_path": "/Invoice/cac:DespatchDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "despatch_documents[].document_type",
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01",
+      "notes": "INCONSISTENCIA guía: tabla resumen p.7 escribe catalogo12; Catálogo=01 y ejemplos/detalle p.21/37 usan catalogo01. Mapping adopta catalogo01."
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentTypeCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "SSPP — Tipo de Servicio Público; Catálogo 56; p.7"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentTypeCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de Tipo de Servicio",
+      "notes": "Catálogo 56"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentTypeCode",
+      "json_path": null,
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo56",
+      "notes": "Catálogo 56"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:LocaleCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "SSPP telecomunicaciones; Catálogo 57; p.7"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:LocaleCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de Servicio de Telecomunicación",
+      "notes": "Catálogo 57"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:LocaleCode",
+      "json_path": null,
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo57",
+      "notes": "Catálogo 57"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentStatusCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Tipo de tarifa; Catálogo 24; p.7"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentStatusCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de Tipo de Tarifa",
+      "notes": "Catálogo 24"
+    },
+    {
+      "ubl_path": "/Invoice/cac:ContractDocumentReference/cbc:DocumentStatusCode",
+      "json_path": null,
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo24",
+      "notes": "Catálogo 24"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AdditionalDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "additional_documents[].document_type",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 12; p.8 / ejemplo p.21"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AdditionalDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "additional_documents[].document_type",
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de documento relacionado",
+      "notes": "Catálogo 12"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AdditionalDocumentReference/cbc:DocumentTypeCode",
+      "json_path": "additional_documents[].document_type",
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo12",
+      "notes": "Catálogo 12"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "supplier.identity_type",
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Dinámico; factura emisor usualmente 6. p.8 / ejemplo p.21"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "supplier.identity_type",
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "supplier.identity_type",
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "supplier.identity_type",
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "customer.identity_type",
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Dinámico. p.8 / ejemplo p.21"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "customer.identity_type",
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "customer.identity_type",
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID",
+      "json_path": "customer.identity_type",
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 58>",
+      "notes": "SSPP medidor luz; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Tipo de Medidor",
+      "notes": "Catálogo 58"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 58"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo58",
+      "notes": "Catálogo 58; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:Quantity",
+      "json_path": null,
+      "attribute": "unitCode",
+      "value": "<código Catálogo 03>",
+      "notes": "SSPP consumo; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:Quantity",
+      "json_path": null,
+      "attribute": "unitCodeListID",
+      "value": "UN/ECE rec 20",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:Quantity",
+      "json_path": null,
+      "attribute": "unitCodeListAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:MaximumQuantity",
+      "json_path": null,
+      "attribute": "unitCode",
+      "value": "<código Catálogo 03>",
+      "notes": "SSPP potencia; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:MaximumQuantity",
+      "json_path": null,
+      "attribute": "unitCodeListID",
+      "value": "UN/ECE rec 20",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cbc:MaximumQuantity",
+      "json_path": null,
+      "attribute": "unitCodeListAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Destinatario delivery; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06",
+      "notes": "Catálogo 06; p.9"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cbc:HandlingCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "SUNAT:Indicador de Motivo de Traslado",
+      "notes": "Catálogo 20; p.10"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cbc:HandlingCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 20"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cbc:HandlingCode",
+      "json_path": null,
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo20",
+      "notes": "Catálogo 20"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cbc:GrossWeightMeasure",
+      "json_path": null,
+      "attribute": "unitCode",
+      "value": "<código Catálogo 03>",
+      "notes": "p.10"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cbc:GrossWeightMeasure",
+      "json_path": null,
+      "attribute": "unitCodeListVersionID",
+      "value": "UN/ECE rec 20 Revision 4",
+      "notes": "Guía usa unitCodeListVersionID (no unitCodeListID) en este nodo"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cbc:TransportModeCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "SUNAT:indicador de Modalidad de Transporte",
+      "notes": "Catálogo 18; ortografía según extracción guía (indicador minúscula); p.10"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cbc:TransportModeCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 18"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cbc:TransportModeCode",
+      "json_path": null,
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo18",
+      "notes": "Catálogo 18"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:CarrierParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "6",
+      "notes": "Transportista; guía ilustra schemeID=6; Catálogo 06; p.10"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:CarrierParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Indicador de Tipo de Documento de Identidad",
+      "notes": "Texto guía usa 'Indicador' (vs 'Identificador' en emisor/adquirente)"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:CarrierParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:CarrierParty/cac:PartyLegalEntity/cbc:CompanyID",
+      "json_path": null,
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06",
+      "notes": "Catálogo 06; p.10"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:DriverPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Conductores; p.11"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:DriverPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Indicador de Tipo de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:DriverPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:DriverPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06",
+      "notes": "Catálogo 06; p.11"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryLocation/cac:Address/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listID",
+      "value": "ISO 3166-1",
+      "notes": "Catálogo 04; p.12 / ejemplo p.22"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryLocation/cac:Address/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 04"
+    },
+    {
+      "ubl_path": "/Invoice/cac:Delivery/cac:DeliveryLocation/cac:Address/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "Country",
+      "notes": "Catálogo 04; sin @listURI"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PaymentTerms/cbc:ID",
+      "json_path": "detraction.code",
+      "attribute": "schemeName",
+      "value": "SUNAT:Codigo de detraccion",
+      "notes": "Detracción Catálogo 54; p.12 / ejemplo p.69. Guía escribe @chemeURI (typo)."
+    },
+    {
+      "ubl_path": "/Invoice/cac:PaymentTerms/cbc:ID",
+      "json_path": "detraction.code",
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 54"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PaymentTerms/cbc:ID",
+      "json_path": "detraction.code",
+      "attribute": "schemeURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo54",
+      "notes": "Catálogo 54"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PrepaidPayment/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 12>",
+      "notes": "Tipo doc. anticipo; p.13"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PrepaidPayment/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documentos Relacionados",
+      "notes": "Catálogo 12; sin schemeURI en tabla"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PrepaidPayment/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 12"
+    },
+    {
+      "ubl_path": "/Invoice/cac:PrepaidPayment/cbc:InstructionID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "6",
+      "notes": "RUC emisor anticipo; Catálogo 06; p.13 — sin schemeName/Agency/URI en tabla"
+    },
+    {
+      "ubl_path": "/Invoice/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:ID",
+      "json_path": "totals.tax_subtotals[].tax_category_id",
+      "attribute": "schemeID",
+      "value": "UN/ECE 5305",
+      "notes": "Catálogo 05 (categoría UNECE, ej. S/E/O/Z); p.14"
+    },
+    {
+      "ubl_path": "/Invoice/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:ID",
+      "json_path": "totals.tax_subtotals[].tax_category_id",
+      "attribute": "schemeName",
+      "value": "Tax Category Identifier",
+      "notes": "Nivel documento"
+    },
+    {
+      "ubl_path": "/Invoice/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:ID",
+      "json_path": "totals.tax_subtotals[].tax_category_id",
+      "attribute": "schemeAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Nivel documento"
+    },
+    {
+      "ubl_path": "/Invoice/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cac:TaxScheme/cbc:ID",
+      "json_path": "totals.tax_subtotals[].tax_scheme_id",
+      "attribute": "schemeID",
+      "value": "UN/ECE 5153",
+      "notes": "Código tributo Catálogo 05 (1000/9997…); p.14 — tabla documento solo schemeID+schemeAgencyID"
+    },
+    {
+      "ubl_path": "/Invoice/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cac:TaxScheme/cbc:ID",
+      "json_path": "totals.tax_subtotals[].tax_scheme_id",
+      "attribute": "schemeAgencyID",
+      "value": "6",
+      "notes": "Nivel documento"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cbc:InvoicedQuantity",
+      "json_path": "lines[].unit_code",
+      "attribute": "unitCode",
+      "value": "<código Catálogo 03>",
+      "notes": "Dinámico (ej. NIU); p.15"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cbc:InvoicedQuantity",
+      "json_path": "lines[].unit_code",
+      "attribute": "unitCodeListID",
+      "value": "UN/ECE rec 20",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cbc:InvoicedQuantity",
+      "json_path": "lines[].unit_code",
+      "attribute": "unitCodeListAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 03"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:PricingReference/cac:AlternativeConditionPrice/cbc:PriceTypeCode",
+      "json_path": "lines[].price_type",
+      "attribute": "listName",
+      "value": "SUNAT:Indicador de Tipo de Precio",
+      "notes": "Catálogo 16; p.15 / ejemplos"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:PricingReference/cac:AlternativeConditionPrice/cbc:PriceTypeCode",
+      "json_path": "lines[].price_type",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 16"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:PricingReference/cac:AlternativeConditionPrice/cbc:PriceTypeCode",
+      "json_path": "lines[].price_type",
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo16",
+      "notes": "Catálogo 16"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PartyIdentification/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Huésped / hospedaje; p.15"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PartyIdentification/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PartyIdentification/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PartyIdentification/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyID",
+      "value": "<código Catálogo 04>",
+      "notes": "País emisión pasaporte cuando aplica; p.15"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PostalAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listID",
+      "value": "ISO 3166-1",
+      "notes": "Residencia huésped; Catálogo 04; p.16"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PostalAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 04"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:DeliveryParty/cac:PostalAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": null,
+      "attribute": "listName",
+      "value": "Country",
+      "notes": "Catálogo 04"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:PassengerPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "<código Catálogo 06>",
+      "notes": "Pasajero; p.17"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:PassengerPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeName",
+      "value": "SUNAT:Identificador de Documento de Identidad",
+      "notes": "Catálogo 06"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Delivery/cac:Shipment/cac:ShipmentStage/cac:PassengerPerson/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 06; sin schemeURI en tabla línea"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeID",
+      "value": "UN/ECE 5305",
+      "notes": "Línea; p.18 — tabla línea lista schemeID + schemeAgencyID (sin schemeName/AgencyName)"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:ID",
+      "json_path": null,
+      "attribute": "schemeAgencyID",
+      "value": "6",
+      "notes": "Línea; ejemplos a veces también llevan schemeName/schemeAgencyName UNECE"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:TaxExemptionReasonCode",
+      "json_path": "lines[].tax_affectation",
+      "attribute": "listName",
+      "value": "SUNAT:Codigo de Tipo de Afectación del IGV",
+      "notes": "Catálogo 07; p.18 / ejemplos"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:TaxExemptionReasonCode",
+      "json_path": "lines[].tax_affectation",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 07"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cbc:TaxExemptionReasonCode",
+      "json_path": "lines[].tax_affectation",
+      "attribute": "listURI",
+      "value": "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo07",
+      "notes": "Catálogo 07"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cac:TaxScheme/cbc:ID",
+      "json_path": "lines[].tax_scheme_id",
+      "attribute": "schemeID",
+      "value": "UN/ECE 5153",
+      "notes": "Catálogo 05; p.18"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cac:TaxScheme/cbc:ID",
+      "json_path": "lines[].tax_scheme_id",
+      "attribute": "schemeName",
+      "value": "Tax Scheme Identifier",
+      "notes": "Línea"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:TaxTotal/cac:TaxSubtotal/cac:TaxCategory/cac:TaxScheme/cbc:ID",
+      "json_path": "lines[].tax_scheme_id",
+      "attribute": "schemeAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Línea — distinto del TaxScheme a nivel documento (que usa schemeAgencyID=6)"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode",
+      "json_path": "lines[].sunat_product_code",
+      "attribute": "listID",
+      "value": "UNSPSC",
+      "notes": "Catálogo 25 / UNSPSC; p.18 — sin listURI"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode",
+      "json_path": "lines[].sunat_product_code",
+      "attribute": "listAgencyName",
+      "value": "GS1 US",
+      "notes": "Catálogo 25"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Item/cac:CommodityClassification/cbc:ItemClassificationCode",
+      "json_path": "lines[].sunat_product_code",
+      "attribute": "listName",
+      "value": "Item Classification",
+      "notes": "Catálogo 25"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Item/cac:AdditionalItemProperty/cbc:NameCode",
+      "json_path": "lines[].additional_properties[].code",
+      "attribute": "listName",
+      "value": "SUNAT:Identificador de la propiedad del ítem",
+      "notes": "Catálogo 55; p.19 — sin @listURI en guía"
+    },
+    {
+      "ubl_path": "/Invoice/cac:InvoiceLine/cac:Item/cac:AdditionalItemProperty/cbc:NameCode",
+      "json_path": "lines[].additional_properties[].code",
+      "attribute": "listAgencyName",
+      "value": "PE:SUNAT",
+      "notes": "Catálogo 55"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cac:RegistrationAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": "customer.address.country",
+      "attribute": "listID",
+      "value": "ISO 3166-1",
+      "notes": "Mismo patrón Country UNECE que DeliveryLocation; ejemplos guía"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cac:RegistrationAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": "customer.address.country",
+      "attribute": "listAgencyName",
+      "value": "United Nations Economic Commission for Europe",
+      "notes": "Catálogo 04"
+    },
+    {
+      "ubl_path": "/Invoice/cac:AccountingCustomerParty/cac:Party/cac:PartyLegalEntity/cac:RegistrationAddress/cac:Country/cbc:IdentificationCode",
+      "json_path": "customer.address.country",
+      "attribute": "listName",
+      "value": "Country",
+      "notes": "Catálogo 04"
+    }
+  ],
+  "gaps": [
+    {
+      "topic": "AllowanceChargeReasonCode @listURI",
+      "ubl_path": "/Invoice/cac:AllowanceCharge/cbc:AllowanceChargeReasonCode | /Invoice/cac:InvoiceLine/cac:AllowanceCharge/cbc:AllowanceChargeReasonCode",
+      "json_path": "allowances[].code | lines[].allowances[].code",
+      "status": "no_attrs_in_guia",
+      "notes": "Catálogo 53 obligatorio en valor; ejemplos guía emiten código sin @listName/@listAgencyName/@listURI. No inventar URN catalogo53."
+    },
+    {
+      "topic": "Ubigeo Address / CountrySubentityCode",
+      "ubl_path": "cbc:CountrySubentityCode (DeliveryAddress, OriginAddress, RegistrationAddress)",
+      "json_path": "customer.address.ubigeo",
+      "status": "no_attrs_in_guia",
+      "notes": "Catálogo 13 como valor n6; guía no marca listURI/scheme* sobre ubigeo. AddressTypeCode (domicilio fiscal) tampoco lleva attrs de catálogo."
+    },
+    {
+      "topic": "cbc:Note languageLocaleID vs URN",
+      "ubl_path": "/Invoice/cbc:Note/@languageLocaleID",
+      "status": "table_layout_ambiguity",
+      "notes": "Tabla p.6 muestra URN catalogo52 junto a languageLocaleID; ejemplos usan códigos 1000/3000. Mapping trata languageLocaleID=código Cat.52."
+    },
+    {
+      "topic": "DespatchDocumentReference listURI catalogo01 vs catalogo12",
+      "ubl_path": "/Invoice/cac:DespatchDocumentReference/cbc:DocumentTypeCode/@listURI",
+      "status": "guia_inconsistency",
+      "notes": "Tabla resumen p.7 = catalogo12; valor Catálogo 01 + ejemplos/detalle = catalogo01. Artifact usa catalogo01."
+    },
+    {
+      "topic": "ProfileID schemeURI catalogo17 vs Catálogo 51",
+      "ubl_path": "/Invoice/cbc:ProfileID/@schemeURI",
+      "status": "guia_quirk",
+      "notes": "Valor = Catálogo 51; schemeURI oficial en guía = catalogo17. No hay URN catalogo51 en el PDF."
+    },
+    {
+      "topic": "TaxScheme attrs documento vs línea",
+      "ubl_path": "cac:TaxScheme/cbc:ID",
+      "status": "asymmetric_in_guia",
+      "notes": "Documento: schemeID=UN/ECE 5153 + schemeAgencyID=6. Línea: schemeID + schemeName + schemeAgencyName UNECE. Ejemplos a veces mezclan. Motor debe alinear con XSL/reglas."
+    },
+    {
+      "topic": "TierRange (ISC Cat.08) / ValueQualifier / PaymentMeans",
+      "status": "no_listuri_in_guia",
+      "notes": "TierRange Cat.08 sin list*; ValueQualifier Cat.54 sin list*; PayeeFinancialAccount/cbc:ID sin scheme*. PaymentMeans no define PaymentMeansCode con listURI en esta guía."
+    },
+    {
+      "topic": "AdditionalItemProperty NameCode listURI",
+      "status": "partial",
+      "notes": "Solo listName + listAgencyName; sin listURI en p.19."
+    },
+    {
+      "topic": "currencyID on Amounts",
+      "status": "out_of_scope_literal",
+      "notes": "Guía exige @currencyID=Cat.02 en montos, pero no es listURI/scheme*. Inyectar desde currency del documento."
+    }
+  ],
+  "count": 110
+}

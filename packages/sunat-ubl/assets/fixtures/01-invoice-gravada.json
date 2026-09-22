@@ -1,0 +1,35 @@
+{
+  "id": "01-invoice-gravada",
+  "document_kind": "invoice",
+  "title": "Factura gravada IGV 18% — happy path",
+  "expects": {
+    "prevalidation": "pass",
+    "terminal_status": ["accepted", "accepted_with_observation"]
+  },
+  "request": {
+    "company_id": "{{company_id}}",
+    "serie": "F001",
+    "operation_type": "0101",
+    "issue_date": "2026-09-17",
+    "currency": "PEN",
+    "customer": {
+      "identity_type": "6",
+      "identity_number": "20123456789",
+      "name": "ACME SAC"
+    },
+    "lines": [
+      {
+        "id": 1,
+        "quantity": 1,
+        "unit_code": "NIU",
+        "description": "Servicio de consultoría",
+        "unit_value": 100.0,
+        "unit_price": 118.0,
+        "tax_affectation": "10",
+        "igv_percent": 18,
+        "tax_scheme_id": "1000"
+      }
+    ],
+    "totals_mode": "auto"
+  }
+}

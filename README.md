@@ -47,7 +47,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
-| `pnpm spike:ubl`                    | Stub — spike constructor Invoice UBL (S1)  |
+| `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
 | `pnpm spike:sendbill`               | Stub — spike SendBill SOAP (S2)            |
 
 CI (GitHub Actions): en push/PR a `main` ejecuta `pnpm lint` → `pnpm test` → `pnpm build` (Node 20 + cache pnpm).
@@ -60,7 +60,7 @@ apps/
 packages/
   shared/               # @factosys/shared — AppError, Result
   domain/               # @factosys/domain — DocumentStatus, VOs
-  sunat-ubl/            # stub — UBL builders
+  sunat-ubl/            # Spike B — Invoice UBL unsigned builder
   sunat-sign/           # Spike A — XMLDSig (xml-crypto)
   sunat-soap/           # stub — billService SOAP
   sunat-validation/     # stub — XSD / rules
@@ -72,8 +72,8 @@ docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 ```
 
 **S0 disponible:** tooling (S0-TOOL), API skeleton (S0-API), packages stub (S0-PKG), Docker/CI/higiene (S0-DEV).  
-**S1 en curso:** firma XML (S1-SIGN / Spike A) — `pnpm spike:sign`.  
-**Fuera de S0:** wiring Nest→Postgres/Redis/MinIO, imagen Docker de la API, UBL golden XSD (Spike B), SendBill.
+**S1 disponible:** firma XML (S1-SIGN) + constructor Invoice UBL (S1-UBL) — `pnpm spike:sign` / `pnpm spike:ubl`.  
+**Fuera de S0/S1 parcial:** Gate XSD CI (S1-GATE), wiring Nest→infra, SendBill (S2).
 
 ## Packages / apps
 
@@ -82,7 +82,7 @@ docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 | `apps/api`                  | `@factosys/api`              | HTTP API NestJS                      |
 | `packages/shared`           | `@factosys/shared`           | `AppError`, `AppErrorCode`, `Result` |
 | `packages/domain`           | `@factosys/domain`           | `DocumentStatus`, VOs (sin Nest)     |
-| `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Stub UBL builders                    |
+| `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Builder Invoice UBL unsigned         |
 | `packages/sunat-sign`       | `@factosys/sunat-sign`       | Firma XMLDSig (`SignXmlPort`)        |
 | `packages/sunat-soap`       | `@factosys/sunat-soap`       | Stub SOAP                            |
 | `packages/sunat-validation` | `@factosys/sunat-validation` | Stub validación XSD                  |
