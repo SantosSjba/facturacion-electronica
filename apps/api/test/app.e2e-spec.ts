@@ -25,6 +25,9 @@ describe("API e2e", () => {
       Buffer.alloc(32, 7).toString("base64");
     process.env["SUNAT_BILL_MODE"] = "fake";
     process.env["SUNAT_GRE_MODE"] = "fake";
+    process.env["PDF_RI_MODE"] = "fake";
+    process.env["SUNAT_VALIDEZ_MODE"] = "fake";
+    process.env["WEBHOOK_ALLOW_LOCALHOST"] = "1";
 
     const moduleRef = await Test.createTestingModule({
       imports: [E2eAppModule],
@@ -297,7 +300,7 @@ describe("API e2e", () => {
     expect(conflict.body.code).toBe("FACTOSYS_IDEMPOTENCY_CONFLICT");
   });
 
-  it("BullMQ noop worker finishes pdf-render job", async () => {
+  it("BullMQ pdf-render worker finishes job", async () => {
     const { QueueEvents } = await import("bullmq");
     const { QueueProducer } = await import(
       "../src/infrastructure/queues/queue.producer"
@@ -322,7 +325,7 @@ describe("API e2e", () => {
       expect(job).toBeTruthy();
       if (!job) throw new Error("job missing");
       const result = await job.waitUntilFinished(events, 15_000);
-      expect(result).toEqual({ ok: true, queue: "pdf-render" });
+      expect(result).toEqual({ ok: true });
     } finally {
       await events.close();
     }
@@ -1139,5 +1142,264 @@ describe("API e2e", () => {
       gre31Status = got.body.status as string;
     }
     expect(["accepted", "accepted_with_observation"]).toContain(gre31Status);
+  });
+
+  it("S8: webhooks CRUD+rotate, signed delivery, PDF GET, validez CPE cache", async () => {
+    process.env["PDF_RI_MODE"] = "fake";
+    process.env["SUNAT_VALIDEZ_MODE"] = "fake";
+
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    const http = await import("node:http");
+    const received: {
+      headers: http.IncomingHttpHeaders;
+      body: string;
+    }[] = [];
+
+    const receiver = http.createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c as Buffer));
+      req.on("end", () => {
+        received.push({
+          headers: req.headers,
+          body: Buffer.concat(chunks).toString("utf8"),
+        });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      });
+    });
+    await new Promise<void>((resolve) => receiver.listen(0, "127.0.0.1", resolve));
+    const addr = receiver.address();
+    if (!addr || typeof addr === "string") {
+      throw new Error("receiver port missing");
+    }
+    const webhookUrl = `https://127.0.0.1:${addr.port}/hook`;
+
+    // SSRF allows localhost only in test; use http via temporary override of assert
+    // Delivery processor uses https-only — spin HTTPS is heavy; call fanout via http by
+    // patching URL check: create endpoint with https URL that we can't hit.
+    // Instead: create endpoint pointing to https://example.com and verify CRUD/rotate,
+    // then deliver via direct processor against a local http server by temporarily
+    // writing endpoint URL to http after create (DB update).
+    receiver.close();
+
+    const s8Key = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `s8-${Date.now()}`,
+        scopes: [
+          "documents:read",
+          "documents:write",
+          "webhooks:manage",
+          "validations:cpe",
+        ],
+      })
+      .expect(201);
+    const secret = s8Key.body.secret as string;
+
+    const createdHook = await request(server)
+      .post("/v1/webhook-endpoints")
+      .set("Authorization", `Bearer ${secret}`)
+      .send({
+        url: "https://127.0.0.1:9443/factosys-webhook",
+        events: ["document.status_changed"],
+      })
+      .expect(201);
+    expect(createdHook.body.secret).toMatch(/^whsec_/);
+    expect(createdHook.body.secret_hint).toHaveLength(4);
+    const endpointId = createdHook.body.id as string;
+    const webhookSecret = createdHook.body.secret as string;
+
+    const listed = await request(server)
+      .get("/v1/webhook-endpoints")
+      .set("Authorization", `Bearer ${secret}`)
+      .expect(200);
+    expect(Array.isArray(listed.body)).toBe(true);
+    expect(
+      (listed.body as { id: string; secret?: string }[]).some(
+        (e) => e.id === endpointId && e.secret === undefined,
+      ),
+    ).toBe(true);
+
+    const rotated = await request(server)
+      .post(`/v1/webhook-endpoints/${endpointId}/rotate-secret`)
+      .set("Authorization", `Bearer ${secret}`)
+      .expect(200);
+    expect(rotated.body.secret).toMatch(/^whsec_/);
+    expect(rotated.body.secret).not.toBe(webhookSecret);
+
+    // Local HTTP receiver for signed delivery (update URL in DB bypassing https create rule)
+    const received2: { headers: http.IncomingHttpHeaders; body: string }[] = [];
+    const receiver2 = http.createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c) => chunks.push(c as Buffer));
+      req.on("end", () => {
+        received2.push({
+          headers: req.headers,
+          body: Buffer.concat(chunks).toString("utf8"),
+        });
+        res.writeHead(200);
+        res.end("ok");
+      });
+    });
+    await new Promise<void>((resolve) =>
+      receiver2.listen(0, "127.0.0.1", resolve),
+    );
+    const addr2 = receiver2.address();
+    if (!addr2 || typeof addr2 === "string") throw new Error("no port");
+    const localUrl = `http://127.0.0.1:${addr2.port}/hook`;
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const { webhookEndpoints } = await import("@factosys/db");
+    const { eq } = await import("drizzle-orm");
+    const db = app.get(DB);
+    await db
+      .update(webhookEndpoints)
+      .set({ url: localUrl })
+      .where(eq(webhookEndpoints.id, endpointId));
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const hasF001 = (
+      seriesList.body as { serie: string; documentType: string }[]
+    ).some((s) => s.serie === "F001" && s.documentType === "01");
+    if (!hasF001) {
+      await request(server)
+        .post(`/companies/${companyId}/series`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ document_type: "01", serie: "F001", next_number: 1 })
+        .expect(201);
+    }
+
+    const invoiceBody = {
+      company_id: companyId,
+      serie: "F001",
+      operation_type: "0101",
+      issue_date: "2026-09-17",
+      currency: "PEN",
+      totals_mode: "auto",
+      customer: {
+        identity_type: "6",
+        identity_number: "20123456789",
+        name: "ACME SAC",
+      },
+      lines: [
+        {
+          id: 1,
+          quantity: 1,
+          unit_code: "NIU",
+          description: "S8 PDF/Webhook item",
+          unit_value: 100,
+          unit_price: 118,
+          tax_affectation: "10",
+          igv_percent: 18,
+          tax_scheme_id: "1000",
+        },
+      ],
+    };
+
+    const created = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${secret}`)
+      .set("Idempotency-Key", `s8-inv-${Date.now()}`)
+      .send(invoiceBody)
+      .expect(201);
+    const documentId = created.body.id as string;
+
+    let status = created.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (status === "queued" || status === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${documentId}`)
+        .set("Authorization", `Bearer ${secret}`)
+        .expect(200);
+      status = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(status);
+
+    // Wait for webhook deliveries
+    for (let i = 0; i < 40 && received2.length === 0; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    expect(received2.length).toBeGreaterThan(0);
+    const delivery = received2[0]!;
+    expect(delivery.headers["x-factosys-event"]).toBe("document.status_changed");
+    expect(delivery.headers["x-factosys-signature"]).toMatch(/^v1=/);
+    const { verifyWebhookSignature } = await import(
+      "../src/infrastructure/webhooks/hmac-sign"
+    );
+    const ts = Number(delivery.headers["x-factosys-timestamp"]);
+    expect(
+      verifyWebhookSignature(
+        rotated.body.secret as string,
+        ts,
+        delivery.body,
+        String(delivery.headers["x-factosys-signature"]),
+      ),
+    ).toBe(true);
+    receiver2.close();
+
+    const pdf = await request(server)
+      .get(`/v1/documents/${documentId}/pdf`)
+      .set("Authorization", `Bearer ${secret}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const data: Buffer[] = [];
+        res.on("data", (chunk) => data.push(chunk as Buffer));
+        res.on("end", () => {
+          callback(null, Buffer.concat(data));
+        });
+      })
+      .expect(200);
+    expect(String(pdf.headers["content-type"])).toMatch(/pdf/);
+    const pdfBuf = pdf.body as Buffer;
+    expect(pdfBuf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
+
+    const val1 = await request(server)
+      .post("/v1/validations/cpe")
+      .set("Authorization", `Bearer ${secret}`)
+      .send({
+        company_id: companyId,
+        ruc: "20123456789",
+        document_type: "01",
+        serie: "VALID",
+        number: "1",
+        issue_date: "2026-09-17",
+        total_amount: 118.0,
+      })
+      .expect(200);
+    expect(val1.body.cpe_status_label).toBe("ACEPTADO");
+    expect(val1.body.cached).toBe(false);
+    expect(val1.body.raw.fixture).toBe("validation-cpe-accepted");
+
+    const val2 = await request(server)
+      .post("/v1/validations/cpe")
+      .set("Authorization", `Bearer ${secret}`)
+      .send({
+        company_id: companyId,
+        ruc: "20123456789",
+        document_type: "01",
+        serie: "VALID",
+        number: "1",
+        issue_date: "2026-09-17",
+        total_amount: 118.0,
+      })
+      .expect(200);
+    expect(val2.body.cached).toBe(true);
   });
 });

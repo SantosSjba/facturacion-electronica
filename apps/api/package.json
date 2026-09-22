@@ -22,6 +22,7 @@
     "@factosys/sunat-soap": "workspace:*",
     "@factosys/sunat-gre": "workspace:*",
     "@factosys/sunat-ubl": "workspace:*",
+    "@factosys/pdf-ri": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.1.6",

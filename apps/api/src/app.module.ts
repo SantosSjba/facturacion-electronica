@@ -14,6 +14,8 @@ import { AppExceptionFilter } from "./interfaces/http/filters/app-exception.filt
 import { HealthModule } from "./interfaces/http/health/health.module";
 import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.middleware";
 import { DocumentsModule } from "./interfaces/http/v1/documents.module";
+import { WebhooksModule } from "./interfaces/http/v1/webhooks.module";
+import { ValidationsModule } from "./interfaces/http/v1/validations.module";
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { DocumentsModule } from "./interfaces/http/v1/documents.module";
     AuthModule,
     CompaniesModule,
     DocumentsModule,
+    WebhooksModule,
+    ValidationsModule,
     HealthModule,
   ],
   controllers: [],

@@ -67,9 +67,16 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    // Real workers registered by DocumentsModule.
+    // Real workers registered by DocumentsModule / WebhooksModule / PdfModule.
     for (const name of QUEUE_NAMES) {
-      if (name === "sunat-send" || name === "sunat-poll") continue;
+      if (
+        name === "sunat-send" ||
+        name === "sunat-poll" ||
+        name === "webhooks" ||
+        name === "pdf-render"
+      ) {
+        continue;
+      }
       const worker = new Worker<QueueJobData>(
         name,
         async (job) => processNoopJob(name, job),

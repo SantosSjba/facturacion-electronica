@@ -32,6 +32,14 @@ export const envSchema = z.object({
   MINIO_PRESIGN_TTL_SEC: z.coerce.number().int().positive().default(300),
   SUNAT_BILL_MODE: z.enum(["fake", "beta"]).default("fake"),
   SUNAT_GRE_MODE: z.enum(["fake", "beta"]).default("fake"),
+  SUNAT_VALIDEZ_MODE: z.enum(["fake", "beta"]).default("fake"),
+  PDF_RI_MODE: z.enum(["fake", "playwright"]).default("fake"),
+  WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  CPE_VALIDATION_CACHE_TTL_SEC: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3600),
   SUNAT_GRE_TOKEN_URL: z
     .string()
     .min(1)

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { and, asc, eq } from "drizzle-orm";
 import {
   documentArtifacts,
@@ -14,6 +14,7 @@ import { AppError } from "@factosys/shared";
 
 import { ObjectStorageService } from "../storage/object-storage.service";
 import { DB } from "../persistence/db.tokens";
+import { WebhookFanoutService } from "../webhooks/webhook-fanout.service";
 import { assertStatusTransition } from "./document-status";
 
 export interface DocumentPublic {
@@ -41,6 +42,7 @@ export class DocumentsService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly storage: ObjectStorageService,
+    @Optional() private readonly webhookFanout?: WebhookFanoutService,
   ) {}
 
   toPublic(row: typeof documents.$inferSelect): DocumentPublic {
@@ -166,7 +168,7 @@ export class DocumentsService {
   async getArtifact(
     organizationId: string,
     documentId: string,
-    kind: "xml_signed" | "cdr_xml" | "zip",
+    kind: "xml_signed" | "cdr_xml" | "zip" | "pdf",
   ) {
     await this.getById(organizationId, documentId);
     const rows = await this.db
@@ -201,9 +203,10 @@ export class DocumentsService {
     detail?: string;
     source: "api" | "worker" | "sunat" | "system";
     data?: Record<string, unknown>;
-  }): Promise<void> {
+  }): Promise<string> {
+    const id = newId();
     await this.db.insert(documentEvents).values({
-      id: newId(),
+      id,
       organizationId: input.organizationId,
       companyId: input.companyId,
       documentId: input.documentId,
@@ -213,6 +216,27 @@ export class DocumentsService {
       source: input.source,
       data: input.data ?? {},
     });
+
+    if (this.webhookFanout) {
+      const sunatCode =
+        typeof input.data?.["sunat_code"] === "string"
+          ? input.data["sunat_code"]
+          : undefined;
+      void this.webhookFanout
+        .onStatusChanged({
+          organizationId: input.organizationId,
+          companyId: input.companyId,
+          documentId: input.documentId,
+          status: input.status,
+          previousStatus: input.fromStatus,
+          eventId: id,
+          sunatCode,
+          sunatMessage: input.detail,
+        })
+        .catch(() => undefined);
+    }
+
+    return id;
   }
 
   async patchPayload(
@@ -309,7 +333,7 @@ export class DocumentsService {
     organizationId: string;
     companyId: string;
     documentId: string;
-    kind: "xml_signed" | "zip" | "cdr_xml" | "request_json";
+    kind: "xml_signed" | "zip" | "cdr_xml" | "request_json" | "pdf";
     body: Buffer;
     contentType: string;
     objectKey: string;

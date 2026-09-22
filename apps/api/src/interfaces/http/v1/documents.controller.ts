@@ -9,6 +9,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AppError } from "@factosys/shared";
 
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
+import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 import type { AuthContext } from "../auth/auth-context";
 import {
   ApiKeyAuth,
@@ -20,7 +21,10 @@ import { CurrentAuth } from "../decorators/current-auth.decorator";
 @ApiBearerAuth()
 @Controller("v1/documents")
 export class DocumentsController {
-  constructor(private readonly documents: DocumentsService) {}
+  constructor(
+    private readonly documents: DocumentsService,
+    private readonly pdf: PdfService,
+  ) {}
 
   @Get(":id")
   @ApiKeyAuth()
@@ -79,6 +83,22 @@ export class DocumentsController {
     return new StreamableFile(art.body, {
       type: "application/zip",
       disposition: `attachment; filename="${id}-cdr.zip"`,
+    });
+  }
+
+  @Get(":id/pdf")
+  @ApiKeyAuth()
+  @RequireScopes("documents:read")
+  @ApiOperation({ summary: "Download RI PDF (lazy render)" })
+  async pdfDownload(
+    @CurrentAuth() auth: AuthContext,
+    @Param("id") id: string,
+  ): Promise<StreamableFile> {
+    const orgId = this.orgId(auth);
+    const art = await this.pdf.getOrRender(orgId, id);
+    return new StreamableFile(art.body, {
+      type: "application/pdf",
+      disposition: `attachment; filename="${id}.pdf"`,
     });
   }
 

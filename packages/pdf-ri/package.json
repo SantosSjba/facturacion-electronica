@@ -24,6 +24,9 @@
   "dependencies": {
     "@factosys/shared": "workspace:*"
   },
+  "optionalDependencies": {
+    "playwright": "^1.55.0"
+  },
   "devDependencies": {
     "vitest": "^5.0.1"
   }

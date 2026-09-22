@@ -28,6 +28,7 @@ import {
 import { SunatSendProcessor } from "../../../infrastructure/queues/sunat-send.processor";
 import { SunatPollProcessor } from "../../../infrastructure/queues/sunat-poll.processor";
 import { CompaniesModule } from "../companies/companies.module";
+import { WebhooksModule } from "./webhooks.module";
 import { DocumentsController } from "./documents.controller";
 import { InvoicesController } from "./invoices.controller";
 import {
@@ -38,9 +39,11 @@ import { ReceiptsController } from "./receipts.controller";
 import { VoidedDocumentsController } from "./voided-documents.controller";
 import { DailySummariesController } from "./daily-summaries.controller";
 import { DespatchAdvicesController } from "./despatch-advices.controller";
+import { PdfRenderProcessor } from "../../../infrastructure/pdf/pdf-render.processor";
+import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 
 @Module({
-  imports: [CompaniesModule, IdempotencyModule],
+  imports: [CompaniesModule, IdempotencyModule, WebhooksModule],
   controllers: [
     InvoicesController,
     ReceiptsController,
@@ -66,6 +69,8 @@ import { DespatchAdvicesController } from "./despatch-advices.controller";
     SummaryPoolService,
     SunatSendProcessor,
     SunatPollProcessor,
+    PdfService,
+    PdfRenderProcessor,
   ],
   exports: [
     DocumentsService,
@@ -76,6 +81,7 @@ import { DespatchAdvicesController } from "./despatch-advices.controller";
     EmitVoidedDocumentUseCase,
     EmitDailySummaryUseCase,
     EmitDespatchAdviceUseCase,
+    PdfService,
   ],
 })
 export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
@@ -86,6 +92,7 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
     private readonly connection: ConnectionOptions,
     private readonly sunatSend: SunatSendProcessor,
     private readonly sunatPoll: SunatPollProcessor,
+    private readonly pdfRender: PdfRenderProcessor,
   ) {}
 
   onModuleInit(): void {
@@ -99,6 +106,11 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
         "sunat-poll",
         async (job) => this.sunatPoll.process(job),
         { connection: this.connection, concurrency: 2 },
+      ),
+      new Worker<QueueJobData>(
+        "pdf-render",
+        async (job) => this.pdfRender.process(job),
+        { connection: this.connection, concurrency: 1 },
       ),
     );
   }
