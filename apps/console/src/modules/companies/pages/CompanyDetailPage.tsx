@@ -1,10 +1,11 @@
-import { NavLink, Outlet, Link, useParams } from "react-router-dom";
+import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { useSession } from "@/shared/auth/session-context";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { TextLink } from "@/shared/ui/components/text-link";
 import { cn } from "@/shared/ui/utils";
 
 import { fetchCompany } from "../api";
@@ -25,7 +26,7 @@ export function CompanyDetailPage() {
 
   const query = useQuery({
     queryKey: ["company", id],
-    queryFn: () => fetchCompany(id!),
+    queryFn: () => fetchCompany(id ?? ""),
     enabled: Boolean(id),
   });
 
@@ -52,21 +53,14 @@ export function CompanyDetailPage() {
         actions={
           <div className="flex gap-3 text-sm">
             {canWrite ? (
-              <Link
-                to={`/companies/${company.id}/edit`}
-                className="text-[var(--primary)] hover:underline"
-              >
-                Editar
-              </Link>
+              <TextLink to={`/companies/${company.id}/edit`}>Editar</TextLink>
             ) : null}
-            <Link to="/companies" className="text-[var(--primary)] hover:underline">
-              ← Lista
-            </Link>
+            <TextLink to="/companies">← Lista</TextLink>
           </div>
         }
       />
 
-      <nav className="mb-6 flex flex-wrap gap-1 border-b border-[var(--border)]">
+      <nav className="mb-6 flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
         {TABS.map((tab) => (
           <NavLink
             key={tab.to}
@@ -75,8 +69,8 @@ export function CompanyDetailPage() {
               cn(
                 "px-3 py-2 text-sm font-medium transition-colors",
                 isActive
-                  ? "border-b-2 border-[var(--primary)] text-[var(--foreground)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                  ? "border-b-2 border-brand-500 text-gray-800 dark:text-white/90"
+                  : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90",
               )
             }
           >

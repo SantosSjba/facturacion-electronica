@@ -20,7 +20,9 @@ export function decodeAccessToken(token: string): AccessTokenClaims | null {
   try {
     const parts = token.split(".");
     if (parts.length < 2) return null;
-    const json = base64UrlDecode(parts[1]!);
+    const payloadPart = parts[1];
+    if (!payloadPart) return null;
+    const json = base64UrlDecode(payloadPart);
     const payload = JSON.parse(json) as AccessTokenClaims;
     if (!payload.sub || !payload.email || !Array.isArray(payload.perms)) {
       return null;

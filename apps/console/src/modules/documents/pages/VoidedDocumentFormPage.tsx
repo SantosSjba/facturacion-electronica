@@ -7,6 +7,7 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { Select } from "@/shared/ui/components/select";
 
 import { emitVoidedDocument, fetchCompanies } from "../api";
@@ -133,7 +134,7 @@ export function VoidedDocumentFormPage() {
           {lines.map((line, i) => (
             <div
               key={i}
-              className="grid gap-2 rounded-md border border-[var(--border)] p-3 sm:grid-cols-3"
+              className="grid gap-2 rounded-md border border-gray-200 p-3 sm:grid-cols-3 dark:border-gray-800"
             >
               <Select
                 value={line.document_type}
@@ -198,11 +199,11 @@ export function VoidedDocumentFormPage() {
           </Button>
         </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-error-600 dark:text-error-500">{error}</p> : null}
         {ticketHint ? (
-          <p className="text-sm text-[var(--muted-foreground)]">
+          <MutedText>
             Ticket / id: <span className="font-mono">{ticketHint}</span>
-          </p>
+          </MutedText>
         ) : null}
 
         <Button type="submit" disabled={submitting || !companyId}>

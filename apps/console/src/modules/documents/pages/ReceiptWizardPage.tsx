@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { Input } from "@/shared/ui/components/input";
+import { MutedText } from "@/shared/ui/components/muted-text";
 
 import { emitReceipt, fetchCompanies } from "../api";
 import { WizardShell } from "../components/wizard/WizardShell";
@@ -112,10 +113,14 @@ export function ReceiptWizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextDisabled={
-        (step === 0 && (!header.company_id || !header.serie)) ||
-        (step === 1 && (!customer.identity_number || !customer.name)) ||
-        (step === 2 && lines.some((l) => !l.description))
+      nextError={
+        step === 0 && (!header.company_id || !header.serie)
+          ? "Selecciona la empresa y una serie activa para continuar."
+          : step === 1 && (!customer.identity_number || !customer.name)
+            ? "Completa el documento de identidad y el nombre del cliente."
+            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
+              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
+              : null
       }
     >
       {step === 0 ? (
@@ -155,9 +160,9 @@ export function ReceiptWizardPage() {
             />
             Enviar individualmente
           </label>
-          <p className="text-xs text-[var(--muted-foreground)]">
+          <MutedText className="text-xs">
             Si envías individualmente, no se requiere RC.
-          </p>
+          </MutedText>
         </div>
       ) : null}
       {step === 4 ? <ReviewStep payload={payload} error={error} /> : null}

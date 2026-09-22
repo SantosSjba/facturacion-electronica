@@ -6,7 +6,7 @@ import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { Button } from "@/shared/ui/components/button";
+import { CursorPagination } from "@/shared/ui/Pagination";
 
 import { fetchCompanies, fetchDocuments } from "../api";
 import { DocumentFilters } from "../components/DocumentFilters";
@@ -82,33 +82,23 @@ export function DocumentsListPage() {
           ) : (
             <>
               <DocumentsTable documents={docsQuery.data?.items ?? []} />
-              <div className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={stack.length === 0}
-                  onClick={() => {
+              <CursorPagination
+                page={stack.length + 1}
+                itemCount={docsQuery.data?.items.length ?? 0}
+                canPrevious={stack.length > 0}
+                canNext={Boolean(docsQuery.data?.next_cursor)}
+                onPrevious={() => {
                     const prev = [...stack];
                     const last = prev.pop();
                     setStack(prev);
                     setCursor(last || undefined);
                   }}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!docsQuery.data?.next_cursor}
-                  onClick={() => {
+                onNext={() => {
                     if (!docsQuery.data?.next_cursor) return;
                     setStack((s) => [...s, cursor ?? ""]);
                     setCursor(docsQuery.data.next_cursor ?? undefined);
                   }}
-                >
-                  Siguiente
-                </Button>
-              </div>
+              />
             </>
           )}
         </div>

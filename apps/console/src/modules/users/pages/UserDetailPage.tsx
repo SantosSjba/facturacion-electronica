@@ -1,16 +1,18 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import { Button, buttonVariants } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
+import { TextLink } from "@/shared/ui/components/text-link";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { cn } from "@/shared/ui/utils";
 
 import { fetchOrgRoles, fetchOrgUsers, patchOrgUser, putOrgUserRoles } from "../api";
 import { RolesMultiSelect } from "../components/RolesMultiSelect";
@@ -48,7 +50,7 @@ export function UserDetailPage() {
 
   const patchMutation = useMutation({
     mutationFn: () =>
-      patchOrgUser(id!, {
+      patchOrgUser(id ?? "", {
         name: displayName,
         status: displayStatus,
       }),
@@ -64,7 +66,7 @@ export function UserDetailPage() {
   });
 
   const rolesMutation = useMutation({
-    mutationFn: () => putOrgUserRoles(id!, displayRoles),
+    mutationFn: () => putOrgUserRoles(id ?? "", displayRoles),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["org-users"] });
       setSaved("Roles actualizados");
@@ -87,12 +89,12 @@ export function UserDetailPage() {
           title="No encontrado"
           message="Usuario no existe en la organización."
         />
-        <Link
+        <TextLink
           to="/users"
-          className="inline-flex h-10 items-center rounded-md border border-[var(--border)] px-4 text-sm hover:bg-[var(--muted)]"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
           Volver a usuarios
-        </Link>
+        </TextLink>
       </div>
     );
   }
@@ -103,16 +105,13 @@ export function UserDetailPage() {
         title={user.email}
         description="Detalle de usuario — editar nombre, estado y roles."
         actions={
-          <Link
-            to="/users"
-            className="text-sm text-[var(--primary)] hover:underline"
-          >
+          <TextLink to="/users" className="text-sm">
             ← Volver
-          </Link>
+          </TextLink>
         }
       />
 
-      <div className="max-w-xl space-y-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6">
+      <div className="max-w-xl space-y-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="space-y-1.5">
           <Label>Email</Label>
           <Input value={user.email} disabled readOnly />
@@ -171,7 +170,7 @@ export function UserDetailPage() {
 
         {error ? <ErrorState title="Error" message={error} /> : null}
         {saved ? (
-          <p className="text-sm text-teal-700" role="status">
+          <p className="text-sm text-success-600 dark:text-success-500" role="status">
             {saved}
           </p>
         ) : null}

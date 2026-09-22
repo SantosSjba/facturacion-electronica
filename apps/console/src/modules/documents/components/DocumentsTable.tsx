@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { TextLink } from "@/shared/ui/components/text-link";
 
 import type { DocumentPublic } from "../types";
 import { StatusBadge } from "./StatusBadge";
@@ -33,23 +33,20 @@ export function DocumentsTable({ documents }: { documents: DocumentPublic[] }) {
           <TR key={d.id}>
             <TD className="font-mono text-sm">{d.document_type}</TD>
             <TD>
-              <Link
-                to={`/documents/${d.id}`}
-                className="font-medium text-[var(--primary)] hover:underline"
-              >
+              <TextLink to={`/documents/${d.id}`}>
                 {d.serie_number ?? d.id.slice(0, 8)}
-              </Link>
+              </TextLink>
             </TD>
             <TD>{d.issue_date ?? "—"}</TD>
             <TD>{d.customer?.name ?? "—"}</TD>
             <TD>
               <StatusBadge status={d.status} />
             </TD>
-            <TD className="font-mono text-sm text-[var(--muted-foreground)]">
-              {d.sunat_code ?? "—"}
+            <TD className="font-mono text-sm">
+              <MutedText as="span">{d.sunat_code ?? "—"}</MutedText>
             </TD>
-            <TD className="text-[var(--muted-foreground)]">
-              {formatDate(d.created_at)}
+            <TD>
+              <MutedText as="span">{formatDate(d.created_at)}</MutedText>
             </TD>
           </TR>
         ))}

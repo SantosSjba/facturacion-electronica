@@ -7,7 +7,9 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { Select } from "@/shared/ui/components/select";
+import { Textarea } from "@/shared/ui/components/textarea";
 
 import { emitDailySummary, fetchCompanies } from "../api";
 import { newIdempotencyKey, pollDocumentStatus } from "../poll";
@@ -149,22 +151,22 @@ export function DailySummaryFormPage() {
               onChange={(e) => setDocumentIds(e.target.value)}
               placeholder="uuid,uuid…"
             />
-            <p className="text-xs text-[var(--muted-foreground)]">
+            <MutedText className="text-xs">
               Vacío = pool pendiente del día de referencia.
-            </p>
+            </MutedText>
           </div>
         ) : (
           <div className="space-y-1.5">
             <Label>Líneas CSV</Label>
-            <textarea
-              className="min-h-32 w-full rounded-md border border-[var(--input)] bg-[var(--card)] p-3 font-mono text-xs"
+            <Textarea
+              className="min-h-32 font-mono text-xs"
               value={manualLines}
               onChange={(e) => setManualLines(e.target.value)}
             />
           </div>
         )}
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-error-600 dark:text-error-500">{error}</p> : null}
 
         <Button type="submit" disabled={submitting || !companyId}>
           {submitting ? "Enviando…" : "Emitir RC"}

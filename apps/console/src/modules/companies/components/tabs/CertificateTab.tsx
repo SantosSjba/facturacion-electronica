@@ -7,6 +7,7 @@ import { useSession } from "@/shared/auth/session-context";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
 
 import { putCertificate } from "../../api";
@@ -27,7 +28,10 @@ export function CertificateTab() {
   const summary = company.credentials_summary?.certificate;
 
   const mutation = useMutation({
-    mutationFn: () => putCertificate(id!, file!, password),
+    mutationFn: () => {
+      if (!id || !file) throw new Error("Selecciona un certificado válido");
+      return putCertificate(id, file, password);
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["company", id] });
       await qc.invalidateQueries({ queryKey: ["companies"] });
@@ -44,7 +48,7 @@ export function CertificateTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
         <h3 className="mb-3 text-sm font-semibold">Estado actual</h3>
         {summary ? (
           <dl className="grid gap-2 sm:grid-cols-2 text-sm">
@@ -55,15 +59,15 @@ export function CertificateTab() {
             <Row label="Rotated" value={summary.rotated_at ?? "—"} />
           </dl>
         ) : (
-          <p className="text-sm text-[var(--muted-foreground)]">
+          <MutedText>
             Sin certificado ({company.certificate_status})
-          </p>
+          </MutedText>
         )}
       </div>
 
       {canManage ? (
         <form
-          className="max-w-md space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
+          className="max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
           onSubmit={(e) => {
             e.preventDefault();
             setError(null);
@@ -95,15 +99,15 @@ export function CertificateTab() {
             />
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
-          {ok ? <p className="text-sm text-teal-700">{ok}</p> : null}
+          {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "Subiendo…" : "Subir certificado"}
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <MutedText>
           Requiere permiso credentials:manage para subir.
-        </p>
+        </MutedText>
       )}
     </div>
   );
@@ -112,7 +116,9 @@ export function CertificateTab() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-[var(--muted-foreground)]">{label}</dt>
+      <MutedText as="dt" className="text-xs">
+        {label}
+      </MutedText>
       <dd className="font-mono text-xs">{value}</dd>
     </div>
   );

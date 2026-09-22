@@ -5,7 +5,7 @@ export function Table({
   ...props
 }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card)]">
+    <div className="w-full overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
       <table
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
@@ -20,7 +20,7 @@ export function THead({
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={cn("border-b border-[var(--border)] bg-[var(--muted)]/50", className)}
+      className={cn("border-b border-gray-100 dark:border-gray-800", className)}
       {...props}
     />
   );
@@ -30,7 +30,7 @@ export function TBody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />;
+    return <tbody className={cn("divide-y divide-gray-100 dark:divide-gray-800 [&_tr:last-child]:border-0", className)} {...props} />;
 }
 
 export function TR({
@@ -40,7 +40,7 @@ export function TR({
   return (
     <tr
       className={cn(
-        "border-b border-[var(--border)] transition-colors hover:bg-[var(--muted)]/40",
+        "border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]",
         className,
       )}
       {...props}
@@ -55,7 +55,7 @@ export function TH({
   return (
     <th
       className={cn(
-        "h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]",
+        "h-11 px-5 text-start align-middle text-theme-xs font-medium text-gray-500 dark:text-gray-400",
         className,
       )}
       {...props}
@@ -69,7 +69,7 @@ export function TD({
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn("px-4 py-3 align-middle text-[var(--foreground)]", className)}
+      className={cn("px-5 py-4 align-middle text-theme-sm text-gray-700 dark:text-gray-400", className)}
       {...props}
     />
   );

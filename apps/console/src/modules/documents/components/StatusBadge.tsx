@@ -3,12 +3,12 @@ import { Badge } from "@/shared/ui/components/badge";
 import type { DocumentStatus } from "../types";
 
 export function StatusBadge({ status }: { status: DocumentStatus }) {
-  const variant =
+  const color =
     status === "accepted" || status === "accepted_with_observation"
       ? "success"
       : status === "rejected" || status === "failed" || status === "cancelled"
-        ? "default"
+        ? "error"
         : "muted";
 
-  return <Badge variant={variant}>{status}</Badge>;
+  return <Badge color={color}>{status}</Badge>;
 }

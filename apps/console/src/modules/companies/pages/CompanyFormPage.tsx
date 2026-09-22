@@ -1,18 +1,32 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
+import { TextLink } from "@/shared/ui/components/text-link";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { FieldError } from "@/shared/ui/FieldError";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 import { createCompany, fetchCompany, patchCompany } from "../api";
 import type { CompanyEnvironment } from "../types";
+
+const companySchema = z.object({
+  ruc: z.string().regex(/^\d{11}$/, "El RUC debe contener exactamente 11 dígitos"),
+  legalName: z.string().trim().min(2, "Ingresa una razón social válida").max(200, "Máximo 200 caracteres"),
+  tradeName: z.string().trim().max(200, "Máximo 200 caracteres"),
+  addressLine: z.string().trim().max(250, "Máximo 250 caracteres"),
+  ubigeo: z.string().refine((value) => value === "" || /^\d{6}$/.test(value), "El ubigeo debe contener 6 dígitos"),
+  timezone: z.string().trim().min(1, "Selecciona una zona horaria"),
+});
+
+type CompanyField = keyof z.infer<typeof companySchema>;
 
 export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +35,7 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const existingQuery = useQuery({
     queryKey: ["company", id],
-    queryFn: () => fetchCompany(id!),
+    queryFn: () => fetchCompany(id ?? ""),
     enabled: mode === "edit" && Boolean(id),
   });
 
@@ -34,6 +48,7 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
   const [ubigeo, setUbigeo] = useState("");
   const [timezone, setTimezone] = useState("America/Lima");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CompanyField, string>>>({});
 
   useEffect(() => {
     const existing = existingQuery.data;
@@ -64,7 +79,7 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
           timezone,
         });
       }
-      return patchCompany(id!, {
+      return patchCompany(id ?? "", {
         legal_name: legalName,
         trade_name: tradeName || null,
         address,
@@ -84,10 +99,17 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (mode === "create" && !/^\d{11}$/.test(ruc)) {
-      setError("RUC debe tener 11 dígitos");
+    const result = companySchema.safeParse({ ruc, legalName, tradeName, addressLine, ubigeo, timezone });
+    if (!result.success) {
+      const nextErrors: Partial<Record<CompanyField, string>> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as CompanyField;
+        if (!nextErrors[field]) nextErrors[field] = issue.message;
+      }
+      setFieldErrors(nextErrors);
       return;
     }
+    setFieldErrors({});
     mutation.mutate();
   }
 
@@ -117,19 +139,19 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
             : "RUC y ambiente son inmutables."
         }
         actions={
-          <Link
+          <TextLink
             to={
               mode === "edit" && id ? `/companies/${id}/overview` : "/companies"
             }
-            className="text-sm text-[var(--primary)] hover:underline"
+            className="text-sm"
           >
             Cancelar
-          </Link>
+          </TextLink>
         }
       />
 
       <form
-        className="max-w-xl space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6"
+        className="max-w-xl space-y-4 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]"
         onSubmit={(e) => void onSubmit(e)}
       >
         <div className="space-y-1.5">
@@ -141,8 +163,13 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
             maxLength={11}
             value={ruc}
             disabled={mode === "edit"}
-            onChange={(e) => setRuc(e.target.value)}
+            inputMode="numeric"
+            autoComplete="off"
+            aria-invalid={Boolean(fieldErrors.ruc)}
+            aria-describedby={fieldErrors.ruc ? "ruc-error" : undefined}
+            onChange={(e) => setRuc(e.target.value.replace(/\D/g, "").slice(0, 11))}
           />
+          <FieldError id="ruc-error" message={fieldErrors.ruc} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="legal_name">Razón social</Label>
@@ -150,16 +177,20 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
             id="legal_name"
             required
             value={legalName}
+            aria-invalid={Boolean(fieldErrors.legalName)}
             onChange={(e) => setLegalName(e.target.value)}
           />
+          <FieldError message={fieldErrors.legalName} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="trade_name">Nombre comercial</Label>
           <Input
             id="trade_name"
             value={tradeName}
+            aria-invalid={Boolean(fieldErrors.tradeName)}
             onChange={(e) => setTradeName(e.target.value)}
           />
+          <FieldError message={fieldErrors.tradeName} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="environment">Ambiente</Label>
@@ -180,24 +211,33 @@ export function CompanyFormPage({ mode }: { mode: "create" | "edit" }) {
           <Input
             id="address_line"
             value={addressLine}
+            aria-invalid={Boolean(fieldErrors.addressLine)}
             onChange={(e) => setAddressLine(e.target.value)}
           />
+          <FieldError message={fieldErrors.addressLine} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ubigeo">Ubigeo</Label>
           <Input
             id="ubigeo"
             value={ubigeo}
-            onChange={(e) => setUbigeo(e.target.value)}
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="150101"
+            aria-invalid={Boolean(fieldErrors.ubigeo)}
+            onChange={(e) => setUbigeo(e.target.value.replace(/\D/g, "").slice(0, 6))}
           />
+          <FieldError message={fieldErrors.ubigeo} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="timezone">Timezone</Label>
           <Input
             id="timezone"
             value={timezone}
+            aria-invalid={Boolean(fieldErrors.timezone)}
             onChange={(e) => setTimezone(e.target.value)}
           />
+          <FieldError message={fieldErrors.timezone} />
         </div>
 
         {error ? <ErrorState title="Error" message={error} /> : null}

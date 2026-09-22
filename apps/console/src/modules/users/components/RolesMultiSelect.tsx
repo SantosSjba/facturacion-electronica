@@ -1,6 +1,7 @@
 import type { OrgRole } from "../types";
 import { Checkbox } from "@/shared/ui/components/checkbox";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 
 export function RolesMultiSelect({
   roles,
@@ -24,7 +25,7 @@ export function RolesMultiSelect({
   return (
     <fieldset className="space-y-2" disabled={disabled}>
       <Label>Roles</Label>
-      <div className="grid gap-2 rounded-md border border-[var(--border)] p-3 sm:grid-cols-2">
+      <div className="grid gap-2 rounded-md border border-gray-200 p-3 sm:grid-cols-2 dark:border-gray-800">
         {roles.map((role) => (
           <label
             key={role.id}
@@ -37,9 +38,9 @@ export function RolesMultiSelect({
             />
             <span>
               <span className="font-medium">{role.name}</span>
-              <span className="ml-1 text-[var(--muted-foreground)]">
+              <MutedText as="span" className="ml-1">
                 ({role.code})
-              </span>
+              </MutedText>
             </span>
           </label>
         ))}

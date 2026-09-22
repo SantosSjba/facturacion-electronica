@@ -14,13 +14,13 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 py-16 text-[var(--muted-foreground)]",
+        "flex flex-col items-center justify-center gap-3 py-16 text-gray-500 dark:text-gray-400",
         className,
       )}
       role="status"
       aria-live="polite"
     >
-      <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+      <Loader2 className="size-8 animate-spin text-brand-500" />
       <p className="text-sm">{label}</p>
     </div>
   );
@@ -31,7 +31,7 @@ export function PageSpinner({ className }: { className?: string }) {
     <div
       className={cn("flex min-h-[40vh] items-center justify-center", className)}
     >
-      <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+      <Loader2 className="size-8 animate-spin text-brand-500" />
     </div>
   );
 }

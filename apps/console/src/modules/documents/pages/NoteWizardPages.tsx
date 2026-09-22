@@ -126,11 +126,16 @@ function NoteWizardPage({ kind }: { kind: "credit" | "debit" }) {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextDisabled={
-        (step === 0 && (!header.company_id || !header.serie)) ||
-        (step === 1 && (!customer.identity_number || !customer.name)) ||
-        (step === 2 && lines.some((l) => !l.description)) ||
-        (step === 3 && (!reason || !affectedSerie))
+      nextError={
+        step === 0 && (!header.company_id || !header.serie)
+          ? "Selecciona la empresa y una serie activa para continuar."
+          : step === 1 && (!customer.identity_number || !customer.name)
+            ? "Completa el documento y el nombre del cliente."
+            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
+              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
+              : step === 3 && (!reason.trim() || !/^[A-Za-z0-9]{1,4}-\d+$/.test(affectedSerie.trim()))
+                ? "Ingresa el motivo y un comprobante afectado con formato F001-1."
+                : null
       }
     >
       {step === 0 ? (

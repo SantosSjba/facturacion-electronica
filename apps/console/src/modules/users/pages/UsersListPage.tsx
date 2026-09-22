@@ -1,14 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Shield } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import { Button, buttonVariants } from "@/shared/ui/components/button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { Pagination } from "@/shared/ui/Pagination";
+import { cn } from "@/shared/ui/utils";
 
 import { fetchOrgRoles, fetchOrgUsers } from "../api";
 import { CreateUserDialog } from "../components/CreateUserDialog";
@@ -17,6 +19,7 @@ import { UsersTable } from "../components/UsersTable";
 import { filterUsers, type UserFiltersState } from "../filters";
 
 export function UsersListPage() {
+  const pageSize = 10;
   const { hasPermission } = useSession();
   const canWrite = hasPermission("users:write");
   const [filters, setFilters] = useState<UserFiltersState>({
@@ -25,6 +28,7 @@ export function UsersListPage() {
     status: "",
   });
   const [createOpen, setCreateOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const usersQuery = useQuery({
     queryKey: ["org-users"],
@@ -39,6 +43,11 @@ export function UsersListPage() {
     () => filterUsers(usersQuery.data ?? [], filters),
     [usersQuery.data, filters],
   );
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => setPage(1), [filters]);
+  useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
 
   const loading = usersQuery.isLoading || rolesQuery.isLoading;
   const error = usersQuery.error || rolesQuery.error;
@@ -52,7 +61,7 @@ export function UsersListPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/users/permissions"
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[var(--border)] bg-transparent px-4 text-sm font-medium hover:bg-[var(--muted)]"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
               <Shield className="h-4 w-4" />
               Matriz de permisos
@@ -93,7 +102,10 @@ export function UsersListPage() {
               description="No hay usuarios que coincidan con los filtros."
             />
           ) : (
-            <UsersTable users={filtered} />
+            <>
+              <UsersTable users={visible} />
+              <Pagination page={page} pageCount={pageCount} total={filtered.length} pageSize={pageSize} onPageChange={setPage} />
+            </>
           )}
         </div>
       ) : null}

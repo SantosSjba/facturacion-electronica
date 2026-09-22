@@ -1,10 +1,13 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { Badge } from "@/shared/ui/components/badge";
+import { Card, CardTitle } from "@/shared/ui/components/card";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { TextLink } from "@/shared/ui/components/text-link";
 
 import { fetchDocument, fetchDocumentTrace } from "../api";
 import { ArtifactButtons } from "../components/ArtifactButtons";
@@ -62,14 +65,7 @@ export function DocumentDetailPage() {
       <PageHeader
         title={`${doc.document_type} ${doc.serie_number ?? ""}`.trim()}
         description={`ID ${doc.id}`}
-        actions={
-          <Link
-            to="/documents"
-            className="text-sm text-[var(--primary)] hover:underline"
-          >
-            ← Volver a lista
-          </Link>
-        }
+        actions={<TextLink to="/documents" className="text-sm">← Volver a lista</TextLink>}
       />
 
       <section className="flex flex-wrap items-center gap-2">
@@ -81,74 +77,74 @@ export function DocumentDetailPage() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-[var(--border)] p-4">
-          <h2 className="mb-2 text-sm font-semibold">Cliente</h2>
+        <Card className="rounded-lg p-4 sm:p-4">
+          <CardTitle className="mb-2">Cliente</CardTitle>
           <dl className="space-y-1 text-sm">
             <div>
-              <dt className="text-[var(--muted-foreground)]">Tipo</dt>
+              <MutedText as="dt">Tipo</MutedText>
               <dd>{doc.customer.identity_type ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-[var(--muted-foreground)]">Número</dt>
+              <MutedText as="dt">Número</MutedText>
               <dd className="font-mono">{doc.customer.identity_number ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-[var(--muted-foreground)]">Nombre</dt>
+              <MutedText as="dt">Nombre</MutedText>
               <dd>{doc.customer.name ?? "—"}</dd>
             </div>
           </dl>
-        </div>
-        <div className="rounded-lg border border-[var(--border)] p-4">
-          <h2 className="mb-2 text-sm font-semibold">Totales</h2>
+        </Card>
+        <Card className="rounded-lg p-4 sm:p-4">
+          <CardTitle className="mb-2">Totales</CardTitle>
           <p className="mb-2 text-sm">
             Moneda: <span className="font-mono">{doc.currency ?? "—"}</span>
           </p>
-          <pre className="max-h-40 overflow-auto rounded-md bg-[var(--muted)] p-2 text-xs">
+          <pre className="max-h-40 overflow-auto rounded-md bg-gray-100 p-2 text-xs dark:bg-white/5">
             {JSON.stringify(doc.totals ?? {}, null, 2)}
           </pre>
-        </div>
+        </Card>
       </section>
 
-      <section className="rounded-lg border border-[var(--border)] p-4">
-        <h2 className="mb-2 text-sm font-semibold">SUNAT</h2>
+      <Card className="rounded-lg p-4 sm:p-4">
+        <CardTitle className="mb-2">SUNAT</CardTitle>
         <dl className="grid gap-2 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-[var(--muted-foreground)]">Ticket</dt>
+            <MutedText as="dt">Ticket</MutedText>
             <dd className="font-mono">{doc.sunat_ticket ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-[var(--muted-foreground)]">Código</dt>
+            <MutedText as="dt">Código</MutedText>
             <dd className="font-mono">{doc.sunat_code ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-[var(--muted-foreground)]">Mensaje</dt>
+            <MutedText as="dt">Mensaje</MutedText>
             <dd>{doc.sunat_message ?? "—"}</dd>
           </div>
         </dl>
-      </section>
+      </Card>
 
       {doc.error ? (
-        <section className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <h2 className="mb-2 text-sm font-semibold text-red-800">Error</h2>
-          <pre className="overflow-auto text-xs text-red-900">
+        <section className="rounded-lg border border-error-200 bg-error-50 p-4 dark:border-error-500/30 dark:bg-error-500/10">
+          <h2 className="mb-2 text-sm font-semibold text-error-700 dark:text-error-400">Error</h2>
+          <pre className="overflow-auto text-xs text-error-800 dark:text-error-400">
             {JSON.stringify(doc.error, null, 2)}
           </pre>
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-[var(--border)] p-4">
-        <h2 className="mb-3 text-sm font-semibold">Artefactos</h2>
+      <Card className="rounded-lg p-4 sm:p-4">
+        <CardTitle className="mb-3">Artefactos</CardTitle>
         <ArtifactButtons documentId={doc.id} />
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-[var(--border)] p-4">
-        <h2 className="mb-3 text-sm font-semibold">Timeline</h2>
+      <Card className="rounded-lg p-4 sm:p-4">
+        <CardTitle className="mb-3">Timeline</CardTitle>
         {traceQuery.isLoading ? (
           <LoadingState label="Cargando eventos…" />
         ) : (
           <DocumentTimeline events={traceQuery.data ?? []} />
         )}
-      </section>
+      </Card>
     </div>
   );
 }

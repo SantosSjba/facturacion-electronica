@@ -6,6 +6,8 @@ import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
 import { Button } from "@/shared/ui/components/button";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { FieldError } from "@/shared/ui/FieldError";
 
 import { fetchSeries } from "../../api";
 import type { CustomerInput, InvoiceLineInput } from "../../types";
@@ -22,6 +24,10 @@ export interface CommonHeaderState {
   totals_mode: "auto" | "strict";
   purchase_order: string;
   idempotency_key: string;
+}
+
+function preventInvalidNumberKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (["e", "E", "+", "-"].includes(event.key)) event.preventDefault();
 }
 
 export function emptyHeader(idempotencyKey: string): CommonHeaderState {
@@ -135,10 +141,12 @@ export function HeaderStep({
       <div className="space-y-1.5">
         <Label>Número (opcional)</Label>
         <Input
-          type="number"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           min={1}
           value={value.number}
-          onChange={(e) => onChange({ ...value, number: e.target.value })}
+          onChange={(e) => onChange({ ...value, number: e.target.value.replace(/\D/g, "") })}
         />
       </div>
       {showOperationType ? (
@@ -147,8 +155,9 @@ export function HeaderStep({
           <Input
             value={value.operation_type}
             onChange={(e) =>
-              onChange({ ...value, operation_type: e.target.value })
+              onChange({ ...value, operation_type: e.target.value.replace(/\D/g, "").slice(0, 4) })
             }
+            inputMode="numeric"
             maxLength={4}
           />
         </div>
@@ -240,15 +249,37 @@ export function CustomerStep({
           <option value="0">0 DOC.TRIB.NO.DOM.SIN.RUC</option>
         </Select>
         {identityHint ? (
-          <p className="text-xs text-[var(--muted-foreground)]">{identityHint}</p>
+          <MutedText className="text-xs">{identityHint}</MutedText>
         ) : null}
       </div>
       <div className="space-y-1.5">
         <Label>Número</Label>
         <Input
           value={value.identity_number}
+          inputMode={value.identity_type === "1" || value.identity_type === "6" ? "numeric" : "text"}
+          maxLength={value.identity_type === "6" ? 11 : value.identity_type === "1" ? 8 : 20}
+          aria-invalid={
+            value.identity_number.length > 0 &&
+            ((value.identity_type === "6" && !/^\d{11}$/.test(value.identity_number)) ||
+              (value.identity_type === "1" && !/^\d{8}$/.test(value.identity_number)))
+          }
           onChange={(e) =>
-            onChange({ ...value, identity_number: e.target.value })
+            onChange({
+              ...value,
+              identity_number:
+                value.identity_type === "1" || value.identity_type === "6"
+                  ? e.target.value.replace(/\D/g, "")
+                  : e.target.value,
+            })
+          }
+        />
+        <FieldError
+          message={
+            value.identity_number.length > 0 && value.identity_type === "6" && !/^\d{11}$/.test(value.identity_number)
+              ? "El RUC debe tener 11 dígitos"
+              : value.identity_number.length > 0 && value.identity_type === "1" && !/^\d{8}$/.test(value.identity_number)
+                ? "El DNI debe tener 8 dígitos"
+                : undefined
           }
         />
       </div>
@@ -287,7 +318,7 @@ export function LinesStep({
       {lines.map((line, i) => (
         <div
           key={line.id}
-          className="grid gap-3 rounded-md border border-[var(--border)] p-3 sm:grid-cols-2"
+          className="grid gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-2 dark:border-gray-800"
         >
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Descripción</Label>
@@ -303,6 +334,8 @@ export function LinesStep({
               min={0.0001}
               step="any"
               value={line.quantity}
+              aria-invalid={line.quantity <= 0}
+              onKeyDown={preventInvalidNumberKey}
               onChange={(e) =>
                 update(i, { quantity: Number(e.target.value) || 0 })
               }
@@ -319,8 +352,11 @@ export function LinesStep({
             <Label>Valor unitario</Label>
             <Input
               type="number"
+              min={0}
               step="any"
               value={line.unit_value}
+              aria-invalid={line.unit_value < 0}
+              onKeyDown={preventInvalidNumberKey}
               onChange={(e) =>
                 update(i, { unit_value: Number(e.target.value) || 0 })
               }
@@ -330,8 +366,10 @@ export function LinesStep({
             <Label>Precio unitario (opc.)</Label>
             <Input
               type="number"
+              min={0}
               step="any"
               value={line.unit_price ?? ""}
+              onKeyDown={preventInvalidNumberKey}
               onChange={(e) =>
                 update(i, {
                   unit_price: e.target.value
@@ -357,7 +395,10 @@ export function LinesStep({
             <Label>% IGV</Label>
             <Input
               type="number"
+              min={0}
+              max={100}
               value={line.igv_percent ?? ""}
+              onKeyDown={preventInvalidNumberKey}
               onChange={(e) =>
                 update(i, {
                   igv_percent: e.target.value
@@ -409,7 +450,7 @@ export function ReviewStep({
 
   return (
     <div className="space-y-3">
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-error-600 dark:text-error-500">{error}</p> : null}
       <div className="flex justify-end">
         <Button
           type="button"
@@ -424,7 +465,7 @@ export function ReviewStep({
           {copied ? "Copiado" : "Copiar JSON"}
         </Button>
       </div>
-      <pre className="max-h-96 overflow-auto rounded-md bg-[var(--muted)] p-3 text-xs">
+      <pre className="max-h-96 overflow-auto rounded-md bg-gray-100 p-3 text-xs dark:bg-white/5">
         {json}
       </pre>
     </div>

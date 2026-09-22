@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
-
 import type { OrgUser } from "../types";
 import { Badge } from "@/shared/ui/components/badge";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { TextLink } from "@/shared/ui/components/text-link";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
 
 function formatDate(value: string | null): string {
@@ -29,12 +29,7 @@ export function UsersTable({ users }: { users: OrgUser[] }) {
         {users.map((u) => (
           <TR key={u.id}>
             <TD>
-              <Link
-                to={`/users/${u.id}`}
-                className="font-medium text-[var(--primary)] hover:underline"
-              >
-                {u.email}
-              </Link>
+              <TextLink to={`/users/${u.id}`}>{u.email}</TextLink>
             </TD>
             <TD>{u.name}</TD>
             <TD>
@@ -51,8 +46,8 @@ export function UsersTable({ users }: { users: OrgUser[] }) {
                 {u.status}
               </Badge>
             </TD>
-            <TD className="text-[var(--muted-foreground)]">
-              {formatDate(u.lastLoginAt)}
+            <TD>
+              <MutedText as="span">{formatDate(u.lastLoginAt)}</MutedText>
             </TD>
           </TR>
         ))}

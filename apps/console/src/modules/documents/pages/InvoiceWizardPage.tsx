@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { Input } from "@/shared/ui/components/input";
+import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 
 import { emitInvoice, fetchCompanies } from "../api";
 import { WizardShell } from "../components/wizard/WizardShell";
@@ -103,11 +106,14 @@ export function InvoiceWizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextDisabled={
-        (step === 0 && (!header.company_id || !header.serie)) ||
-        (step === 1 &&
-          (!customer.identity_number || !customer.name)) ||
-        (step === 2 && lines.some((l) => !l.description))
+      nextError={
+        step === 0 && (!header.company_id || !header.serie)
+          ? "Selecciona la empresa y una serie activa para continuar."
+          : step === 1 && (!customer.identity_number || !customer.name)
+            ? "Completa el documento de identidad y la razón social del cliente."
+            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
+              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
+              : null
       }
     >
       {step === 0 ? (
@@ -125,16 +131,15 @@ export function InvoiceWizardPage() {
       {step === 2 ? <LinesStep lines={lines} onChange={setLines} /> : null}
       {step === 3 ? (
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Orden de compra (opc.)</label>
-          <input
-            className="flex h-10 w-full rounded-md border border-[var(--input)] bg-[var(--card)] px-3 text-sm"
+          <Label>Orden de compra (opc.)</Label>
+          <Input
             value={purchaseOrder}
             onChange={(e) => setPurchaseOrder(e.target.value)}
           />
-          <p className="text-xs text-[var(--muted-foreground)]">
+          <MutedText className="text-xs">
             Detraction / payment_means se pueden ampliar luego; la API acepta
             objetos opcionales.
-          </p>
+          </MutedText>
         </div>
       ) : null}
       {step === 4 ? <ReviewStep payload={payload} error={error} /> : null}

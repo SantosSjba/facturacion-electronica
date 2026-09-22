@@ -7,6 +7,7 @@ import { useSession } from "@/shared/auth/session-context";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
 
 import { putSolCredentials } from "../../api";
@@ -27,7 +28,7 @@ export function SolTab() {
   const summary = company.credentials_summary?.sol;
 
   const mutation = useMutation({
-    mutationFn: () => putSolCredentials(id!, { username, password }),
+    mutationFn: () => putSolCredentials(id ?? "", { username, password }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["company", id] });
       await qc.invalidateQueries({ queryKey: ["companies"] });
@@ -43,7 +44,7 @@ export function SolTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 text-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 text-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <p>
           Configurado:{" "}
           <strong>{company.sol_configured ? "sí" : "no"}</strong>
@@ -53,16 +54,16 @@ export function SolTab() {
             <p className="mt-2">
               Usuario: <span className="font-mono">{summary.username ?? "—"}</span>
             </p>
-            <p className="text-[var(--muted-foreground)]">
+            <MutedText>
               Rotated: {summary.rotated_at ?? "—"}
-            </p>
+            </MutedText>
           </>
         ) : null}
       </div>
 
       {canManage ? (
         <form
-          className="max-w-md space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
+          className="max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
           onSubmit={(e) => {
             e.preventDefault();
             setError(null);
@@ -89,15 +90,15 @@ export function SolTab() {
             />
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
-          {ok ? <p className="text-sm text-teal-700">{ok}</p> : null}
+          {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "Guardando…" : "Guardar SOL"}
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <MutedText>
           Requiere credentials:manage.
-        </p>
+        </MutedText>
       )}
     </div>
   );

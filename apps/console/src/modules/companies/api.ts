@@ -35,11 +35,11 @@ export function putCertificate(
   companyId: string,
   file: File,
   password: string,
-): Promise<void> {
+): Promise<undefined> {
   const form = new FormData();
   form.append("file", file);
   form.append("password", password);
-  return apiRequest<void>(`/companies/${companyId}/certificate`, {
+  return apiRequest<undefined>(`/companies/${companyId}/certificate`, {
     method: "PUT",
     body: form,
   });
@@ -48,8 +48,8 @@ export function putCertificate(
 export function putSolCredentials(
   companyId: string,
   input: { username: string; password: string },
-): Promise<void> {
-  return apiRequest<void>(`/companies/${companyId}/sol-credentials`, {
+): Promise<undefined> {
+  return apiRequest<undefined>(`/companies/${companyId}/sol-credentials`, {
     method: "PUT",
     body: input,
   });
@@ -58,8 +58,8 @@ export function putSolCredentials(
 export function putGreCredentials(
   companyId: string,
   input: { client_id: string; client_secret: string },
-): Promise<void> {
-  return apiRequest<void>(`/companies/${companyId}/gre-credentials`, {
+): Promise<undefined> {
+  return apiRequest<undefined>(`/companies/${companyId}/gre-credentials`, {
     method: "PUT",
     body: input,
   });

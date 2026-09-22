@@ -11,6 +11,7 @@ import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { FieldError } from "@/shared/ui/FieldError";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
 
@@ -28,16 +29,17 @@ export function SeriesTab() {
   const [serie, setSerie] = useState("");
   const [nextNumber, setNextNumber] = useState("1");
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<{ serie?: string; nextNumber?: string }>({});
 
   const query = useQuery({
     queryKey: ["series", companyId],
-    queryFn: () => fetchSeries(companyId!),
+    queryFn: () => fetchSeries(companyId ?? ""),
     enabled: Boolean(companyId),
   });
 
   const createMutation = useMutation({
     mutationFn: () =>
-      createSeries(companyId!, {
+      createSeries(companyId ?? "", {
         document_type: documentType,
         serie,
         next_number: Number(nextNumber) || 1,
@@ -55,7 +57,7 @@ export function SeriesTab() {
 
   const toggleMutation = useMutation({
     mutationFn: (input: { seriesId: string; is_active: boolean }) =>
-      patchSeries(companyId!, input.seriesId, { is_active: input.is_active }),
+      patchSeries(companyId ?? "", input.seriesId, { is_active: input.is_active }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["series", companyId] });
     },
@@ -132,10 +134,15 @@ export function SeriesTab() {
 
       {canWrite ? (
         <form
-          className="max-w-lg space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
+          className="max-w-lg space-y-3 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
           onSubmit={(e) => {
             e.preventDefault();
             setError(null);
+            const nextErrors: { serie?: string; nextNumber?: string } = {};
+            if (!/^[A-Z0-9]{1,8}$/.test(serie)) nextErrors.serie = "Usa de 1 a 8 letras mayúsculas o números";
+            if (!/^\d+$/.test(nextNumber) || Number(nextNumber) < 1) nextErrors.nextNumber = "Ingresa un correlativo entero mayor a cero";
+            setFormErrors(nextErrors);
+            if (Object.keys(nextErrors).length > 0) return;
             createMutation.mutate();
           }}
         >
@@ -162,18 +169,23 @@ export function SeriesTab() {
                 required
                 maxLength={8}
                 value={serie}
+                aria-invalid={Boolean(formErrors.serie)}
                 onChange={(e) => setSerie(e.target.value.toUpperCase())}
               />
+              <FieldError message={formErrors.serie} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="next">Next number</Label>
               <Input
                 id="next"
-                type="number"
-                min={1}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={nextNumber}
-                onChange={(e) => setNextNumber(e.target.value)}
+                aria-invalid={Boolean(formErrors.nextNumber)}
+                onChange={(e) => setNextNumber(e.target.value.replace(/\D/g, ""))}
               />
+              <FieldError message={formErrors.nextNumber} />
             </div>
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}

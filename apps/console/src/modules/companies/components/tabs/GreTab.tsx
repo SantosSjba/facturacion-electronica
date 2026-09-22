@@ -7,6 +7,7 @@ import { useSession } from "@/shared/auth/session-context";
 import { Button } from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
 
 import { putGreCredentials } from "../../api";
@@ -28,7 +29,7 @@ export function GreTab() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      putGreCredentials(id!, {
+      putGreCredentials(id ?? "", {
         client_id: clientId,
         client_secret: clientSecret,
       }),
@@ -47,7 +48,7 @@ export function GreTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 text-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 text-sm dark:border-gray-800 dark:bg-white/[0.03]">
         <p>
           Configurado:{" "}
           <strong>{company.gre_configured ? "sí" : "no"}</strong>
@@ -58,16 +59,16 @@ export function GreTab() {
               Client ID:{" "}
               <span className="font-mono">{summary.client_id ?? "—"}</span>
             </p>
-            <p className="text-[var(--muted-foreground)]">
+            <MutedText>
               Rotated: {summary.rotated_at ?? "—"}
-            </p>
+            </MutedText>
           </>
         ) : null}
       </div>
 
       {canManage ? (
         <form
-          className="max-w-md space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5"
+          className="max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
           onSubmit={(e) => {
             e.preventDefault();
             setError(null);
@@ -94,15 +95,15 @@ export function GreTab() {
             />
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
-          {ok ? <p className="text-sm text-teal-700">{ok}</p> : null}
+          {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? "Guardando…" : "Guardar GRE"}
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <MutedText>
           Requiere credentials:manage.
-        </p>
+        </MutedText>
       )}
     </div>
   );

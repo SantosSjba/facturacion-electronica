@@ -20,20 +20,20 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-start gap-3 rounded-lg border border-[var(--destructive)]/30 bg-[var(--card)] px-5 py-4",
+        "flex flex-col items-start gap-3 rounded-xl border border-error-300 bg-error-50 px-5 py-4 dark:border-error-500/30 dark:bg-error-500/10",
         className,
       )}
     >
       <div className="flex items-start gap-3">
         <AlertCircle
-          className="mt-0.5 h-5 w-5 shrink-0 text-[var(--destructive)]"
+          className="mt-0.5 size-5 shrink-0 text-error-500"
           aria-hidden
         />
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">
+          <h3 className="text-sm font-semibold text-error-700 dark:text-error-400">
             {title}
           </h3>
-          <p className="text-sm text-[var(--muted-foreground)]">{message}</p>
+          <p className="text-sm text-error-700/90 dark:text-error-400">{message}</p>
         </div>
       </div>
       {onRetry ? (

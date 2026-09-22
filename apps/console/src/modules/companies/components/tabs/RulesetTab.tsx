@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
+import { MutedText } from "@/shared/ui/components/muted-text";
 
 import { fetchRuleset } from "../../api";
 import type { Company } from "../../types";
@@ -27,13 +28,14 @@ export function RulesetTab() {
     );
   }
 
-  const meta = query.data!;
+  const meta = query.data;
+  if (!meta) return <ErrorState message="No se recibió información del ruleset" />;
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5">
-      <p className="text-sm text-[var(--muted-foreground)]">
+    <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+      <MutedText>
         Vista de solo lectura. El pin de la empresa no se edita en esta pantalla.
-      </p>
+      </MutedText>
       <dl className="grid gap-3 sm:grid-cols-2">
         <Item label="Platform ruleset" value={meta.ruleset_version} />
         <Item
@@ -57,7 +59,9 @@ export function RulesetTab() {
 function Item({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase text-[var(--muted-foreground)]">{label}</dt>
+      <MutedText as="dt" className="text-xs uppercase">
+        {label}
+      </MutedText>
       <dd className="font-mono text-sm">{value}</dd>
     </div>
   );

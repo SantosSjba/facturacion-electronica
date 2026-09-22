@@ -1,4 +1,6 @@
 import { Button } from "@/shared/ui/components/button";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { AlertCircle, Check } from "lucide-react";
 
 export function WizardShell({
   title,
@@ -9,7 +11,7 @@ export function WizardShell({
   onNext,
   onSubmit,
   submitting,
-  nextDisabled,
+  nextError,
   children,
 }: {
   title: string;
@@ -20,7 +22,7 @@ export function WizardShell({
   onNext: () => void;
   onSubmit: () => void;
   submitting?: boolean;
-  nextDisabled?: boolean;
+  nextError?: string | null;
   children: React.ReactNode;
 }) {
   const isLast = step >= steps.length - 1;
@@ -30,32 +32,37 @@ export function WizardShell({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            {description}
-          </p>
+          <MutedText className="mt-1">{description}</MutedText>
         ) : null}
       </div>
 
-      <ol className="flex flex-wrap gap-2">
+      <ol className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {steps.map((label, i) => (
           <li
             key={label}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium ${
               i === step
-                ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                ? "bg-brand-500 text-white"
                 : i < step
-                  ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
-                  : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                  ? "bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400"
+                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"
             }`}
           >
-            {i + 1}. {label}
+            {i < step ? <Check className="size-3.5" /> : <span>{i + 1}.</span>} {label}
           </li>
         ))}
       </ol>
 
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
         {children}
       </div>
+
+      {!isLast && nextError ? (
+        <div role="alert" className="flex items-center gap-2 rounded-lg border border-warning-300 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-400">
+          <AlertCircle className="size-4 shrink-0" />
+          {nextError}
+        </div>
+      ) : null}
 
       <div className="flex justify-between gap-3">
         <Button
@@ -74,7 +81,7 @@ export function WizardShell({
           <Button
             type="button"
             onClick={onNext}
-            disabled={nextDisabled || submitting}
+            disabled={Boolean(nextError) || submitting}
           >
             Siguiente
           </Button>

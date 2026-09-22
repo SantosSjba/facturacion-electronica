@@ -1,6 +1,8 @@
-import { Link, useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import { Badge } from "@/shared/ui/components/badge";
+import { MutedText } from "@/shared/ui/components/muted-text";
+import { TextLink } from "@/shared/ui/components/text-link";
 import { useSession } from "@/shared/auth/session-context";
 
 import type { Company } from "../../types";
@@ -16,9 +18,7 @@ export function OverviewTab() {
       <Field label="Razón social" value={company.legal_name} />
       <Field label="Ambiente" value={company.environment} />
       <div>
-        <p className="text-xs uppercase text-[var(--muted-foreground)]">
-          Certificado
-        </p>
+        <MutedText className="text-xs uppercase">Certificado</MutedText>
         <Badge
           variant={company.certificate_status === "active" ? "success" : "muted"}
         >
@@ -43,12 +43,9 @@ export function OverviewTab() {
       />
       {canWrite ? (
         <div className="sm:col-span-2">
-          <Link
-            to={`/companies/${company.id}/edit`}
-            className="text-sm text-[var(--primary)] hover:underline"
-          >
+          <TextLink to={`/companies/${company.id}/edit`} className="text-sm">
             Editar metadatos
-          </Link>
+          </TextLink>
         </div>
       ) : null}
     </div>
@@ -58,8 +55,8 @@ export function OverviewTab() {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs uppercase text-[var(--muted-foreground)]">{label}</p>
-      <p className="text-sm font-medium text-[var(--foreground)]">{value}</p>
+      <MutedText className="text-xs uppercase">{label}</MutedText>
+      <p className="text-sm font-medium text-gray-800 dark:text-white/90">{value}</p>
     </div>
   );
 }

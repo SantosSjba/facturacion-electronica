@@ -194,7 +194,7 @@ export async function logoutRequest(): Promise<void> {
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) return;
   try {
-    await apiRequest<void>("/auth/logout", {
+    await apiRequest<undefined>("/auth/logout", {
       method: "POST",
       auth: false,
       body: { refresh_token: refreshToken },

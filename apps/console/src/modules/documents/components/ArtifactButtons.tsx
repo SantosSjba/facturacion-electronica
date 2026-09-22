@@ -36,7 +36,7 @@ export function ArtifactButtons({ documentId }: { documentId: string }) {
         ))}
       </div>
       {error ? (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="text-sm text-error-600 dark:text-error-500">{error}</p>
       ) : null}
     </div>
   );
