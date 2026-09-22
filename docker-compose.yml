@@ -1,0 +1,78 @@
+# Local infrastructure only (S0). Not for production.
+# API runs via `pnpm dev:api` — no Nest container in this compose file.
+#
+# Dev credentials below are intentionally weak. Never reuse in production.
+
+name: factosys
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: factosys-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: factosys
+      POSTGRES_PASSWORD: factosys
+      POSTGRES_DB: factosys
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factosys -d factosys"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - factosys
+
+  redis:
+    image: redis:7-alpine
+    container_name: factosys-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - factosys
+
+  minio:
+    # quay.io mirror — Docker Hub `minio/minio` may require login
+    image: quay.io/minio/minio:latest
+    container_name: factosys-minio
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: factosys
+      MINIO_ROOT_PASSWORD: factosysdev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - factosys
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+
+networks:
+  factosys:
+    driver: bridge

@@ -3,22 +3,41 @@
 Monorepo TypeScript para el backend de facturación electrónica SUNAT (CPE).  
 Stack: **pnpm workspaces**, **NestJS 11**, **TypeScript strict**, **ESLint flat + Prettier**, **Vitest**, **Turborepo**, **Pino**, **Zod**.
 
-Documentación de producto y backlog: [planificacion-fe-SUNAT](https://github.com/SantosSjba/planificacion-fe-SUNAT)  
-(en particular [23 — monorepo bootstrap](https://github.com/SantosSjba/planificacion-fe-SUNAT/blob/main/docs/planificacion/23-monorepo-bootstrap.md) y [32 — backlog](https://github.com/SantosSjba/planificacion-fe-SUNAT/blob/main/docs/planificacion/32-backlog-sprints-mvp.md)).
+Documentación de producto y backlog: [planificacion-fe-SUNAT](https://github.com/SantosSjba/planificacion-fe-SUNAT)
 
-## Requisitos
+- [23 — monorepo bootstrap](https://github.com/SantosSjba/planificacion-fe-SUNAT/blob/main/docs/planificacion/23-monorepo-bootstrap.md)
+- [24 — arquitectura Nest](https://github.com/SantosSjba/planificacion-fe-SUNAT/blob/main/docs/planificacion/24-arquitectura-nestjs.md)
+- [32 — backlog sprints MVP](https://github.com/SantosSjba/planificacion-fe-SUNAT/blob/main/docs/planificacion/32-backlog-sprints-mvp.md)
 
-| Tool    | Versión                                         |
-| ------- | ----------------------------------------------- |
-| Node.js | 20+ (ver `.nvmrc`)                              |
-| pnpm    | 10.x (campo `packageManager` en `package.json`) |
+## Desarrollo local
+
+### Prerrequisitos
+
+| Tool           | Versión                                         |
+| -------------- | ----------------------------------------------- |
+| Node.js        | 20+ (ver `.nvmrc`)                              |
+| pnpm           | 10.x (campo `packageManager` en `package.json`) |
+| Docker Desktop | Compose v2 (Postgres, Redis, MinIO)             |
+
+### Arranque
 
 ```bash
 pnpm install
 cp .env.example .env
+
+# Infra local (credenciales de desarrollo en compose — no usar en producción)
+docker compose up -d
+docker compose ps   # postgres :5432, redis :6379, minio :9000 / console :9001
+
+pnpm dev:api
+# GET http://localhost:3000/health
+# GET http://localhost:3000/ready
 ```
 
-## Scripts de contrato (root)
+La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
+`DATABASE_URL`, `REDIS_URL` y `MINIO_*` en `.env.example` apuntan al compose; Nest aún no los consume (wiring en sprints posteriores).
+
+### Contrato del monorepo
 
 | Script                              | Descripción                                |
 | ----------------------------------- | ------------------------------------------ |
@@ -31,13 +50,7 @@ cp .env.example .env
 | `pnpm spike:ubl`                    | Stub — spike constructor Invoice UBL (S1)  |
 | `pnpm spike:sendbill`               | Stub — spike SendBill SOAP (S2)            |
 
-## API local
-
-```bash
-pnpm dev:api
-# GET http://localhost:3000/health
-# GET http://localhost:3000/ready
-```
+CI (GitHub Actions): en push/PR a `main` ejecuta `pnpm lint` → `pnpm test` → `pnpm build` (Node 20 + cache pnpm).
 
 ## Estructura (S0)
 
@@ -54,9 +67,12 @@ packages/
   sunat-catalogs/       # stub — catalogs
   sunat-gre/            # stub — GRE REST
   pdf-ri/               # stub — PDF RI
+docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
+.github/workflows/ci.yml
 ```
 
-**Fuera de S0-PKG:** lógica SUNAT real, Docker/CI (S0-DEV / S1+).
+**S0 disponible:** tooling (S0-TOOL), API skeleton (S0-API), packages stub (S0-PKG), Docker/CI/higiene (S0-DEV).  
+**Fuera de S0:** lógica SUNAT real, wiring Nest→Postgres/Redis/MinIO, imagen Docker de la API.
 
 ## Packages / apps
 
