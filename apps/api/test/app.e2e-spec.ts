@@ -24,6 +24,7 @@ describe("API e2e", () => {
       process.env["CREDENTIALS_MASTER_KEY"] ??
       Buffer.alloc(32, 7).toString("base64");
     process.env["SUNAT_BILL_MODE"] = "fake";
+    process.env["SUNAT_GRE_MODE"] = "fake";
 
     const moduleRef = await Test.createTestingModule({
       imports: [E2eAppModule],
@@ -948,5 +949,195 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${emitSecret}`)
       .expect(200);
     expect(rcXml.text).toContain("SummaryDocuments");
+  });
+
+  it("emits GRE 09 and 31 via Fake OAuth + poll (S7)", async () => {
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    // Ensure GRE credentials (seeded test may already have them)
+    await request(server)
+      .put(`/companies/${companyId}/gre-credentials`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ client_id: "gre-client-e2e", client_secret: "gre-secret-e2e" })
+      .expect(204);
+
+    const emitKey = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `s7-${Date.now()}`,
+        scopes: ["documents:read", "documents:write"],
+      })
+      .expect(201);
+    const emitSecret = emitKey.body.secret as string;
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const series = seriesList.body as { serie: string; documentType: string }[];
+    const ensureSerie = async (documentType: string, serie: string) => {
+      const has = series.some(
+        (s) => s.serie === serie && s.documentType === documentType,
+      );
+      if (!has) {
+        await request(server)
+          .post(`/companies/${companyId}/series`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({ document_type: documentType, serie, next_number: 1 })
+          .expect(201);
+      }
+    };
+    await ensureSerie("09", "T001");
+    await ensureSerie("31", "V001");
+
+    const bad = await request(server)
+      .post("/v1/despatch-advices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `gre-bad-${Date.now()}`)
+      .send({ company_id: companyId })
+      .expect(422);
+    expect(bad.body.code).toBe("FACTOSYS_VALIDATION");
+
+    const gre09 = await request(server)
+      .post("/v1/despatch-advices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `gre09-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        document_type: "09",
+        serie: "T001",
+        issue_date: "2026-09-17",
+        issue_time: "10:00:00",
+        delivery_customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        shipment: {
+          transfer_reason_code: "01",
+          transport_mode_code: "01",
+          gross_weight: 10.5,
+          gross_weight_unit: "KGM",
+          start_date: "2026-09-17",
+          carrier: {
+            identity_type: "6",
+            identity_number: "20600000000",
+            name: "TRANSPORTE SAC",
+          },
+          origin: {
+            ubigeo: "150101",
+            address: "Av. Emisor 123, Lima",
+          },
+          destination: {
+            ubigeo: "150122",
+            address: "Av. Destino 456, Lima",
+          },
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 10,
+            unit_code: "NIU",
+            description: "Cajas de producto",
+          },
+        ],
+      })
+      .expect(201);
+    expect(gre09.body.document_type).toBe("09");
+    expect(gre09.body.status).toBe("ticket_pending");
+    expect(gre09.body.sunat_ticket).toBeTruthy();
+
+    let gre09Status = gre09.body.status as string;
+    for (let i = 0; i < 40 && gre09Status === "ticket_pending"; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${gre09.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      gre09Status = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(gre09Status);
+
+    const gre09Xml = await request(server)
+      .get(`/v1/documents/${gre09.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(gre09Xml.text).toContain("DespatchAdvice");
+
+    const gre31 = await request(server)
+      .post("/v1/despatch-advices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `gre31-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        document_type: "31",
+        serie: "V001",
+        issue_date: "2026-09-17",
+        issue_time: "11:30:00",
+        shipper: {
+          identity_type: "6",
+          identity_number: "20111111111",
+          name: "REMITENTE COMERCIAL SAC",
+        },
+        delivery_customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        shipment: {
+          gross_weight: 25,
+          gross_weight_unit: "KGM",
+          start_date: "2026-09-17",
+          vehicles: [{ plate: "ABC-123" }],
+          drivers: [
+            {
+              job_title: "Principal",
+              identity_type: "1",
+              identity_number: "12345678",
+              name: "Juan Conductor Perez",
+              license: "Q12345678",
+            },
+          ],
+          origin: {
+            ubigeo: "150101",
+            address: "Almacen origen",
+          },
+          destination: {
+            ubigeo: "040101",
+            address: "Almacen destino",
+          },
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 25,
+            unit_code: "NIU",
+            description: "Mercaderia transportada",
+          },
+        ],
+      })
+      .expect(201);
+    expect(gre31.body.document_type).toBe("31");
+    expect(gre31.body.status).toBe("ticket_pending");
+
+    let gre31Status = gre31.body.status as string;
+    for (let i = 0; i < 40 && gre31Status === "ticket_pending"; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${gre31.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      gre31Status = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(gre31Status);
   });
 });

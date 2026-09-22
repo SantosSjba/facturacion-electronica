@@ -37,6 +37,20 @@ export class CredentialsResolver {
     );
   }
 
+  async resolveGre(
+    companyId: string,
+  ): Promise<{ clientId: string; clientSecret: string }> {
+    const row = await this.requireCredential(companyId, "gre");
+    const secret = await this.vault.getSecret<{
+      client_id: string;
+      client_secret: string;
+    }>(row.secretRef);
+    return {
+      clientId: secret.client_id,
+      clientSecret: secret.client_secret,
+    };
+  }
+
   private async requireCredential(
     companyId: string,
     kind: "certificate" | "sol" | "gre",

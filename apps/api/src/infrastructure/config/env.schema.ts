@@ -31,6 +31,17 @@ export const envSchema = z.object({
   MINIO_REGION: z.string().min(1).default("us-east-1"),
   MINIO_PRESIGN_TTL_SEC: z.coerce.number().int().positive().default(300),
   SUNAT_BILL_MODE: z.enum(["fake", "beta"]).default("fake"),
+  SUNAT_GRE_MODE: z.enum(["fake", "beta"]).default("fake"),
+  SUNAT_GRE_TOKEN_URL: z
+    .string()
+    .min(1)
+    .default(
+      "https://api-seguridad.sunat.gob.pe/v1/clientessol/{client_id}/oauth2/token/",
+    ),
+  SUNAT_GRE_API_BASE: z
+    .string()
+    .url()
+    .default("https://api-cpe.sunat.gob.pe"),
   CREDENTIALS_MASTER_KEY: z
     .string()
     .min(1)

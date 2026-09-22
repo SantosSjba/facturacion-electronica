@@ -15,9 +15,11 @@ import {
 import { EmitReceiptUseCase } from "../../../infrastructure/documents/emit-receipt.use-case";
 import { EmitVoidedDocumentUseCase } from "../../../infrastructure/documents/emit-voided-document.use-case";
 import { EmitDailySummaryUseCase } from "../../../infrastructure/documents/emit-daily-summary.use-case";
+import { EmitDespatchAdviceUseCase } from "../../../infrastructure/documents/emit-despatch-advice.use-case";
 import { SummaryPoolService } from "../../../infrastructure/documents/summary-pool.service";
 import { CredentialsResolver } from "../../../infrastructure/documents/credentials-resolver";
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
+import { GreTokenCacheService } from "../../../infrastructure/gre/gre-token-cache.service";
 import { IdempotencyModule } from "../../../infrastructure/idempotency/idempotency.module";
 import {
   BULLMQ_CONNECTION,
@@ -35,6 +37,7 @@ import {
 import { ReceiptsController } from "./receipts.controller";
 import { VoidedDocumentsController } from "./voided-documents.controller";
 import { DailySummariesController } from "./daily-summaries.controller";
+import { DespatchAdvicesController } from "./despatch-advices.controller";
 
 @Module({
   imports: [CompaniesModule, IdempotencyModule],
@@ -45,11 +48,13 @@ import { DailySummariesController } from "./daily-summaries.controller";
     DebitNotesController,
     VoidedDocumentsController,
     DailySummariesController,
+    DespatchAdvicesController,
     DocumentsController,
   ],
   providers: [
     DocumentsService,
     CredentialsResolver,
+    GreTokenCacheService,
     EmitDocumentOrchestrator,
     EmitInvoiceUseCase,
     EmitReceiptUseCase,
@@ -57,6 +62,7 @@ import { DailySummariesController } from "./daily-summaries.controller";
     EmitDebitNoteUseCase,
     EmitVoidedDocumentUseCase,
     EmitDailySummaryUseCase,
+    EmitDespatchAdviceUseCase,
     SummaryPoolService,
     SunatSendProcessor,
     SunatPollProcessor,
@@ -69,6 +75,7 @@ import { DailySummariesController } from "./daily-summaries.controller";
     EmitDebitNoteUseCase,
     EmitVoidedDocumentUseCase,
     EmitDailySummaryUseCase,
+    EmitDespatchAdviceUseCase,
   ],
 })
 export class DocumentsModule implements OnModuleInit, OnModuleDestroy {

@@ -22,9 +22,11 @@
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
   "dependencies": {
-    "@factosys/shared": "workspace:*"
+    "@factosys/shared": "workspace:*",
+    "adm-zip": "^0.6.1"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "vitest": "^5.0.1"
   }
 }

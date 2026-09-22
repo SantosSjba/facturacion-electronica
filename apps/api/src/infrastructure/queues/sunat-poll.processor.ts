@@ -7,6 +7,10 @@ import {
   parseCdrZip,
   type BillServicePort,
 } from "@factosys/sunat-soap";
+import {
+  createGreClientsFromEnv,
+  type GreDespatchPort,
+} from "@factosys/sunat-gre";
 import type { DocumentStatus } from "@factosys/domain";
 
 import type { Env } from "../config/env.schema";
@@ -14,25 +18,33 @@ import type { QueueJobData } from "../queues/queue.tokens";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 import { CredentialsResolver } from "../documents/credentials-resolver";
 import { DocumentsService } from "../documents/documents.service";
+import { GreTokenCacheService } from "../gre/gre-token-cache.service";
 
 /**
- * Polls SUNAT getStatus for RA/RC documents in ticket_pending.
- * Side-effects: cancel voided origins (RA) or update summary_status (RC).
+ * Polls ticket_pending docs:
+ * - RA/RC → SOAP getStatus
+ * - GRE 09/31 → REST consultarTicket
  */
 @Injectable()
 export class SunatPollProcessor {
   private readonly logger = new Logger(SunatPollProcessor.name);
   private readonly bill: BillServicePort;
+  private readonly greDespatch: GreDespatchPort;
 
   constructor(
     private readonly documents: DocumentsService,
     private readonly credentials: CredentialsResolver,
+    private readonly greTokens: GreTokenCacheService,
     config: ConfigService<Env, true>,
   ) {
     process.env["SUNAT_BILL_MODE"] = config.get("SUNAT_BILL_MODE", {
       infer: true,
     });
+    process.env["SUNAT_GRE_MODE"] = config.get("SUNAT_GRE_MODE", {
+      infer: true,
+    });
     this.bill = createBillServiceFromEnv();
+    this.greDespatch = createGreClientsFromEnv().despatch;
   }
 
   async process(job: Job<QueueJobData>): Promise<{ ok: true; status: string }> {
@@ -52,11 +64,107 @@ export class SunatPollProcessor {
       throw new Error(`Document ${documentId} missing sunat_ticket`);
     }
 
+    if (doc.documentType === "09" || doc.documentType === "31") {
+      return this.processGre(organizationId, companyId, documentId, doc);
+    }
+
+    return this.processSoapSummary(organizationId, companyId, documentId, doc);
+  }
+
+  private async processGre(
+    organizationId: string,
+    companyId: string,
+    documentId: string,
+    doc: Awaited<ReturnType<DocumentsService["getById"]>>,
+  ): Promise<{ ok: true; status: string }> {
+    try {
+      let accessToken = await this.greTokens.getAccessToken(companyId);
+      let result;
+      try {
+        result = await this.greDespatch.getStatus({
+          accessToken,
+          ticket: doc.sunatTicket!,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!/401|Unauthorized|OAuth/i.test(msg)) throw err;
+        await this.greTokens.invalidate(companyId);
+        accessToken = await this.greTokens.getAccessToken(companyId);
+        result = await this.greDespatch.getStatus({
+          accessToken,
+          ticket: doc.sunatTicket!,
+        });
+      }
+
+      if (result.status === "ticket_pending") {
+        // Still processing — retry via BullMQ
+        throw new Error(`GRE ticket ${doc.sunatTicket} still pending`);
+      }
+
+      if (result.rawCdrZip?.length) {
+        const cdrKey = buildDocumentObjectKey({
+          organizationId,
+          companyId,
+          documentId,
+          kind: "cdr_xml",
+          sha256: createHash("sha256")
+            .update(result.rawCdrZip)
+            .digest("hex"),
+          ext: "zip",
+        });
+        await this.documents.putArtifact({
+          organizationId,
+          companyId,
+          documentId,
+          kind: "cdr_xml",
+          body: result.rawCdrZip,
+          contentType: "application/zip",
+          objectKey: cdrKey,
+        });
+      }
+
+      const nextStatus = result.status as DocumentStatus;
+      await this.documents.transitionStatus(
+        documentId,
+        "ticket_pending",
+        nextStatus,
+        {
+          sunatResponseCode: result.sunatCode ?? null,
+          sunatResponseMessage: result.sunatMessage ?? null,
+          completedAt: new Date(),
+        },
+      );
+      await this.documents.appendEvent({
+        organizationId,
+        companyId,
+        documentId,
+        status: nextStatus,
+        fromStatus: "ticket_pending",
+        detail: result.sunatMessage ?? `GRE ${result.sunatCode ?? nextStatus}`,
+        source: "sunat",
+        data: { sunat_code: result.sunatCode },
+      });
+
+      return { ok: true, status: nextStatus };
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : "GRE getStatus failed";
+      this.logger.error(`sunat-poll GRE failed for ${documentId}: ${message}`);
+      throw cause;
+    }
+  }
+
+  private async processSoapSummary(
+    organizationId: string,
+    companyId: string,
+    documentId: string,
+    doc: Awaited<ReturnType<DocumentsService["getById"]>>,
+  ): Promise<{ ok: true; status: string }> {
     const sol = await this.credentials.resolveSol(companyId);
 
     try {
       const result = await this.bill.getStatus({
-        ticket: doc.sunatTicket,
+        ticket: doc.sunatTicket!,
         solUser: sol.username,
         solPassword: sol.password,
       });
@@ -125,7 +233,6 @@ export class SunatPollProcessor {
       const message =
         cause instanceof Error ? cause.message : "getStatus failed";
       this.logger.error(`sunat-poll failed for ${documentId}: ${message}`);
-      // Rethrow for BullMQ retry; do not mark failed until retries exhaust
       throw cause;
     }
   }

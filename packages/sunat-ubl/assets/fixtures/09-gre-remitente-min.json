@@ -1,0 +1,54 @@
+{
+  "id": "09-gre-remitente-min",
+  "document_kind": "despatch_advice",
+  "title": "GRE remitente 09 mínima",
+  "expects": {
+    "prevalidation": "pass",
+    "terminal_status": ["accepted", "accepted_with_observation", "ticket_pending"]
+  },
+  "request": {
+    "company_id": "{{company_id}}",
+    "document_type": "09",
+    "serie": "T001",
+    "issue_date": "2026-09-17",
+    "delivery_customer": {
+      "identity_type": "6",
+      "identity_number": "20123456789",
+      "name": "ACME SAC"
+    },
+    "shipment": {
+      "transfer_reason_code": "01",
+      "transport_mode_code": "01",
+      "gross_weight": 10.5,
+      "gross_weight_unit": "KGM",
+      "start_date": "2026-09-17",
+      "carrier": {
+        "identity_type": "6",
+        "identity_number": "20600000000",
+        "name": "TRANSPORTE SAC"
+      },
+      "origin": {
+        "ubigeo": "150101",
+        "address": "Av. Emisor 123, Lima"
+      },
+      "destination": {
+        "ubigeo": "150122",
+        "address": "Av. Destino 456, Lima"
+      }
+    },
+    "related_documents": [
+      {
+        "document_type": "01",
+        "serie_number": "{{related_invoice_serie_number}}"
+      }
+    ],
+    "lines": [
+      {
+        "id": 1,
+        "quantity": 10,
+        "unit_code": "NIU",
+        "description": "Cajas de producto"
+      }
+    ]
+  }
+}

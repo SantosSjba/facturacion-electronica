@@ -1,5 +1,5 @@
 /**
- * @factosys/sunat-ubl — UBL Invoice / Boleta / NC / ND builders.
+ * @factosys/sunat-ubl — UBL Invoice / Boleta / NC / ND / GRE builders.
  * Unsigned XML only; signing is `@factosys/sunat-sign` (ADR-003).
  */
 
@@ -90,5 +90,20 @@ export {
   type SummaryDocumentsLineCanonical,
   type SummaryLineTotalsCanonical,
 } from "./adapters/summary-documents-xml.builder";
+
+export {
+  XmlDespatchAdviceBuilder,
+  type BuildDespatchAdviceXmlResult,
+} from "./adapters/despatch-advice-xml.builder";
+
+export {
+  assertDespatchCanonical,
+  despatchCanonicalSchema,
+  type DespatchCanonical,
+  type DespatchDocumentType,
+  type DespatchLineCanonical,
+  type DespatchRelatedDocument,
+  type DespatchShipment,
+} from "./types/despatch-canonical";
 
 export { ublInternal, ublValidationError } from "./errors";

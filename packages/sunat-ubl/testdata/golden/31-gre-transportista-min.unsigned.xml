@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DespatchAdvice xmlns="urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>2.0</cbc:CustomizationID>
+  <cbc:ID>V001-00000001</cbc:ID>
+  <cbc:IssueDate>2026-09-17</cbc:IssueDate>
+  <cbc:IssueTime>11:30:00</cbc:IssueTime>
+  <cbc:DespatchAdviceTypeCode>31</cbc:DespatchAdviceTypeCode>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>T001-00000001</cbc:ID>
+    <cbc:DocumentTypeCode>09</cbc:DocumentTypeCode>
+  </cac:AdditionalDocumentReference>
+  <cac:DespatchSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6">20601234567</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DespatchSupplierParty>
+  <cac:DeliveryCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6">20123456789</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DeliveryCustomerParty>
+  <cac:Shipment>
+    <cbc:ID>SUNAT_Envio</cbc:ID>
+    <cbc:GrossWeightMeasure unitCode="KGM">25</cbc:GrossWeightMeasure>
+    <cac:ShipmentStage>
+      <cac:TransitPeriod>
+        <cbc:StartDate>2026-09-17</cbc:StartDate>
+      </cac:TransitPeriod>
+      <cac:DriverPerson>
+        <cbc:ID schemeID="1">12345678</cbc:ID>
+        <cbc:FirstName>Juan Conductor Perez</cbc:FirstName>
+        <cbc:JobTitle>Principal</cbc:JobTitle>
+        <cac:IdentityDocumentReference>
+          <cbc:ID>Q12345678</cbc:ID>
+        </cac:IdentityDocumentReference>
+      </cac:DriverPerson>
+    </cac:ShipmentStage>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:ID>040101</cbc:ID>
+        <cac:AddressLine>
+          <cbc:Line>Almacén destino Arequipa</cbc:Line>
+        </cac:AddressLine>
+      </cac:DeliveryAddress>
+      <cac:Despatch>
+        <cac:DespatchAddress>
+          <cbc:ID>150101</cbc:ID>
+          <cac:AddressLine>
+            <cbc:Line>Almacén origen — Av. Industrial 100</cbc:Line>
+          </cac:AddressLine>
+        </cac:DespatchAddress>
+        <cac:DespatchParty>
+          <cac:PartyIdentification>
+            <cbc:ID schemeID="6">20111111111</cbc:ID>
+          </cac:PartyIdentification>
+          <cac:PartyLegalEntity>
+            <cbc:RegistrationName>REMITENTE COMERCIAL SAC</cbc:RegistrationName>
+          </cac:PartyLegalEntity>
+        </cac:DespatchParty>
+      </cac:Despatch>
+    </cac:Delivery>
+    <cac:TransportHandlingUnit>
+      <cac:TransportEquipment>
+        <cbc:ID>ABC-123</cbc:ID>
+      </cac:TransportEquipment>
+    </cac:TransportHandlingUnit>
+  </cac:Shipment>
+  <cac:DespatchLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:DeliveredQuantity unitCode="NIU">25</cbc:DeliveredQuantity>
+    <cac:OrderLineReference>
+      <cbc:LineID>1</cbc:LineID>
+    </cac:OrderLineReference>
+    <cac:Item>
+      <cbc:Description>Mercadería transportada</cbc:Description>
+    </cac:Item>
+  </cac:DespatchLine>
+</DespatchAdvice>

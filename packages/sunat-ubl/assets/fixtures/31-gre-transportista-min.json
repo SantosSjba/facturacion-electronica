@@ -1,0 +1,68 @@
+{
+  "id": "31-gre-transportista-min",
+  "document_kind": "despatch_advice",
+  "title": "GRE transportista 31 mínima (campos M Excel + shipper)",
+  "expects": {
+    "prevalidation": "pass",
+    "terminal_status": ["accepted", "accepted_with_observation", "ticket_pending"]
+  },
+  "notes": "Emisor=transportista (company_id, serie V). Excel Guía-Transportista M: shipper/remitente, destinatario, ubigeo partida, placa, conductor+licencia, start_date, peso. Relacionar GRE 09 si aplica.",
+  "request": {
+    "company_id": "{{company_id}}",
+    "document_type": "31",
+    "serie": "V001",
+    "issue_date": "2026-09-17",
+    "issue_time": "11:30:00",
+    "shipper": {
+      "identity_type": "6",
+      "identity_number": "20111111111",
+      "name": "REMITENTE COMERCIAL SAC"
+    },
+    "delivery_customer": {
+      "identity_type": "6",
+      "identity_number": "20123456789",
+      "name": "ACME SAC"
+    },
+    "shipment": {
+      "gross_weight": 25.0,
+      "gross_weight_unit": "KGM",
+      "start_date": "2026-09-17",
+      "vehicles": [
+        {
+          "plate": "ABC-123"
+        }
+      ],
+      "drivers": [
+        {
+          "job_title": "Principal",
+          "identity_type": "1",
+          "identity_number": "12345678",
+          "name": "Juan Conductor Perez",
+          "license": "Q12345678"
+        }
+      ],
+      "origin": {
+        "ubigeo": "150101",
+        "address": "Almacén origen — Av. Industrial 100"
+      },
+      "destination": {
+        "ubigeo": "040101",
+        "address": "Almacén destino Arequipa"
+      }
+    },
+    "related_documents": [
+      {
+        "document_type": "09",
+        "serie_number": "{{related_gre_serie_number}}"
+      }
+    ],
+    "lines": [
+      {
+        "id": 1,
+        "quantity": 25,
+        "unit_code": "NIU",
+        "description": "Mercadería transportada"
+      }
+    ]
+  }
+}

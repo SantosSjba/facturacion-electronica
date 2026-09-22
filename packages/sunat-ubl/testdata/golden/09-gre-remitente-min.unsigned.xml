@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DespatchAdvice xmlns="urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>2.0</cbc:CustomizationID>
+  <cbc:ID>T001-00000001</cbc:ID>
+  <cbc:IssueDate>2026-09-17</cbc:IssueDate>
+  <cbc:IssueTime>10:00:00</cbc:IssueTime>
+  <cbc:DespatchAdviceTypeCode>09</cbc:DespatchAdviceTypeCode>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>F001-00000015</cbc:ID>
+    <cbc:DocumentTypeCode>01</cbc:DocumentTypeCode>
+  </cac:AdditionalDocumentReference>
+  <cac:DespatchSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6">20601234567</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DespatchSupplierParty>
+  <cac:DeliveryCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6">20123456789</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:DeliveryCustomerParty>
+  <cac:Shipment>
+    <cbc:ID>SUNAT_Envio</cbc:ID>
+    <cbc:HandlingCode>01</cbc:HandlingCode>
+    <cbc:GrossWeightMeasure unitCode="KGM">10.5</cbc:GrossWeightMeasure>
+    <cac:ShipmentStage>
+      <cbc:TransportModeCode>01</cbc:TransportModeCode>
+      <cac:TransitPeriod>
+        <cbc:StartDate>2026-09-17</cbc:StartDate>
+      </cac:TransitPeriod>
+      <cac:CarrierParty>
+        <cac:PartyIdentification>
+          <cbc:ID schemeID="6">20600000000</cbc:ID>
+        </cac:PartyIdentification>
+        <cac:PartyLegalEntity>
+          <cbc:RegistrationName>TRANSPORTE SAC</cbc:RegistrationName>
+        </cac:PartyLegalEntity>
+      </cac:CarrierParty>
+    </cac:ShipmentStage>
+    <cac:Delivery>
+      <cac:DeliveryAddress>
+        <cbc:ID>150122</cbc:ID>
+        <cac:AddressLine>
+          <cbc:Line>Av. Destino 456, Lima</cbc:Line>
+        </cac:AddressLine>
+      </cac:DeliveryAddress>
+      <cac:Despatch>
+        <cac:DespatchAddress>
+          <cbc:ID>150101</cbc:ID>
+          <cac:AddressLine>
+            <cbc:Line>Av. Emisor 123, Lima</cbc:Line>
+          </cac:AddressLine>
+        </cac:DespatchAddress>
+      </cac:Despatch>
+    </cac:Delivery>
+  </cac:Shipment>
+  <cac:DespatchLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:DeliveredQuantity unitCode="NIU">10</cbc:DeliveredQuantity>
+    <cac:OrderLineReference>
+      <cbc:LineID>1</cbc:LineID>
+    </cac:OrderLineReference>
+    <cac:Item>
+      <cbc:Description>Cajas de producto</cbc:Description>
+    </cac:Item>
+  </cac:DespatchLine>
+</DespatchAdvice>

@@ -16,6 +16,7 @@ import {
   PACKAGE_NAME,
   XmlCreditNoteBuilder,
   XmlDebitNoteBuilder,
+  XmlDespatchAdviceBuilder,
   XmlInvoiceBuilder,
   XmlSummaryDocumentsBuilder,
   XmlVoidedDocumentsBuilder,
@@ -267,6 +268,175 @@ describe("RC SummaryDocuments builder (FE-197)", () => {
     expect(xml).toContain("<cbc:CustomizationID>1.1</cbc:CustomizationID>");
     expect(xml).toContain("<cbc:ConditionCode>1</cbc:ConditionCode>");
     expect(fileStem).toBe("20601234567-RC-20260917-1");
+  });
+});
+
+describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
+  const supplier09 = {
+    identity_type: "6",
+    identity_number: "20601234567",
+    name: "FACTOSYS SPIKE SAC",
+  };
+
+  const gre09Canonical = {
+    document_type: "09" as const,
+    serie: "T001",
+    number: 1,
+    issue_date: "2026-09-17",
+    issue_time: "10:00:00",
+    supplier: supplier09,
+    delivery_customer: {
+      identity_type: "6",
+      identity_number: "20123456789",
+      name: "ACME SAC",
+    },
+    shipment: {
+      transfer_reason_code: "01",
+      transport_mode_code: "01",
+      gross_weight: 10.5,
+      gross_weight_unit: "KGM",
+      start_date: "2026-09-17",
+      carrier: {
+        identity_type: "6",
+        identity_number: "20600000000",
+        name: "TRANSPORTE SAC",
+      },
+      origin: {
+        ubigeo: "150101",
+        address: "Av. Emisor 123, Lima",
+      },
+      destination: {
+        ubigeo: "150122",
+        address: "Av. Destino 456, Lima",
+      },
+    },
+    related_documents: [
+      { document_type: "01", serie_number: "F001-00000015" },
+    ],
+    lines: [
+      {
+        id: 1,
+        quantity: 10,
+        unit_code: "NIU",
+        description: "Cajas de producto",
+      },
+    ],
+  };
+
+  const gre31Canonical = {
+    document_type: "31" as const,
+    serie: "V001",
+    number: 1,
+    issue_date: "2026-09-17",
+    issue_time: "11:30:00",
+    supplier: supplier09,
+    shipper: {
+      identity_type: "6",
+      identity_number: "20111111111",
+      name: "REMITENTE COMERCIAL SAC",
+    },
+    delivery_customer: {
+      identity_type: "6",
+      identity_number: "20123456789",
+      name: "ACME SAC",
+    },
+    shipment: {
+      gross_weight: 25,
+      gross_weight_unit: "KGM",
+      start_date: "2026-09-17",
+      vehicles: [{ plate: "ABC-123" }],
+      drivers: [
+        {
+          job_title: "Principal",
+          identity_type: "1",
+          identity_number: "12345678",
+          name: "Juan Conductor Perez",
+          license: "Q12345678",
+        },
+      ],
+      origin: {
+        ubigeo: "150101",
+        address: "Almacén origen — Av. Industrial 100",
+      },
+      destination: {
+        ubigeo: "040101",
+        address: "Almacén destino Arequipa",
+      },
+    },
+    related_documents: [
+      { document_type: "09", serie_number: "T001-00000001" },
+    ],
+    lines: [
+      {
+        id: 1,
+        quantity: 25,
+        unit_code: "NIU",
+        description: "Mercadería transportada",
+      },
+    ],
+  };
+
+  it("builds GRE 09 with HandlingCode, CarrierParty, DespatchLine (no tax)", () => {
+    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(
+      gre09Canonical,
+    );
+    expect(xml).toContain("DespatchAdvice");
+    expect(xml).not.toContain("UBLExtensions");
+    expect(xml).toContain("<cbc:DespatchAdviceTypeCode>09</cbc:DespatchAdviceTypeCode>");
+    expect(xml).toContain("<cbc:ID>T001-00000001</cbc:ID>");
+    expect(xml).toContain("<cbc:HandlingCode>01</cbc:HandlingCode>");
+    expect(xml).toContain("<cbc:TransportModeCode>01</cbc:TransportModeCode>");
+    expect(xml).toContain('unitCode="KGM">10.5</cbc:GrossWeightMeasure>');
+    expect(xml).toContain("<cbc:ID>SUNAT_Envio</cbc:ID>");
+    expect(xml).toContain("CarrierParty");
+    expect(xml).toContain("DespatchSupplierParty");
+    expect(xml).toContain("DeliveryCustomerParty");
+    expect(xml).toContain("AdditionalDocumentReference");
+    expect(xml).toContain("DespatchLine");
+    expect(xml).toContain("DeliveredQuantity");
+    expect(xml).not.toContain("TaxTotal");
+    expect(xml).not.toContain("DespatchParty");
+    expect(fileStem).toBe("20601234567-09-T001-1");
+  });
+
+  it("matches golden GRE 09 unsigned structurally", () => {
+    const { xml } = new XmlDespatchAdviceBuilder().build(gre09Canonical);
+    const golden = readFileSync(
+      join(process.cwd(), "testdata/golden/09-gre-remitente-min.unsigned.xml"),
+      "utf8",
+    );
+    expect(normalizeXml(xml)).toBe(normalizeXml(golden));
+  });
+
+  it("builds GRE 31 with shipper DespatchParty, plate and driver license", () => {
+    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(
+      gre31Canonical,
+    );
+    expect(xml).toContain("<cbc:DespatchAdviceTypeCode>31</cbc:DespatchAdviceTypeCode>");
+    expect(xml).toContain("<cbc:ID>V001-00000001</cbc:ID>");
+    expect(xml).toContain("DespatchParty");
+    expect(xml).toContain("20111111111");
+    expect(xml).toContain("REMITENTE COMERCIAL SAC");
+    expect(xml).toContain("<cbc:ID>ABC-123</cbc:ID>");
+    expect(xml).toContain("TransportEquipment");
+    expect(xml).toContain("DriverPerson");
+    expect(xml).toContain("IdentityDocumentReference");
+    expect(xml).toContain(">Q12345678</cbc:ID>");
+    expect(xml).toContain("<cbc:JobTitle>Principal</cbc:JobTitle>");
+    expect(xml).not.toContain("TaxTotal");
+    expect(fileStem).toBe("20601234567-31-V001-1");
+  });
+
+  it("matches golden GRE 31 unsigned structurally", () => {
+    const { xml } = new XmlDespatchAdviceBuilder().build(gre31Canonical);
+    const golden = readFileSync(
+      join(
+        process.cwd(),
+        "testdata/golden/31-gre-transportista-min.unsigned.xml",
+      ),
+      "utf8",
+    );
+    expect(normalizeXml(xml)).toBe(normalizeXml(golden));
   });
 });
 

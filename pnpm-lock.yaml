@@ -65,6 +65,9 @@ importers:
       '@factosys/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@factosys/sunat-gre':
+        specifier: workspace:*
+        version: link:../../packages/sunat-gre
       '@factosys/sunat-sign':
         specifier: workspace:*
         version: link:../../packages/sunat-sign
@@ -216,7 +219,13 @@ importers:
       '@factosys/shared':
         specifier: workspace:*
         version: link:../shared
+      adm-zip:
+        specifier: ^0.6.1
+        version: 0.6.1
     devDependencies:
+      '@types/adm-zip':
+        specifier: ^0.5.8
+        version: 0.5.8
       vitest:
         specifier: ^5.0.1
         version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))

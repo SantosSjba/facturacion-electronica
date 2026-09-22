@@ -20,6 +20,7 @@
     "@factosys/shared": "workspace:*",
     "@factosys/sunat-sign": "workspace:*",
     "@factosys/sunat-soap": "workspace:*",
+    "@factosys/sunat-gre": "workspace:*",
     "@factosys/sunat-ubl": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^12.0.0",
