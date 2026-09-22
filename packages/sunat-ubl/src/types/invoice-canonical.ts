@@ -49,39 +49,89 @@ export const invoiceTotalsSchema = z.object({
 
 export type InvoiceTotals = z.infer<typeof invoiceTotalsSchema>;
 
+export const invoiceDocumentTypeSchema = z.enum(["01", "03"]);
+export type InvoiceDocumentType = z.infer<typeof invoiceDocumentTypeSchema>;
+
 /**
- * Fully hydrated canonical invoice ready for XML build (doc 24 §B.2).
+ * Fully hydrated canonical invoice/boleta ready for XML build (docs 11 / 13).
  */
-export const invoiceCanonicalSchema = z.object({
-  document_type: z.literal("01").default("01"),
-  serie: z.string().regex(/^[Ff][A-Za-z0-9]{3}$/),
-  number: z.number().int().positive(),
-  operation_type: z.string().length(4),
-  issue_date: z.string().min(10),
-  currency: z.string().length(3),
-  totals_mode: z.enum(["auto", "strict"]).default("auto"),
-  supplier: partyCanonicalSchema,
-  customer: partyCanonicalSchema,
-  lines: z.array(invoiceLineCanonicalSchema).min(1),
-  totals: invoiceTotalsSchema,
-});
+export const invoiceCanonicalSchema = z
+  .object({
+    document_type: invoiceDocumentTypeSchema.default("01"),
+    serie: z.string().regex(/^[FfBb][A-Za-z0-9]{3}$/),
+    number: z.number().int().positive(),
+    operation_type: z.string().length(4),
+    issue_date: z.string().min(10),
+    currency: z.string().length(3),
+    totals_mode: z.enum(["auto", "strict"]).default("auto"),
+    supplier: partyCanonicalSchema,
+    customer: partyCanonicalSchema,
+    lines: z.array(invoiceLineCanonicalSchema).min(1),
+    totals: invoiceTotalsSchema,
+  })
+  .superRefine((val, ctx) => {
+    const serie = val.serie.toUpperCase();
+    if (val.document_type === "01" && !serie.startsWith("F")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["serie"],
+        message: "Factura 01 requires serie F###",
+      });
+    }
+    if (val.document_type === "03" && !serie.startsWith("B")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["serie"],
+        message: "Boleta 03 requires serie B###",
+      });
+    }
+  });
 
 export type InvoiceCanonical = z.infer<typeof invoiceCanonicalSchema>;
 
 /** Raw fixture `request` shape (pre-hydrate). */
-export const invoiceFixtureRequestSchema = z.object({
-  company_id: z.string().min(1),
-  serie: z.string().regex(/^[Ff][A-Za-z0-9]{3}$/),
-  number: z.number().int().positive().optional(),
-  operation_type: z.string().length(4),
-  issue_date: z.string().min(10),
-  currency: z.string().length(3),
-  totals_mode: z.enum(["auto", "strict"]).optional(),
-  customer: partyCanonicalSchema,
-  lines: z.array(invoiceLineInputSchema).min(1),
-});
+export const invoiceFixtureRequestSchema = z
+  .object({
+    company_id: z.string().min(1),
+    document_type: invoiceDocumentTypeSchema.optional(),
+    serie: z.string().regex(/^[FfBb][A-Za-z0-9]{3}$/),
+    number: z.number().int().positive().optional(),
+    operation_type: z.string().length(4),
+    issue_date: z.string().min(10),
+    currency: z.string().length(3),
+    totals_mode: z.enum(["auto", "strict"]).optional(),
+    customer: partyCanonicalSchema,
+    lines: z.array(invoiceLineInputSchema).min(1),
+  })
+  .superRefine((val, ctx) => {
+    const docType =
+      val.document_type ??
+      (val.serie.toUpperCase().startsWith("B") ? "03" : "01");
+    const serie = val.serie.toUpperCase();
+    if (docType === "01" && !serie.startsWith("F")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["serie"],
+        message: "Factura 01 requires serie F###",
+      });
+    }
+    if (docType === "03" && !serie.startsWith("B")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["serie"],
+        message: "Boleta 03 requires serie B###",
+      });
+    }
+  });
 
 export type InvoiceFixtureRequest = z.infer<typeof invoiceFixtureRequestSchema>;
+
+export function resolveInvoiceDocumentType(
+  request: InvoiceFixtureRequest,
+): InvoiceDocumentType {
+  if (request.document_type) return request.document_type;
+  return request.serie.toUpperCase().startsWith("B") ? "03" : "01";
+}
 
 export function parseFixtureRequest(raw: unknown): InvoiceFixtureRequest {
   const parsed = invoiceFixtureRequestSchema.safeParse(raw);

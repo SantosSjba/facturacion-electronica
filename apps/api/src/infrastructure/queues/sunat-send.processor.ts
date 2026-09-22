@@ -54,7 +54,7 @@ export class SunatSendProcessor {
     const ruc = sol.username.replace(/[A-Za-z].*$/, "") || "00000000000";
     const zipName =
       doc.serie && doc.number != null
-        ? `${ruc}-01-${doc.serie}-${doc.number}.zip`
+        ? `${ruc}-${doc.documentType}-${doc.serie}-${doc.number}.zip`
         : `${documentId}.zip`;
 
     await this.documents.transitionStatus(documentId, "queued", "sent", {

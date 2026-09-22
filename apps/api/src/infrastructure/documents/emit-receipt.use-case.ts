@@ -7,23 +7,23 @@ import {
 import { XmlCryptoSignAdapter } from "@factosys/sunat-sign";
 import { packInvoiceZip } from "@factosys/sunat-soap";
 
-import type { InvoiceCreate } from "../../interfaces/http/dto/invoice-create.schema";
+import type { ReceiptCreate } from "../../interfaces/http/dto/receipt-create.schema";
 import { EmitDocumentOrchestrator } from "./emit-document.orchestrator";
 import type { DocumentPublic } from "./documents.service";
 
 @Injectable()
-export class EmitInvoiceUseCase {
+export class EmitReceiptUseCase {
   constructor(private readonly orchestrator: EmitDocumentOrchestrator) {}
 
   async execute(input: {
     organizationId: string;
-    body: InvoiceCreate;
+    body: ReceiptCreate;
     idempotencyKey: string;
   }): Promise<DocumentPublic> {
     return this.orchestrator.execute({
       organizationId: input.organizationId,
       companyId: input.body.company_id,
-      documentType: "01",
+      documentType: "03",
       serie: input.body.serie,
       issueDate: input.body.issue_date,
       currency: input.body.currency,
@@ -33,7 +33,7 @@ export class EmitInvoiceUseCase {
       build: async ({ company, allocated, pfx, password }) => {
         const fixtureRequest: InvoiceFixtureRequest = {
           company_id: company.id,
-          document_type: "01",
+          document_type: "03",
           serie: input.body.serie.toUpperCase(),
           operation_type: input.body.operation_type,
           issue_date: input.body.issue_date,
@@ -74,7 +74,7 @@ export class EmitInvoiceUseCase {
         });
         const packed = packInvoiceZip({
           ruc: company.ruc,
-          documentType: "01",
+          documentType: "03",
           serie: canonical.serie,
           number: canonical.number,
           xml: signedXml,

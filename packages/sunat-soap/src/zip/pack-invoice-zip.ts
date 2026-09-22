@@ -4,7 +4,7 @@ import { soapTransportError } from "../errors";
 
 export interface PackInvoiceZipInput {
   ruc: string;
-  documentType: "01";
+  documentType: "01" | "03" | "07" | "08";
   serie: string;
   number: number;
   xml: string;
@@ -18,8 +18,8 @@ export interface PackInvoiceZipResult {
 }
 
 /**
- * Build SUNAT wire ZIP: one signed XML entry named `{RUC}-01-{SERIE}-{N}.xml`
- * inside `{RUC}-01-{SERIE}-{N}.zip`.
+ * Build SUNAT wire ZIP: one signed XML entry named `{RUC}-{TYPE}-{SERIE}-{N}.xml`
+ * inside `{RUC}-{TYPE}-{SERIE}-{N}.zip`.
  */
 export function packInvoiceZip(input: PackInvoiceZipInput): PackInvoiceZipResult {
   const ruc = input.ruc.trim();

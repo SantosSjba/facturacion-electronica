@@ -24,7 +24,7 @@ export interface DocumentPublic {
   status: string;
   sunat_ticket: string | null;
   sunat_code: string | null;
-  summary_status: null;
+  summary_status: string | null;
   links: {
     self: string;
     xml: string;
@@ -53,7 +53,7 @@ export class DocumentsService {
       status: row.status,
       sunat_ticket: row.sunatTicket,
       sunat_code: row.sunatResponseCode,
-      summary_status: null,
+      summary_status: resolveSummaryStatus(row),
       links: {
         self: `/v1/documents/${id}`,
         xml: `/v1/documents/${id}/xml`,
@@ -64,6 +64,49 @@ export class DocumentsService {
       created_at: row.createdAt,
       updated_at: row.updatedAt,
     };
+  }
+
+  async requireAcceptedAffected(input: {
+    organizationId: string;
+    companyId: string;
+    documentType: string;
+    serieNumber: string;
+  }): Promise<typeof documents.$inferSelect> {
+    const serieNumber = input.serieNumber.trim().toUpperCase();
+    const rows = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, input.organizationId),
+          eq(documents.companyId, input.companyId),
+          eq(documents.documentType, input.documentType),
+          eq(documents.serieNumber, serieNumber),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    if (!row) {
+      throw AppError.notFound(
+        `Affected document ${input.documentType} ${serieNumber} not found`,
+      );
+    }
+    if (
+      row.status !== "accepted" &&
+      row.status !== "accepted_with_observation"
+    ) {
+      throw AppError.validation(
+        "Affected document must be accepted before issuing NC/ND",
+        [
+          {
+            path: "affected_document",
+            issue: `status is ${row.status}, expected accepted`,
+          },
+        ],
+        { httpStatus: 422 },
+      );
+    }
+    return row;
   }
 
   async getById(
@@ -229,4 +272,25 @@ export class DocumentsService {
       sizeBytes: input.body.length,
     });
   }
+}
+
+function resolveSummaryStatus(
+  row: typeof documents.$inferSelect,
+): string | null {
+  const payload = (row.payload ?? {}) as {
+    include_in_daily_summary?: boolean;
+    send_individually?: boolean;
+  };
+  if (row.documentType === "03") {
+    if (payload.send_individually === true) return "not_required";
+    if (payload.include_in_daily_summary === false) return "not_required";
+    return "pending";
+  }
+  if (
+    (row.documentType === "07" || row.documentType === "08") &&
+    payload.include_in_daily_summary === true
+  ) {
+    return "pending";
+  }
+  return null;
 }

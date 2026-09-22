@@ -1,5 +1,5 @@
 /**
- * @factosys/sunat-ubl — UBL Invoice builder (Spike B / S1-UBL).
+ * @factosys/sunat-ubl — UBL Invoice / Boleta / NC / ND builders.
  * Unsigned XML only; signing is `@factosys/sunat-sign` (ADR-003).
  */
 
@@ -16,7 +16,9 @@ export {
   invoiceCanonicalSchema,
   invoiceFixtureRequestSchema,
   parseFixtureRequest,
+  resolveInvoiceDocumentType,
   type InvoiceCanonical,
+  type InvoiceDocumentType,
   type InvoiceFixtureRequest,
   type InvoiceLineCanonical,
   type InvoiceTotals,
@@ -24,12 +26,33 @@ export {
 } from "./types/invoice-canonical";
 
 export {
+  assertNoteCanonical,
+  noteCanonicalSchema,
+  noteFixtureRequestSchema,
+  parseNoteFixtureRequest,
+  type AffectedDocument,
+  type NoteCanonical,
+  type NoteDocumentType,
+  type NoteFixtureRequest,
+} from "./types/note-canonical";
+
+export {
   DEFAULT_CORRELATIVE,
   SPIKE_SUPPLIER,
   hydrateFromFixtureRequest,
   hydrateGravadaFixture,
+  hydrateReceiptDniFixture,
   loadGravadaFixtureRequest,
+  loadReceiptDniFixtureRequest,
 } from "./hydrate/from-fixture";
+
+export {
+  hydrateCreditNoteVoidFixture,
+  hydrateDebitNoteInterestFixture,
+  hydrateNoteFromFixtureRequest,
+  loadCreditNoteVoidFixtureRequest,
+  loadDebitNoteInterestFixtureRequest,
+} from "./hydrate/from-note-fixture";
 
 export {
   computeAutoTotals,
@@ -46,5 +69,11 @@ export { loadTaxMatrix, resolveTaxPair } from "./totals/matrix-07-05";
 export { ListUri, attrsForPath, loadListUriMappings } from "./attributes/listuri-injector";
 
 export { XmlInvoiceBuilder } from "./adapters/invoice-xml.builder";
+
+export {
+  XmlCreditNoteBuilder,
+  XmlDebitNoteBuilder,
+  type BuildNoteXmlResult,
+} from "./adapters/note-xml.builder";
 
 export { ublInternal, ublValidationError } from "./errors";

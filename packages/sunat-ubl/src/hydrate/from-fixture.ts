@@ -30,6 +30,20 @@ export function loadGravadaFixtureRequest(): InvoiceFixtureRequest {
   return parseFixtureRequest(file.request);
 }
 
+export function loadReceiptDniFixtureRequest(): InvoiceFixtureRequest {
+  const file = readAssetJson<FixtureFile>(
+    "assets/fixtures/03-receipt-dni.json",
+  );
+  return parseFixtureRequest(file.request);
+}
+
+export function hydrateReceiptDniFixture(options?: {
+  supplier?: InvoiceCanonical["supplier"];
+  number?: number;
+}): InvoiceCanonical {
+  return hydrateFromFixtureRequest(loadReceiptDniFixtureRequest(), options);
+}
+
 /**
  * Hydrate fixture request → InvoiceCanonical (supplier stub + auto totals).
  */

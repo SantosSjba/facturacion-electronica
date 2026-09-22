@@ -85,9 +85,14 @@ export class XmllintXsdValidationAdapter implements SunatValidationPort {
       };
     }
 
-    if (input.documentType !== "01") {
+    if (
+      input.documentType !== "01" &&
+      input.documentType !== "03" &&
+      input.documentType !== "07" &&
+      input.documentType !== "08"
+    ) {
       throw validationError(
-        `documentType '${input.documentType}' is not supported in S1-GATE (only '01')`,
+        `documentType '${input.documentType}' is not supported (use 01, 03, 07, 08)`,
       );
     }
 

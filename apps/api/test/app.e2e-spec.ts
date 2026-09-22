@@ -452,4 +452,274 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${emitSecret}`)
       .expect(200);
   });
+
+  it("emits boleta 03, NC 07 and ND 08 via API (S5)", async () => {
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    const emitKey = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `s5-${Date.now()}`,
+        scopes: ["documents:read", "documents:write"],
+      })
+      .expect(201);
+    const emitSecret = emitKey.body.secret as string;
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const series = seriesList.body as { serie: string; documentType: string }[];
+    const ensureSerie = async (documentType: string, serie: string) => {
+      const has = series.some(
+        (s) => s.serie === serie && s.documentType === documentType,
+      );
+      if (!has) {
+        await request(server)
+          .post(`/companies/${companyId}/series`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({ document_type: documentType, serie, next_number: 1 })
+          .expect(201);
+      }
+    };
+    await ensureSerie("01", "F001");
+    await ensureSerie("03", "B001");
+    await ensureSerie("07", "F001");
+    await ensureSerie("08", "F001");
+
+    const receiptBody = {
+      company_id: companyId,
+      serie: "B001",
+      operation_type: "0101",
+      issue_date: "2026-09-17",
+      currency: "PEN",
+      totals_mode: "auto",
+      include_in_daily_summary: true,
+      customer: {
+        identity_type: "1",
+        identity_number: "12345678",
+        name: "JUAN PEREZ",
+      },
+      lines: [
+        {
+          id: 1,
+          quantity: 2,
+          unit_code: "NIU",
+          description: "Producto",
+          unit_value: 50,
+          unit_price: 59,
+          tax_affectation: "10",
+          igv_percent: 18,
+          tax_scheme_id: "1000",
+        },
+      ],
+    };
+
+    const receipt = await request(server)
+      .post("/v1/receipts")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `rcpt-${Date.now()}`)
+      .send(receiptBody)
+      .expect(201);
+    expect(receipt.body.document_type).toBe("03");
+    expect(receipt.body.summary_status).toBe("pending");
+
+    let receiptStatus = receipt.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (receiptStatus === "queued" || receiptStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${receipt.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      receiptStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(receiptStatus);
+
+    const receiptXml = await request(server)
+      .get(`/v1/documents/${receipt.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(receiptXml.text).toContain("Invoice");
+    expect(receiptXml.text).toContain(">03</cbc:InvoiceTypeCode>");
+
+    // Invoice to attach NC/ND
+    const inv = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `inv-s5-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        serie: "F001",
+        operation_type: "0101",
+        issue_date: "2026-09-17",
+        currency: "PEN",
+        totals_mode: "auto",
+        customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "Servicio",
+            unit_value: 100,
+            unit_price: 118,
+            tax_affectation: "10",
+            igv_percent: 18,
+            tax_scheme_id: "1000",
+          },
+        ],
+      })
+      .expect(201);
+
+    let invStatus = inv.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (invStatus === "queued" || invStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${inv.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      invStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(invStatus);
+    const affectedSerie = inv.body.serie_number as string;
+
+    const nc = await request(server)
+      .post("/v1/credit-notes")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `nc-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        serie: "F001",
+        issue_date: "2026-09-18",
+        currency: "PEN",
+        note_type: "01",
+        reason: "Anulación de la operación",
+        affected_document: {
+          document_type: "01",
+          serie_number: affectedSerie,
+        },
+        customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "Servicio anulado",
+            unit_value: 100,
+            unit_price: 118,
+            tax_affectation: "10",
+            igv_percent: 18,
+            tax_scheme_id: "1000",
+          },
+        ],
+        totals_mode: "auto",
+      })
+      .expect(201);
+    expect(nc.body.document_type).toBe("07");
+
+    let ncStatus = nc.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (ncStatus === "queued" || ncStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${nc.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      ncStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(ncStatus);
+
+    const ncXml = await request(server)
+      .get(`/v1/documents/${nc.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(ncXml.text).toContain("CreditNote");
+
+    const nd = await request(server)
+      .post("/v1/debit-notes")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `nd-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        serie: "F001",
+        issue_date: "2026-09-18",
+        currency: "PEN",
+        note_type: "01",
+        reason: "Intereses por mora",
+        affected_document: {
+          document_type: "01",
+          serie_number: affectedSerie,
+        },
+        customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "Interés moratorio",
+            unit_value: 20,
+            unit_price: 23.6,
+            tax_affectation: "10",
+            igv_percent: 18,
+            tax_scheme_id: "1000",
+          },
+        ],
+        totals_mode: "auto",
+      })
+      .expect(201);
+    expect(nd.body.document_type).toBe("08");
+
+    let ndStatus = nd.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (ndStatus === "queued" || ndStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${nd.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      ndStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(ndStatus);
+
+    const ndXml = await request(server)
+      .get(`/v1/documents/${nd.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(ndXml.text).toContain("DebitNote");
+  });
 });

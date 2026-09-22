@@ -30,6 +30,7 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
     const id = documentId(canonical.serie, canonical.number);
     const stem = fileStem(
       canonical.supplier.identity_number,
+      canonical.document_type,
       canonical.serie,
       canonical.number,
     );

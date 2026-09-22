@@ -82,10 +82,11 @@ export function documentId(serie: string, number: number): string {
 
 export function fileStem(
   supplierRuc: string,
+  documentType: string,
   serie: string,
   number: number,
 ): string {
-  return `${supplierRuc}-01-${serie.toUpperCase()}-${number}`;
+  return `${supplierRuc}-${documentType}-${serie.toUpperCase()}-${number}`;
 }
 
 /** Build full canonical from totals output + parties. */
@@ -96,8 +97,11 @@ export function toCanonical(params: {
   lines: InvoiceLineCanonical[];
   totals: InvoiceTotals;
 }): InvoiceCanonical {
+  const documentType =
+    params.request.document_type ??
+    (params.request.serie.toUpperCase().startsWith("B") ? "03" : "01");
   return {
-    document_type: "01",
+    document_type: documentType,
     serie: params.request.serie.toUpperCase(),
     number: params.number,
     operation_type: params.request.operation_type,

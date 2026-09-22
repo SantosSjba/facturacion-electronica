@@ -111,3 +111,12 @@ jobs:
 
       - name: XSD + Excel P0 gate (golden Invoice 01)
         run: pnpm validate:xml --type=01 --stages=xsd,excel packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml
+
+      - name: XSD + Excel P1 gate (golden Boleta 03)
+        run: pnpm validate:xml --type=03 --stages=xsd,excel packages/sunat-ubl/testdata/golden/03-receipt-dni.unsigned.xml
+
+      - name: XSD + Excel P2 gate (golden NC 07)
+        run: pnpm validate:xml --type=07 --stages=xsd,excel packages/sunat-ubl/testdata/golden/07-credit-note-void.unsigned.xml
+
+      - name: XSD + Excel P2 gate (golden ND 08)
+        run: pnpm validate:xml --type=08 --stages=xsd,excel packages/sunat-ubl/testdata/golden/08-debit-note-interest.unsigned.xml

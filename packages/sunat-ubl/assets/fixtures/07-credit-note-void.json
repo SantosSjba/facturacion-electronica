@@ -1,0 +1,41 @@
+{
+  "id": "07-credit-note-void",
+  "document_kind": "credit_note",
+  "title": "NC anulación sobre factura",
+  "expects": {
+    "prevalidation": "pass",
+    "depends_on": "accepted invoice F001-*"
+  },
+  "request": {
+    "company_id": "{{company_id}}",
+    "document_type": "07",
+    "serie": "F001",
+    "issue_date": "2026-09-18",
+    "currency": "PEN",
+    "note_type": "01",
+    "reason": "Anulación de la operación",
+    "affected_document": {
+      "document_type": "01",
+      "serie_number": "F001-00000001"
+    },
+    "customer": {
+      "identity_type": "6",
+      "identity_number": "20123456789",
+      "name": "ACME SAC"
+    },
+    "lines": [
+      {
+        "id": 1,
+        "quantity": 1,
+        "unit_code": "NIU",
+        "description": "Servicio anulado",
+        "unit_value": 100.0,
+        "unit_price": 118.0,
+        "tax_affectation": "10",
+        "igv_percent": 18,
+        "tax_scheme_id": "1000"
+      }
+    ],
+    "totals_mode": "auto"
+  }
+}

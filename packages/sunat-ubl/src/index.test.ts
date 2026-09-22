@@ -14,10 +14,15 @@ import {
   BUILD_INVOICE_XML_PORT,
   ListUri,
   PACKAGE_NAME,
+  XmlCreditNoteBuilder,
+  XmlDebitNoteBuilder,
   XmlInvoiceBuilder,
   computeAutoTotals,
   documentId,
+  hydrateCreditNoteVoidFixture,
+  hydrateDebitNoteInterestFixture,
   hydrateGravadaFixture,
+  hydrateReceiptDniFixture,
   loadGravadaFixtureRequest,
   resolveTaxPair,
   type BuildInvoiceXmlPort,
@@ -105,6 +110,81 @@ describe("builder unsigned (FE-70 / FE-76)", () => {
       "testdata/golden/01-invoice-gravada.unsigned.xml",
     );
     const golden = readFileSync(goldenPath, "utf8");
+    expect(normalizeXml(xml)).toBe(normalizeXml(golden));
+  });
+});
+
+describe("boleta 03 builder (S5-01)", () => {
+  it("hydrates DNI receipt fixture", () => {
+    const canonical = hydrateReceiptDniFixture();
+    expect(canonical.document_type).toBe("03");
+    expect(canonical.serie).toBe("B001");
+    expect(canonical.customer.identity_type).toBe("1");
+    expect(canonical.totals.payable_amount).toBe(118);
+  });
+
+  it("builds Invoice root with type 03 and B serie stem", () => {
+    const { xml, fileStem } = new XmlInvoiceBuilder().build(
+      hydrateReceiptDniFixture(),
+    );
+    expect(xml).toContain(">03</cbc:InvoiceTypeCode>");
+    expect(xml).toContain("<cbc:ID>B001-00000001</cbc:ID>");
+    expect(fileStem).toBe("20601234567-03-B001-1");
+  });
+
+  it("matches golden unsigned boleta structurally", () => {
+    const { xml } = new XmlInvoiceBuilder().build(hydrateReceiptDniFixture());
+    const goldenPath = join(
+      process.cwd(),
+      "testdata/golden/03-receipt-dni.unsigned.xml",
+    );
+    const golden = readFileSync(goldenPath, "utf8");
+    expect(normalizeXml(xml)).toBe(normalizeXml(golden));
+  });
+});
+
+describe("NC/ND builders (S5-03)", () => {
+  it("builds CreditNote with BillingReference", () => {
+    const { xml, fileStem } = new XmlCreditNoteBuilder().build(
+      hydrateCreditNoteVoidFixture(),
+    );
+    expect(xml).toContain("CreditNote");
+    expect(xml).toContain("DiscrepancyResponse");
+    expect(xml).toContain("BillingReference");
+    expect(xml).toContain("F001-00000001");
+    expect(xml).toContain("CreditedQuantity");
+    expect(fileStem).toBe("20601234567-07-F001-1");
+  });
+
+  it("matches golden credit note structurally", () => {
+    const { xml } = new XmlCreditNoteBuilder().build(
+      hydrateCreditNoteVoidFixture(),
+    );
+    const golden = readFileSync(
+      join(process.cwd(), "testdata/golden/07-credit-note-void.unsigned.xml"),
+      "utf8",
+    );
+    expect(normalizeXml(xml)).toBe(normalizeXml(golden));
+  });
+
+  it("builds DebitNote with interest line", () => {
+    const { xml, fileStem } = new XmlDebitNoteBuilder().build(
+      hydrateDebitNoteInterestFixture(),
+    );
+    expect(xml).toContain("DebitNote");
+    expect(xml).toContain("DebitedQuantity");
+    expect(xml).toContain(">23.60<");
+    expect(fileStem).toBe("20601234567-08-F001-1");
+  });
+
+  it("matches golden debit note structurally", () => {
+    const { xml } = new XmlDebitNoteBuilder().build(
+      hydrateDebitNoteInterestFixture(),
+    );
+    const golden = readFileSync(
+      join(process.cwd(), "testdata/golden/08-debit-note-interest.unsigned.xml"),
+      "utf8",
+    );
     expect(normalizeXml(xml)).toBe(normalizeXml(golden));
   });
 });

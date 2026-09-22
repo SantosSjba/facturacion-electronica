@@ -1,25 +1,28 @@
 /**
- * CLI: validate XML against XSD and/or Excel P0 (document type 01).
+ * CLI: validate XML against XSD and/or Excel P0/P1/P2.
  *
- * Usage: pnpm validate:xml --type=01 [--stages=xsd,excel] <path-to-xml>
+ * Usage: pnpm validate:xml --type=01|03|07|08 [--stages=xsd,excel] <path-to-xml>
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import {
   CompositeSunatValidationAdapter,
+  type SunatValidationDocumentType,
   type SunatValidationStage,
 } from "../src/index";
 
+const SUPPORTED = new Set(["01", "03", "07", "08"]);
+
 function usage(): never {
   console.error(
-    "Usage: pnpm validate:xml --type=01 [--stages=xsd,excel] <path-to-xml>",
+    "Usage: pnpm validate:xml --type=01|03|07|08 [--stages=xsd,excel] <path-to-xml>",
   );
   process.exit(2);
 }
 
 function parseArgs(argv: string[]): {
-  type: string;
+  type: SunatValidationDocumentType;
   file: string;
   stages: SunatValidationStage[];
 } {
@@ -50,14 +53,14 @@ function parseArgs(argv: string[]): {
       process.exit(2);
     }
   }
-  return { type, file, stages };
+  return { type: type as SunatValidationDocumentType, file, stages };
 }
 
 async function main(): Promise<void> {
   const { type, file, stages } = parseArgs(process.argv.slice(2));
-  if (type !== "01") {
+  if (!SUPPORTED.has(type)) {
     console.error(
-      `[validate:xml] Unsupported --type=${type} (only 01)`,
+      `[validate:xml] Unsupported --type=${type} (use 01, 03, 07, 08)`,
     );
     process.exit(2);
   }
@@ -66,7 +69,7 @@ async function main(): Promise<void> {
   const xml = readFileSync(abs, "utf8");
   const port = new CompositeSunatValidationAdapter();
   const result = await port.validateXml({
-    documentType: "01",
+    documentType: type,
     xml,
     stages,
   });

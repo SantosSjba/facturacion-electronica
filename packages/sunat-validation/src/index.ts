@@ -34,5 +34,12 @@ export {
   loadObsToErrorCodes,
 } from "./rules/obs-to-error";
 export { P0_SUNAT_CODES, runP0InvoiceRules } from "./rules/p0-invoice-rules";
+export {
+  P1_SUNAT_CODES,
+  P2_SUNAT_CODES,
+  runExcelRulesForType,
+  runP1BoletaRules,
+  runP2NoteRules,
+} from "./rules/excel-p1-p2-rules";
 
 export { validationError, validationInternal } from "./errors";

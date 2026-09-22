@@ -22,9 +22,9 @@ async function bootstrap(): Promise<void> {
     const swaggerConfig = new DocumentBuilder()
       .setTitle("Factosys API")
       .setDescription(
-        "Electronic invoicing API — auth, companies, Factura 01 emission (S4-EMIT)",
+        "Electronic invoicing API — Factura 01, Boleta 03, NC 07, ND 08 (S4/S5)",
       )
-      .setVersion("0.2.0")
+      .setVersion("0.3.0")
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);

@@ -6,10 +6,10 @@ import type {
   SunatValidationResult,
 } from "../ports/sunat-validation.port";
 import { EXCEL_RULESET_VERSION } from "../rules/obs-to-error";
-import { runP0InvoiceRules } from "../rules/p0-invoice-rules";
+import { runExcelRulesForType } from "../rules/excel-p1-p2-rules";
 
 /**
- * Excel P0 typed rules for Invoice 01 (doc 29 §6–7).
+ * Excel P0/P1/P2 typed rules for Invoice 01, Boleta 03, NC 07, ND 08.
  */
 export class ExcelP0ValidationAdapter implements SunatValidationPort {
   private readonly catalogs: JsonCatalogAdapter;
@@ -30,7 +30,12 @@ export class ExcelP0ValidationAdapter implements SunatValidationPort {
       };
     }
 
-    if (input.documentType !== "01") {
+    if (
+      input.documentType !== "01" &&
+      input.documentType !== "03" &&
+      input.documentType !== "07" &&
+      input.documentType !== "08"
+    ) {
       return {
         ok: false,
         rulesetVersion: EXCEL_RULESET_VERSION,
@@ -38,13 +43,13 @@ export class ExcelP0ValidationAdapter implements SunatValidationPort {
           {
             severity: "error",
             stage: "excel",
-            message: `documentType '${input.documentType}' not supported in Excel P0 (only '01')`,
+            message: `documentType '${input.documentType}' not supported in Excel gate`,
           },
         ],
       };
     }
 
-    const issues = await runP0InvoiceRules(input.xml, {
+    const issues = await runExcelRulesForType(input.documentType, input.xml, {
       catalogs: this.catalogs,
     });
 

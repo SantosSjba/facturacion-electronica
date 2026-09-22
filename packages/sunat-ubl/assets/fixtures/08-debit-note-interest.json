@@ -1,0 +1,41 @@
+{
+  "id": "08-debit-note-interest",
+  "document_kind": "debit_note",
+  "title": "ND intereses por mora",
+  "expects": {
+    "prevalidation": "pass",
+    "depends_on": "accepted invoice"
+  },
+  "request": {
+    "company_id": "{{company_id}}",
+    "document_type": "08",
+    "serie": "F001",
+    "issue_date": "2026-09-18",
+    "currency": "PEN",
+    "note_type": "01",
+    "reason": "Intereses por mora",
+    "affected_document": {
+      "document_type": "01",
+      "serie_number": "F001-00000001"
+    },
+    "customer": {
+      "identity_type": "6",
+      "identity_number": "20123456789",
+      "name": "ACME SAC"
+    },
+    "lines": [
+      {
+        "id": 1,
+        "quantity": 1,
+        "unit_code": "NIU",
+        "description": "Interés moratorio",
+        "unit_value": 20.0,
+        "unit_price": 23.6,
+        "tax_affectation": "10",
+        "igv_percent": 18,
+        "tax_scheme_id": "1000"
+      }
+    ],
+    "totals_mode": "auto"
+  }
+}
