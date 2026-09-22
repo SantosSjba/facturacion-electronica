@@ -1,5 +1,5 @@
 /**
- * Stub AppError codes aligned with OpenAPI `Error.code` examples.
+ * AppError codes aligned with OpenAPI `Error.code`.
  * Values are stable strings; business mapping grows in later sprints.
  */
 export const AppErrorCode = {
@@ -7,8 +7,10 @@ export const AppErrorCode = {
   HTTP: "FACTOSYS_HTTP",
   INTERNAL: "FACTOSYS_INTERNAL",
   UNAUTHORIZED: "FACTOSYS_UNAUTHORIZED",
+  FORBIDDEN: "FACTOSYS_FORBIDDEN",
   NOT_FOUND: "FACTOSYS_NOT_FOUND",
   CONFLICT: "FACTOSYS_CONFLICT",
+  RATE_LIMITED: "FACTOSYS_RATE_LIMITED",
   SUNAT_REJECTED: "FACTOSYS_SUNAT_REJECTED",
 } as const;
 

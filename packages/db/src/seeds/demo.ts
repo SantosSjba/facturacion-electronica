@@ -1,9 +1,13 @@
-import { eq } from "drizzle-orm";
+import { hash } from "argon2";
+import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 
 import type { Db } from "../client";
 import { catalogVersions } from "../schema/catalog-versions";
 import { organizations } from "../schema/organizations";
+import { userRoles } from "../schema/user-roles";
+import { users } from "../schema/users";
+import { seedRbacMatrix } from "./rbac-matrix";
 
 /** Official Excel ruleset pin (docs/sunat-oficial). */
 export const RULESET_VERSION = "2026-08-26";
@@ -13,14 +17,18 @@ export const RULESET_ARTIFACT =
   "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx";
 
 export const DEMO_ORG_SLUG = "demo";
+export const DEMO_OWNER_EMAIL = "owner@demo.local";
+/** Dev-only password for demo owner — never use in production. */
+export const DEMO_OWNER_PASSWORD = "DemoOwner!2026";
 
 /**
- * Idempotent demo seed: organization `demo` + default catalog_versions ruleset.
- * No secrets / API keys.
+ * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner user.
+ * No API key secrets.
  */
 export async function seedDemo(db: Db): Promise<{
   organizationId: string;
   catalogVersionId: string;
+  ownerUserId: string;
 }> {
   const existingOrg = await db
     .select()
@@ -83,5 +91,39 @@ export async function seedDemo(db: Db): Promise<{
     }
   }
 
-  return { organizationId, catalogVersionId };
+  const { roleIds } = await seedRbacMatrix(db);
+
+  const existingUser = await db
+    .select()
+    .from(users)
+    .where(
+      and(eq(users.organizationId, organizationId), eq(users.email, DEMO_OWNER_EMAIL)),
+    )
+    .limit(1);
+
+  let ownerUserId = existingUser[0]?.id;
+  if (!ownerUserId) {
+    ownerUserId = uuidv7();
+    const passwordHash = await hash(DEMO_OWNER_PASSWORD);
+    await db.insert(users).values({
+      id: ownerUserId,
+      organizationId,
+      email: DEMO_OWNER_EMAIL,
+      name: "Demo Owner",
+      passwordHash,
+      status: "active",
+    });
+  }
+
+  const ownerRoleId = roleIds.owner;
+  const hasRole = await db
+    .select()
+    .from(userRoles)
+    .where(and(eq(userRoles.userId, ownerUserId), eq(userRoles.roleId, ownerRoleId)))
+    .limit(1);
+  if (hasRole.length === 0) {
+    await db.insert(userRoles).values({ userId: ownerUserId, roleId: ownerRoleId });
+  }
+
+  return { organizationId, catalogVersionId, ownerUserId };
 }

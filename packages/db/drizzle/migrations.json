@@ -5,5 +5,12 @@
     "tag": "core_tables",
     "up": "0001_core_tables.sql",
     "down": "0001_core_tables.down.sql"
+  },
+  {
+    "id": "0002_rbac",
+    "when": 2,
+    "tag": "rbac",
+    "up": "0002_rbac.sql",
+    "down": "0002_rbac.down.sql"
   }
 ]

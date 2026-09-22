@@ -41,7 +41,7 @@ export const auditEvents = pgTable(
     index("audit_events_resource_idx").on(t.resourceType, t.resourceId),
     check(
       "audit_events_actor_type_check",
-      sql`${t.actorType} in ('api_key', 'system', 'worker', 'support')`,
+      sql`${t.actorType} in ('api_key', 'system', 'worker', 'support', 'user')`,
     ),
   ],
 );

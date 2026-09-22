@@ -36,6 +36,10 @@ export class AppExceptionFilter implements ExceptionFilter {
 
     const { status, body } = this.mapException(exception, requestId);
 
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      response.setHeader("Retry-After", "60");
+    }
+
     if (status >= 500) {
       this.logger.error({ err: exception, request_id: requestId }, body.message);
     }

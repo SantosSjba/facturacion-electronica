@@ -4,12 +4,21 @@ import { APP_FILTER } from "@nestjs/core";
 import { AppConfigModule } from "./infrastructure/config/config.module";
 import { LoggingModule } from "./infrastructure/logging/logging.module";
 import { DbModule } from "./infrastructure/persistence/db.module";
+import { RedisModule } from "./infrastructure/redis/redis.module";
+import { AuthModule } from "./interfaces/http/auth/auth.module";
 import { AppExceptionFilter } from "./interfaces/http/filters/app-exception.filter";
 import { HealthModule } from "./interfaces/http/health/health.module";
 import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.middleware";
 
 @Module({
-  imports: [AppConfigModule, LoggingModule, DbModule, HealthModule],
+  imports: [
+    AppConfigModule,
+    LoggingModule,
+    DbModule,
+    RedisModule,
+    AuthModule,
+    HealthModule,
+  ],
   controllers: [],
   providers: [
     {

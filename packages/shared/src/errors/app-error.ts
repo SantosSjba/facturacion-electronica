@@ -74,6 +74,58 @@ export class AppError extends Error {
     });
   }
 
+  static unauthorized(
+    message = "Unauthorized",
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      stage: "request",
+      ...extras,
+      code: AppErrorCode.UNAUTHORIZED,
+      message,
+      httpStatus: 401,
+    });
+  }
+
+  static forbidden(
+    message = "Forbidden",
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      stage: "request",
+      ...extras,
+      code: AppErrorCode.FORBIDDEN,
+      message,
+      httpStatus: 403,
+    });
+  }
+
+  static rateLimited(
+    message = "Rate limit exceeded",
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus" | "retryable">,
+  ): AppError {
+    return new AppError({
+      stage: "request",
+      ...extras,
+      code: AppErrorCode.RATE_LIMITED,
+      message,
+      httpStatus: 429,
+      retryable: true,
+    });
+  }
+
+  static conflict(
+    message: string,
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      ...extras,
+      code: AppErrorCode.CONFLICT,
+      message,
+      httpStatus: 409,
+    });
+  }
+
   static internal(
     message: string,
     extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus" | "retryable">,

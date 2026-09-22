@@ -14,6 +14,8 @@ env:
   NODE_VERSION: "20"
   PNPM_VERSION: "10.12.1"
   DATABASE_URL: postgresql://factosys:factosys@localhost:5432/factosys
+  REDIS_URL: redis://localhost:6379
+  JWT_ACCESS_SECRET: ci-test-jwt-access-secret-32b
 
 jobs:
   lint-test-build:
@@ -34,6 +36,15 @@ jobs:
           --health-cmd "pg_isready -U factosys -d factosys"
           --health-interval 5s
           --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
           --health-retries 10
 
     steps:
@@ -72,7 +83,7 @@ jobs:
       - name: DB migrate up → down → up
         run: |
           pnpm db:migrate
-          pnpm db:migrate:down
+          pnpm --filter @factosys/db migrate:down -- --all
           pnpm db:migrate
           pnpm db:seed
 

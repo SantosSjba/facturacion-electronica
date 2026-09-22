@@ -34,11 +34,13 @@ pnpm db:seed
 
 pnpm dev:api
 # GET http://localhost:3000/health
-# GET http://localhost:3000/ready  → database: "up"
+# GET http://localhost:3000/ready  → database + redis "up"
+# GET http://localhost:3000/docs   → OpenAPI (non-production)
+# Demo login: owner@demo.local / DemoOwner!2026 (org slug: demo)
 ```
 
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
-`DATABASE_URL` (Postgres en host **5433**), `REDIS_URL` y `MINIO_*` en `.env.example` apuntan al compose. Nest valida `DATABASE_URL` y `/ready` hace ping a Postgres.
+`DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET` y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
 ### Contrato del monorepo
 

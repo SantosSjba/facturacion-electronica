@@ -9,6 +9,9 @@ describe("validateEnv", () => {
     expect(env.PORT).toBe(3000);
     expect(env.LOG_LEVEL).toBe("info");
     expect(env.DATABASE_URL).toMatch(/^postgresql:\/\//);
+    expect(env.REDIS_URL).toMatch(/^redis:\/\//);
+    expect(env.JWT_ACCESS_SECRET.length).toBeGreaterThanOrEqual(16);
+    expect(env.RATE_LIMIT_RPM_DEFAULT).toBe(120);
   });
 
   it("fails with a clear message for invalid PORT", () => {

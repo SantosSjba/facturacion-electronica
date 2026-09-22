@@ -19,8 +19,11 @@ describe("AppError factories", () => {
     expect(error.details?.[0]?.path).toBe("ruc");
   });
 
-  it("notFound() and internal() set status codes", () => {
+  it("notFound() and auth helpers set status codes", () => {
     expect(AppError.notFound("missing").httpStatus).toBe(404);
+    expect(AppError.unauthorized().httpStatus).toBe(401);
+    expect(AppError.forbidden().httpStatus).toBe(403);
+    expect(AppError.rateLimited().httpStatus).toBe(429);
     expect(AppError.internal("boom").retryable).toBe(true);
   });
 });
