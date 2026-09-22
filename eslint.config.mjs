@@ -12,6 +12,7 @@ export default tseslint.config(
       "**/.turbo/**",
       "docs/sunat-oficial/**",
       "**/*.d.ts",
+      "**/tmp/**",
     ],
   },
   js.configs.recommended,

@@ -46,7 +46,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm lint`                         | ESLint flat en el monorepo                 |
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
-| `pnpm spike:sign`                   | Stub — spike firma XML (S1)                |
+| `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Stub — spike constructor Invoice UBL (S1)  |
 | `pnpm spike:sendbill`               | Stub — spike SendBill SOAP (S2)            |
 
@@ -61,7 +61,7 @@ packages/
   shared/               # @factosys/shared — AppError, Result
   domain/               # @factosys/domain — DocumentStatus, VOs
   sunat-ubl/            # stub — UBL builders
-  sunat-sign/           # stub — XML signature
+  sunat-sign/           # Spike A — XMLDSig (xml-crypto)
   sunat-soap/           # stub — billService SOAP
   sunat-validation/     # stub — XSD / rules
   sunat-catalogs/       # stub — catalogs
@@ -72,7 +72,8 @@ docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 ```
 
 **S0 disponible:** tooling (S0-TOOL), API skeleton (S0-API), packages stub (S0-PKG), Docker/CI/higiene (S0-DEV).  
-**Fuera de S0:** lógica SUNAT real, wiring Nest→Postgres/Redis/MinIO, imagen Docker de la API.
+**S1 en curso:** firma XML (S1-SIGN / Spike A) — `pnpm spike:sign`.  
+**Fuera de S0:** wiring Nest→Postgres/Redis/MinIO, imagen Docker de la API, UBL golden XSD (Spike B), SendBill.
 
 ## Packages / apps
 
@@ -82,7 +83,7 @@ docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 | `packages/shared`           | `@factosys/shared`           | `AppError`, `AppErrorCode`, `Result` |
 | `packages/domain`           | `@factosys/domain`           | `DocumentStatus`, VOs (sin Nest)     |
 | `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Stub UBL builders                    |
-| `packages/sunat-sign`       | `@factosys/sunat-sign`       | Stub firma XML                       |
+| `packages/sunat-sign`       | `@factosys/sunat-sign`       | Firma XMLDSig (`SignXmlPort`)        |
 | `packages/sunat-soap`       | `@factosys/sunat-soap`       | Stub SOAP                            |
 | `packages/sunat-validation` | `@factosys/sunat-validation` | Stub validación XSD                  |
 | `packages/sunat-catalogs`   | `@factosys/sunat-catalogs`   | Stub catálogos                       |

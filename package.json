@@ -13,7 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:api": "pnpm --filter @factosys/api start:dev",
-    "spike:sign": "node ./scripts/stubs/spike.mjs sign",
+    "spike:sign": "pnpm --filter @factosys/sunat-sign exec tsx ./scripts/spike-sign.ts",
     "spike:ubl": "node ./scripts/stubs/spike.mjs ubl",
     "spike:sendbill": "node ./scripts/stubs/spike.mjs sendbill"
   },
