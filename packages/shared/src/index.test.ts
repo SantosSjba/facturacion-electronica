@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SHARED_PACKAGE_NAME, assertNever } from "./index.js";
+import { SHARED_PACKAGE_NAME, assertNever } from "./index";
 
 describe("@factosys/shared", () => {
   it("exports the package name constant", () => {

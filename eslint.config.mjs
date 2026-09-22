@@ -38,4 +38,45 @@ export default tseslint.config(
       },
     },
   },
+  {
+    files: ["apps/api/src/application/**/*.{ts,tsx}", "packages/domain/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@nestjs/common",
+              message:
+                "Clean architecture: application/domain must not import Nest. Use ports + infrastructure adapters.",
+            },
+            {
+              name: "@nestjs/core",
+              message:
+                "Clean architecture: application/domain must not import Nest. Use ports + infrastructure adapters.",
+            },
+            {
+              name: "@nestjs/config",
+              message:
+                "Clean architecture: application/domain must not import Nest. Use ports + infrastructure adapters.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["@nestjs/*"],
+              message:
+                "Clean architecture: application/domain must not import @nestjs/*. Keep Nest in interfaces/infrastructure only.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/api/**/*.{ts,tsx}"],
+    rules: {
+      // Nest DI modules/controllers are intentionally empty-ish classes.
+      "@typescript-eslint/no-extraneous-class": "off",
+    },
+  },
 );

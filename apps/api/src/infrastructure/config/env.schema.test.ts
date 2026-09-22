@@ -1,0 +1,18 @@
+import { describe, expect, it } from "vitest";
+
+import { validateEnv } from "./env.schema";
+
+describe("validateEnv", () => {
+  it("applies defaults when optional vars are missing", () => {
+    const env = validateEnv({});
+    expect(env.NODE_ENV).toBe("development");
+    expect(env.PORT).toBe(3000);
+    expect(env.LOG_LEVEL).toBe("info");
+  });
+
+  it("fails with a clear message for invalid PORT", () => {
+    expect(() => validateEnv({ PORT: "not-a-number" })).toThrow(
+      /Invalid environment configuration/,
+    );
+  });
+});

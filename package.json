@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev:api": "node ./scripts/stubs/dev-api.mjs",
+    "dev:api": "pnpm --filter @factosys/api start:dev",
     "spike:sign": "node ./scripts/stubs/spike.mjs sign",
     "spike:ubl": "node ./scripts/stubs/spike.mjs ubl",
     "spike:sendbill": "node ./scripts/stubs/spike.mjs sendbill"
