@@ -3,8 +3,12 @@ import { buildCdrZipFixture, type CdrFixtureKind } from "../cdr/build-cdr-fixtur
 import { parseCdrZip } from "../cdr/parse-cdr-zip";
 import type { BillServicePort } from "../ports/bill-service.port";
 import type {
+  GetStatusInput,
+  GetStatusResult,
   SendBillInput,
   SendBillResult,
+  SendSummaryInput,
+  SendSummaryResult,
 } from "../ports/bill-service.types";
 
 export type FakeBillMode = CdrFixtureKind;
@@ -15,11 +19,13 @@ export interface FakeBillServiceOptions {
 }
 
 /**
- * Offline BillServicePort for Spike C / CI (doc 24 §C.4).
- * No network. Returns a real CDR ZIP (ApplicationResponse inside).
+ * Offline BillServicePort for CI / Fake mode.
+ * SendSummary returns a deterministic ticket; getStatus returns a CDR ZIP.
  */
 export class FakeBillServiceAdapter implements BillServicePort {
   private readonly defaultMode: FakeBillMode;
+  private readonly tickets = new Map<string, FakeBillMode>();
+  private ticketSeq = 0;
 
   constructor(options: FakeBillServiceOptions = {}) {
     this.defaultMode = options.mode ?? "accepted";
@@ -37,6 +43,39 @@ export class FakeBillServiceAdapter implements BillServicePort {
     const rawCdrZip = buildCdrZipFixture(kind);
     const parsed = parseCdrZip(rawCdrZip);
 
+    return {
+      rawCdrZip,
+      statusCode: parsed.sunatCode,
+      statusMessage: parsed.sunatMessage,
+    };
+  }
+
+  async sendSummary(input: SendSummaryInput): Promise<SendSummaryResult> {
+    if (!input?.zipBytes?.length) {
+      throw soapTransportError("zipBytes is empty");
+    }
+    if (!input.fileName?.trim()) {
+      throw soapTransportError("fileName is required");
+    }
+
+    this.ticketSeq += 1;
+    const ticket = `fake-ticket-${this.ticketSeq}-${Date.now()}`;
+    const kind = resolveMode(input.fileName, this.defaultMode);
+    this.tickets.set(ticket, kind);
+    return { ticket };
+  }
+
+  async getStatus(input: GetStatusInput): Promise<GetStatusResult> {
+    if (!input.ticket?.trim()) {
+      throw soapTransportError("ticket is required");
+    }
+    const kind =
+      this.tickets.get(input.ticket) ??
+      (input.ticket.toUpperCase().includes("REJECT")
+        ? "rejected"
+        : this.defaultMode);
+    const rawCdrZip = buildCdrZipFixture(kind);
+    const parsed = parseCdrZip(rawCdrZip);
     return {
       rawCdrZip,
       statusCode: parsed.sunatCode,

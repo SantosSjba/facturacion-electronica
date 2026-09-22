@@ -722,4 +722,231 @@ describe("API e2e", () => {
       .expect(200);
     expect(ndXml.text).toContain("DebitNote");
   });
+
+  it("emits RA voided-document and RC daily-summary via Fake poll (S6)", async () => {
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    const emitKey = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `s6-${Date.now()}`,
+        scopes: ["documents:read", "documents:write"],
+      })
+      .expect(201);
+    const emitSecret = emitKey.body.secret as string;
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const series = seriesList.body as { serie: string; documentType: string }[];
+    const ensureSerie = async (documentType: string, serie: string) => {
+      const has = series.some(
+        (s) => s.serie === serie && s.documentType === documentType,
+      );
+      if (!has) {
+        await request(server)
+          .post(`/companies/${companyId}/series`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({ document_type: documentType, serie, next_number: 1 })
+          .expect(201);
+      }
+    };
+    await ensureSerie("01", "F001");
+    await ensureSerie("03", "B001");
+
+    // Invoice → accepted → RA void
+    const inv = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `inv-s6-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        serie: "F001",
+        operation_type: "0101",
+        issue_date: "2026-09-15",
+        currency: "PEN",
+        totals_mode: "auto",
+        customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "ACME SAC",
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "Servicio",
+            unit_value: 100,
+            unit_price: 118,
+            tax_affectation: "10",
+            igv_percent: 18,
+            tax_scheme_id: "1000",
+          },
+        ],
+      })
+      .expect(201);
+
+    let invStatus = inv.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (invStatus === "queued" || invStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${inv.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      invStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(invStatus);
+
+    const badRa = await request(server)
+      .post("/v1/voided-documents")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `ra-bad-${Date.now()}`)
+      .send({ company_id: companyId })
+      .expect(422);
+    expect(badRa.body.code).toBe("FACTOSYS_VALIDATION");
+
+    const ra = await request(server)
+      .post("/v1/voided-documents")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `ra-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        reference_date: "2026-09-15",
+        documents: [
+          {
+            document_type: "01",
+            serie_number: inv.body.serie_number,
+            reason: "Error en datos; comprobante no otorgado",
+          },
+        ],
+      })
+      .expect(201);
+    expect(ra.body.document_type).toBe("RA");
+    expect(ra.body.status).toBe("ticket_pending");
+    expect(ra.body.sunat_ticket).toBeTruthy();
+
+    let raStatus = ra.body.status as string;
+    for (let i = 0; i < 40 && raStatus === "ticket_pending"; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${ra.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      raStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(raStatus);
+
+    const cancelled = await request(server)
+      .get(`/v1/documents/${inv.body.id}`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(cancelled.body.status).toBe("cancelled");
+
+    const raXml = await request(server)
+      .get(`/v1/documents/${ra.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(raXml.text).toContain("VoidedDocuments");
+
+    // Boleta → accepted → RC auto-pool
+    const receipt = await request(server)
+      .post("/v1/receipts")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `rcpt-s6-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        serie: "B001",
+        operation_type: "0101",
+        issue_date: "2026-09-17",
+        currency: "PEN",
+        totals_mode: "auto",
+        include_in_daily_summary: true,
+        customer: {
+          identity_type: "1",
+          identity_number: "12345678",
+          name: "JUAN PEREZ",
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "Producto RC",
+            unit_value: 50,
+            unit_price: 59,
+            tax_affectation: "10",
+            igv_percent: 18,
+            tax_scheme_id: "1000",
+          },
+        ],
+      })
+      .expect(201);
+    expect(receipt.body.summary_status).toBe("pending");
+
+    let receiptStatus = receipt.body.status as string;
+    for (
+      let i = 0;
+      i < 40 && (receiptStatus === "queued" || receiptStatus === "sent");
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${receipt.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      receiptStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(receiptStatus);
+
+    const rc = await request(server)
+      .post("/v1/daily-summaries")
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .set("Idempotency-Key", `rc-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        reference_date: "2026-09-17",
+      })
+      .expect(201);
+    expect(rc.body.document_type).toBe("RC");
+    expect(rc.body.status).toBe("ticket_pending");
+    expect(rc.body.sunat_ticket).toBeTruthy();
+
+    let rcStatus = rc.body.status as string;
+    for (let i = 0; i < 40 && rcStatus === "ticket_pending"; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${rc.body.id}`)
+        .set("Authorization", `Bearer ${emitSecret}`)
+        .expect(200);
+      rcStatus = got.body.status as string;
+    }
+    expect(["accepted", "accepted_with_observation"]).toContain(rcStatus);
+
+    const pooled = await request(server)
+      .get(`/v1/documents/${receipt.body.id}`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(pooled.body.summary_status).toBe("accepted");
+
+    const rcXml = await request(server)
+      .get(`/v1/documents/${rc.body.id}/xml`)
+      .set("Authorization", `Bearer ${emitSecret}`)
+      .expect(200);
+    expect(rcXml.text).toContain("SummaryDocuments");
+  });
 });

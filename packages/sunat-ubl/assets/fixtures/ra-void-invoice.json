@@ -1,0 +1,21 @@
+{
+  "id": "ra-void-invoice",
+  "document_kind": "voided_document",
+  "title": "Comunicación de baja RA de factura no otorgada",
+  "expects": {
+    "prevalidation": "pass",
+    "terminal_status": ["accepted", "ticket_pending"],
+    "depends_on": "accepted invoice not delivered to customer"
+  },
+  "request": {
+    "company_id": "{{company_id}}",
+    "reference_date": "2026-09-15",
+    "documents": [
+      {
+        "document_type": "01",
+        "serie_number": "{{void_invoice_serie_number}}",
+        "reason": "Error en datos; comprobante no otorgado"
+      }
+    ]
+  }
+}

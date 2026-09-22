@@ -2,7 +2,7 @@ import type { DocumentStatus } from "@factosys/domain";
 
 const ALLOWED: Record<DocumentStatus, readonly DocumentStatus[]> = {
   draft: ["validated", "rejected"],
-  validated: ["queued", "rejected"],
+  validated: ["queued", "ticket_pending", "rejected"],
   queued: ["sent", "failed", "rejected"],
   sent: [
     "accepted",

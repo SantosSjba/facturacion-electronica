@@ -13,6 +13,9 @@ import {
   EmitDebitNoteUseCase,
 } from "../../../infrastructure/documents/emit-note.use-case";
 import { EmitReceiptUseCase } from "../../../infrastructure/documents/emit-receipt.use-case";
+import { EmitVoidedDocumentUseCase } from "../../../infrastructure/documents/emit-voided-document.use-case";
+import { EmitDailySummaryUseCase } from "../../../infrastructure/documents/emit-daily-summary.use-case";
+import { SummaryPoolService } from "../../../infrastructure/documents/summary-pool.service";
 import { CredentialsResolver } from "../../../infrastructure/documents/credentials-resolver";
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
 import { IdempotencyModule } from "../../../infrastructure/idempotency/idempotency.module";
@@ -21,6 +24,7 @@ import {
   type QueueJobData,
 } from "../../../infrastructure/queues/queue.tokens";
 import { SunatSendProcessor } from "../../../infrastructure/queues/sunat-send.processor";
+import { SunatPollProcessor } from "../../../infrastructure/queues/sunat-poll.processor";
 import { CompaniesModule } from "../companies/companies.module";
 import { DocumentsController } from "./documents.controller";
 import { InvoicesController } from "./invoices.controller";
@@ -29,6 +33,8 @@ import {
   DebitNotesController,
 } from "./notes.controller";
 import { ReceiptsController } from "./receipts.controller";
+import { VoidedDocumentsController } from "./voided-documents.controller";
+import { DailySummariesController } from "./daily-summaries.controller";
 
 @Module({
   imports: [CompaniesModule, IdempotencyModule],
@@ -37,6 +43,8 @@ import { ReceiptsController } from "./receipts.controller";
     ReceiptsController,
     CreditNotesController,
     DebitNotesController,
+    VoidedDocumentsController,
+    DailySummariesController,
     DocumentsController,
   ],
   providers: [
@@ -47,7 +55,11 @@ import { ReceiptsController } from "./receipts.controller";
     EmitReceiptUseCase,
     EmitCreditNoteUseCase,
     EmitDebitNoteUseCase,
+    EmitVoidedDocumentUseCase,
+    EmitDailySummaryUseCase,
+    SummaryPoolService,
     SunatSendProcessor,
+    SunatPollProcessor,
   ],
   exports: [
     DocumentsService,
@@ -55,26 +67,36 @@ import { ReceiptsController } from "./receipts.controller";
     EmitReceiptUseCase,
     EmitCreditNoteUseCase,
     EmitDebitNoteUseCase,
+    EmitVoidedDocumentUseCase,
+    EmitDailySummaryUseCase,
   ],
 })
 export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
-  private worker: Worker<QueueJobData> | undefined;
+  private workers: Worker<QueueJobData>[] = [];
 
   constructor(
     @Inject(BULLMQ_CONNECTION)
     private readonly connection: ConnectionOptions,
     private readonly sunatSend: SunatSendProcessor,
+    private readonly sunatPoll: SunatPollProcessor,
   ) {}
 
   onModuleInit(): void {
-    this.worker = new Worker<QueueJobData>(
-      "sunat-send",
-      async (job) => this.sunatSend.process(job),
-      { connection: this.connection, concurrency: 2 },
+    this.workers.push(
+      new Worker<QueueJobData>(
+        "sunat-send",
+        async (job) => this.sunatSend.process(job),
+        { connection: this.connection, concurrency: 2 },
+      ),
+      new Worker<QueueJobData>(
+        "sunat-poll",
+        async (job) => this.sunatPoll.process(job),
+        { connection: this.connection, concurrency: 2 },
+      ),
     );
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.worker?.close();
+    await Promise.all(this.workers.map((w) => w.close()));
   }
 }

@@ -1,5 +1,5 @@
 /**
- * @factosys/sunat-soap — SUNAT billService SendBill (Spike C / S2-SOAP).
+ * @factosys/sunat-soap — SUNAT billService SendBill + SendSummary/getStatus (S4/S6).
  */
 
 export const PACKAGE_NAME = "@factosys/sunat-soap" as const;
@@ -9,8 +9,12 @@ export {
   type BillServicePort,
 } from "./ports/bill-service.port";
 export type {
+  GetStatusInput,
+  GetStatusResult,
   SendBillInput,
   SendBillResult,
+  SendSummaryInput,
+  SendSummaryResult,
 } from "./ports/bill-service.types";
 
 export { packInvoiceZip } from "./zip/pack-invoice-zip";
@@ -18,6 +22,13 @@ export type {
   PackInvoiceZipInput,
   PackInvoiceZipResult,
 } from "./zip/pack-invoice-zip";
+
+export { packSummaryZip } from "./zip/pack-summary-zip";
+export type {
+  PackSummaryZipInput,
+  PackSummaryZipResult,
+  SummaryDocumentKind,
+} from "./zip/pack-summary-zip";
 
 export { FakeBillServiceAdapter } from "./adapters/fake-bill-service.adapter";
 export type {

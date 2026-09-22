@@ -17,6 +17,8 @@ import {
   XmlCreditNoteBuilder,
   XmlDebitNoteBuilder,
   XmlInvoiceBuilder,
+  XmlSummaryDocumentsBuilder,
+  XmlVoidedDocumentsBuilder,
   computeAutoTotals,
   documentId,
   hydrateCreditNoteVoidFixture,
@@ -203,6 +205,69 @@ describe("pipeline B→A (FE-78)", () => {
     expect(signed.signedXml).toMatch(/Signature/);
     expect(verifySignedXml(signed.signedXml, loaded.certificatePem)).toBe(true);
   }, 60_000);
+});
+
+describe("RA VoidedDocuments builder (FE-194)", () => {
+  it("builds VoidedDocuments with ReferenceDate and lines", () => {
+    const { xml, fileStem } = new XmlVoidedDocumentsBuilder().build({
+      id: "RA-20260915-00001",
+      reference_date: "2026-09-15",
+      issue_date: "2026-09-16",
+      supplier: {
+        identity_type: "6",
+        identity_number: "20601234567",
+        name: "FACTOSYS DEMO SAC",
+      },
+      lines: [
+        {
+          line_id: 1,
+          document_type: "01",
+          serie: "F001",
+          number: 99,
+          reason: "Error en datos; comprobante no otorgado",
+        },
+      ],
+    });
+    expect(xml).toContain("VoidedDocuments");
+    expect(xml).toContain("<cbc:ReferenceDate>2026-09-15</cbc:ReferenceDate>");
+    expect(xml).toContain("<sac:DocumentSerialID>F001</sac:DocumentSerialID>");
+    expect(fileStem).toBe("20601234567-RA-20260915-1");
+  });
+});
+
+describe("RC SummaryDocuments builder (FE-197)", () => {
+  it("builds SummaryDocuments CustomizationID 1.1", () => {
+    const { xml, fileStem } = new XmlSummaryDocumentsBuilder().build({
+      id: "RC-20260917-00001",
+      reference_date: "2026-09-17",
+      issue_date: "2026-09-18",
+      supplier: {
+        identity_type: "6",
+        identity_number: "20601234567",
+        name: "FACTOSYS DEMO SAC",
+      },
+      lines: [
+        {
+          line_id: 1,
+          document_type: "03",
+          serie_number: "B001-00000001",
+          status: "1",
+          customer: { identity_type: "1", identity_number: "12345678" },
+          totals: {
+            gravadas: 100,
+            exoneradas: 0,
+            inafectas: 0,
+            igv: 18,
+            payable: 118,
+          },
+        },
+      ],
+    });
+    expect(xml).toContain("SummaryDocuments");
+    expect(xml).toContain("<cbc:CustomizationID>1.1</cbc:CustomizationID>");
+    expect(xml).toContain("<cbc:ConditionCode>1</cbc:ConditionCode>");
+    expect(fileStem).toBe("20601234567-RC-20260917-1");
+  });
 });
 
 function normalizeXml(xml: string): string {

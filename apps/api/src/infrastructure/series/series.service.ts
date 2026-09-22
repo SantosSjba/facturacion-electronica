@@ -51,13 +51,25 @@ export class SeriesService {
     },
   ) {
     await this.companies.requireCompany(organizationId, companyId);
-    if (!/^[A-Z0-9]{1,4}$/i.test(input.serie)) {
+    if (input.documentType === "RA" || input.documentType === "RC") {
+      if (!/^\d{8}$/.test(input.serie)) {
+        throw AppError.validation("Invalid serie", [
+          {
+            path: "serie",
+            issue: "RA/RC serie must be YYYYMMDD (8 digits)",
+          },
+        ]);
+      }
+    } else if (!/^[A-Z0-9]{1,4}$/i.test(input.serie)) {
       throw AppError.validation("Invalid serie", [
         { path: "serie", issue: "must be 1-4 alphanumeric" },
       ]);
     }
 
-    const serie = input.serie.toUpperCase();
+    const serie =
+      input.documentType === "RA" || input.documentType === "RC"
+        ? input.serie
+        : input.serie.toUpperCase();
     const existing = await this.db
       .select({ id: documentSeries.id })
       .from(documentSeries)
@@ -142,6 +154,7 @@ export class SeriesService {
 
   /**
    * Atomically allocate next correlative with SELECT … FOR UPDATE.
+   * For RA/RC, creates the date-serie row on first use when missing.
    */
   async allocateNextNumber(input: {
     organizationId: string;
@@ -149,9 +162,12 @@ export class SeriesService {
     documentType: string;
     serie: string;
   }): Promise<{ number: number; padded: string; seriesId: string }> {
-    const serie = input.serie.toUpperCase();
+    const serie =
+      input.documentType === "RA" || input.documentType === "RC"
+        ? input.serie
+        : input.serie.toUpperCase();
     return this.db.transaction(async (tx) => {
-      const locked = await tx
+      let locked = await tx
         .select()
         .from(documentSeries)
         .where(
@@ -164,6 +180,32 @@ export class SeriesService {
         )
         .for("update")
         .limit(1);
+
+      if (!locked[0] && (input.documentType === "RA" || input.documentType === "RC")) {
+        await tx.insert(documentSeries).values({
+          id: newId(),
+          organizationId: input.organizationId,
+          companyId: input.companyId,
+          documentType: input.documentType,
+          serie,
+          nextNumber: 1,
+          padding: 5,
+          isActive: true,
+        });
+        locked = await tx
+          .select()
+          .from(documentSeries)
+          .where(
+            and(
+              eq(documentSeries.organizationId, input.organizationId),
+              eq(documentSeries.companyId, input.companyId),
+              eq(documentSeries.documentType, input.documentType),
+              eq(documentSeries.serie, serie),
+            ),
+          )
+          .for("update")
+          .limit(1);
+      }
 
       const series = locked[0];
       if (!series) {
@@ -197,7 +239,10 @@ export class SeriesService {
     serie: string;
     number: number;
   }): Promise<void> {
-    const serie = input.serie.toUpperCase();
+    const serie =
+      input.documentType === "RA" || input.documentType === "RC"
+        ? input.serie
+        : input.serie.toUpperCase();
     await this.db.transaction(async (tx) => {
       const locked = await tx
         .select()

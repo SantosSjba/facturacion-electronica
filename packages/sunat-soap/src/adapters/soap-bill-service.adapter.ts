@@ -4,8 +4,12 @@ import { DOMParser } from "@xmldom/xmldom";
 import { soapTransportError, soapTransportInternal } from "../errors";
 import type { BillServicePort } from "../ports/bill-service.port";
 import type {
+  GetStatusInput,
+  GetStatusResult,
   SendBillInput,
   SendBillResult,
+  SendSummaryInput,
+  SendSummaryResult,
 } from "../ports/bill-service.types";
 
 export const DEFAULT_BETA_WSDL =
@@ -26,8 +30,8 @@ export interface SoapBillServiceOptions {
 }
 
 /**
- * Real SOAP 1.1 SendBill with WS-Security UsernameToken (doc 24 §C.1).
- * Does not depend on node-soap / WSDL parse — handcrafted envelope.
+ * Real SOAP 1.1 SendBill / sendSummary / getStatus with WS-Security UsernameToken.
+ * Does not depend on node-soap / WSDL parse — handcrafted envelopes.
  */
 export class SoapBillServiceAdapter implements BillServicePort {
   private readonly endpoint: string;
@@ -42,30 +46,75 @@ export class SoapBillServiceAdapter implements BillServicePort {
   }
 
   async sendBill(input: SendBillInput): Promise<SendBillResult> {
+    assertSolCredentials(input.solUser, input.solPassword, "SendBill");
     if (!input?.zipBytes?.length) {
       throw soapTransportError("zipBytes is empty");
     }
     if (!input.fileName?.trim()) {
       throw soapTransportError("fileName is required");
     }
-    if (!input.solUser?.trim()) {
-      throw soapTransportError(
-        "SOL user is required for beta SendBill (set SUNAT_SOL_USER)",
-      );
+
+    const bodyText = await this.postEnvelope(
+      buildSendBillEnvelope({
+        fileName: input.fileName,
+        contentBase64: input.zipBytes.toString("base64"),
+        solUser: input.solUser,
+        solPassword: input.solPassword,
+      }),
+      "SendBill",
+    );
+
+    return { rawCdrZip: decodeApplicationResponseZip(bodyText, "SendBill") };
+  }
+
+  async sendSummary(input: SendSummaryInput): Promise<SendSummaryResult> {
+    assertSolCredentials(input.solUser, input.solPassword, "sendSummary");
+    if (!input?.zipBytes?.length) {
+      throw soapTransportError("zipBytes is empty");
     }
-    if (!input.solPassword) {
-      throw soapTransportError(
-        "SOL password is required for beta SendBill (set SUNAT_SOL_PASSWORD)",
-      );
+    if (!input.fileName?.trim()) {
+      throw soapTransportError("fileName is required");
     }
 
-    const envelope = buildSendBillEnvelope({
-      fileName: input.fileName,
-      contentBase64: input.zipBytes.toString("base64"),
-      solUser: input.solUser,
-      solPassword: input.solPassword,
-    });
+    const bodyText = await this.postEnvelope(
+      buildSendSummaryEnvelope({
+        fileName: input.fileName,
+        contentBase64: input.zipBytes.toString("base64"),
+        solUser: input.solUser,
+        solPassword: input.solPassword,
+      }),
+      "sendSummary",
+    );
 
+    const ticket = extractTicket(bodyText);
+    if (!ticket) {
+      throw soapTransportInternal("sendSummary response missing ticket");
+    }
+    return { ticket };
+  }
+
+  async getStatus(input: GetStatusInput): Promise<GetStatusResult> {
+    assertSolCredentials(input.solUser, input.solPassword, "getStatus");
+    if (!input.ticket?.trim()) {
+      throw soapTransportError("ticket is required");
+    }
+
+    const bodyText = await this.postEnvelope(
+      buildGetStatusEnvelope({
+        ticket: input.ticket,
+        solUser: input.solUser,
+        solPassword: input.solPassword,
+      }),
+      "getStatus",
+    );
+
+    return { rawCdrZip: decodeApplicationResponseZip(bodyText, "getStatus") };
+  }
+
+  private async postEnvelope(
+    envelope: string,
+    operation: string,
+  ): Promise<string> {
     let response: Response;
     try {
       const controller = new AbortController();
@@ -88,24 +137,23 @@ export class SoapBillServiceAdapter implements BillServicePort {
         cause instanceof Error &&
         (cause.name === "AbortError" || cause.message.includes("abort"));
       throw soapTransportError(
-        aborted ? "SUNAT SendBill timed out" : "SUNAT SendBill network error",
+        aborted
+          ? `SUNAT ${operation} timed out`
+          : `SUNAT ${operation} network error`,
         { cause },
       );
     }
 
     const bodyText = await response.text();
     if (!response.ok) {
-      throw soapTransportError(
-        `SUNAT SendBill HTTP ${response.status}`,
-        {
-          details: [
-            {
-              path: "http",
-              issue: `status ${response.status}`,
-            },
-          ],
-        },
-      );
+      throw soapTransportError(`SUNAT ${operation} HTTP ${response.status}`, {
+        details: [
+          {
+            path: "http",
+            issue: `status ${response.status}`,
+          },
+        ],
+      });
     }
 
     if (/Fault/i.test(bodyText) && /soap/i.test(bodyText)) {
@@ -115,27 +163,7 @@ export class SoapBillServiceAdapter implements BillServicePort {
       });
     }
 
-    const cdrBase64 = extractApplicationResponseBase64(bodyText);
-    if (!cdrBase64) {
-      throw soapTransportInternal(
-        "SendBill response missing applicationResponse base64",
-      );
-    }
-
-    let rawCdrZip: Buffer;
-    try {
-      rawCdrZip = Buffer.from(cdrBase64, "base64");
-    } catch (cause) {
-      throw soapTransportInternal("Invalid applicationResponse base64", {
-        cause,
-      });
-    }
-
-    if (!rawCdrZip.length) {
-      throw soapTransportInternal("Decoded CDR ZIP is empty");
-    }
-
-    return { rawCdrZip };
+    return bodyText;
   }
 }
 
@@ -143,12 +171,27 @@ export function wsdlUrlToEndpoint(wsdlUrl: string): string {
   return wsdlUrl.replace(/\?wsdl$/i, "").replace(/\/$/, "");
 }
 
-function buildSendBillEnvelope(params: {
-  fileName: string;
-  contentBase64: string;
+function assertSolCredentials(
+  solUser: string,
+  solPassword: string,
+  operation: string,
+): void {
+  if (!solUser?.trim()) {
+    throw soapTransportError(
+      `SOL user is required for beta ${operation} (set SUNAT_SOL_USER)`,
+    );
+  }
+  if (!solPassword) {
+    throw soapTransportError(
+      `SOL password is required for beta ${operation} (set SUNAT_SOL_PASSWORD)`,
+    );
+  }
+}
+
+function buildWsseEnvelopeRoot(params: {
   solUser: string;
   solPassword: string;
-}): string {
+}) {
   const env = create({ version: "1.0", encoding: "UTF-8" }).ele(
     "soapenv:Envelope",
     {
@@ -165,25 +208,89 @@ function buildSendBillEnvelope(params: {
     .ele("wsse:UsernameToken");
   security.ele("wsse:Username").txt(params.solUser).up();
   security.ele("wsse:Password").txt(params.solPassword).up();
+  return env;
+}
 
+function buildSendBillEnvelope(params: {
+  fileName: string;
+  contentBase64: string;
+  solUser: string;
+  solPassword: string;
+}): string {
+  const env = buildWsseEnvelopeRoot(params);
   const body = env.ele("soapenv:Body").ele("ser:sendBill");
   body.ele("fileName").txt(params.fileName).up();
   body.ele("contentFile").txt(params.contentBase64).up();
-
   return env.end({ prettyPrint: false });
 }
 
-function extractApplicationResponseBase64(soapXml: string): string | null {
+function buildSendSummaryEnvelope(params: {
+  fileName: string;
+  contentBase64: string;
+  solUser: string;
+  solPassword: string;
+}): string {
+  const env = buildWsseEnvelopeRoot(params);
+  const body = env.ele("soapenv:Body").ele("ser:sendSummary");
+  body.ele("fileName").txt(params.fileName).up();
+  body.ele("contentFile").txt(params.contentBase64).up();
+  return env.end({ prettyPrint: false });
+}
+
+function buildGetStatusEnvelope(params: {
+  ticket: string;
+  solUser: string;
+  solPassword: string;
+}): string {
+  const env = buildWsseEnvelopeRoot(params);
+  const body = env.ele("soapenv:Body").ele("ser:getStatus");
+  body.ele("ticket").txt(params.ticket).up();
+  return env.end({ prettyPrint: false });
+}
+
+function decodeApplicationResponseZip(
+  bodyText: string,
+  operation: string,
+): Buffer {
+  const cdrBase64 =
+    extractElementText(bodyText, "applicationResponse") ??
+    extractElementText(bodyText, "content");
+  if (!cdrBase64) {
+    throw soapTransportInternal(
+      `${operation} response missing applicationResponse/content base64`,
+    );
+  }
+
+  let rawCdrZip: Buffer;
+  try {
+    rawCdrZip = Buffer.from(cdrBase64, "base64");
+  } catch (cause) {
+    throw soapTransportInternal("Invalid applicationResponse base64", {
+      cause,
+    });
+  }
+
+  if (!rawCdrZip.length) {
+    throw soapTransportInternal("Decoded CDR ZIP is empty");
+  }
+  return rawCdrZip;
+}
+
+function extractTicket(soapXml: string): string | null {
+  return extractElementText(soapXml, "ticket");
+}
+
+function extractElementText(
+  soapXml: string,
+  localName: string,
+): string | null {
   const doc = new DOMParser().parseFromString(soapXml, "text/xml");
   const nodes = doc.getElementsByTagName("*");
   for (let i = 0; i < nodes.length; i++) {
     const el = nodes.item(i);
     if (!el) continue;
     const name = el.localName || el.nodeName;
-    if (
-      name === "applicationResponse" ||
-      name.endsWith(":applicationResponse")
-    ) {
+    if (name === localName || name.endsWith(`:${localName}`)) {
       return (el.textContent ?? "").trim() || null;
     }
   }
@@ -191,15 +298,5 @@ function extractApplicationResponseBase64(soapXml: string): string | null {
 }
 
 function extractFaultString(soapXml: string): string | null {
-  const doc = new DOMParser().parseFromString(soapXml, "text/xml");
-  const nodes = doc.getElementsByTagName("*");
-  for (let i = 0; i < nodes.length; i++) {
-    const el = nodes.item(i);
-    if (!el) continue;
-    const name = el.localName || el.nodeName;
-    if (name === "faultstring" || name.endsWith(":faultstring")) {
-      return (el.textContent ?? "").trim() || null;
-    }
-  }
-  return null;
+  return extractElementText(soapXml, "faultstring");
 }

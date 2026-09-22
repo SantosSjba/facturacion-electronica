@@ -10,6 +10,7 @@ import {
   assertCdrAccepted,
   buildCdrZipFixture,
   packInvoiceZip,
+  packSummaryZip,
   parseCdrZip,
   wsdlUrlToEndpoint,
   type BillServicePort,
@@ -27,7 +28,11 @@ describe("@factosys/sunat-soap port", () => {
       fetchImpl: async () => new Response("", { status: 500 }),
     });
     expect(typeof fake.sendBill).toBe("function");
+    expect(typeof fake.sendSummary).toBe("function");
+    expect(typeof fake.getStatus).toBe("function");
     expect(typeof soap.sendBill).toBe("function");
+    expect(typeof soap.sendSummary).toBe("function");
+    expect(typeof soap.getStatus).toBe("function");
   });
 });
 
@@ -105,6 +110,49 @@ describe("FakeBillServiceAdapter (FE-91)", () => {
     });
     expect(result.statusCode).toBe("2324");
     expect(parseCdrZip(result.rawCdrZip).status).toBe("rejected");
+  });
+
+  it("sendSummary returns ticket and getStatus returns CDR", async () => {
+    const port = new FakeBillServiceAdapter();
+    const packed = packSummaryZip({
+      ruc: "20601234567",
+      kind: "RA",
+      referenceDateCompact: "20260915",
+      correlative: 1,
+      xml: "<VoidedDocuments/>",
+    });
+    const { ticket } = await port.sendSummary({
+      zipBytes: packed.zipBytes,
+      fileName: packed.fileName,
+      solUser: "u",
+      solPassword: "p",
+    });
+    expect(ticket).toMatch(/^fake-ticket-/);
+    const status = await port.getStatus({
+      ticket,
+      solUser: "u",
+      solPassword: "p",
+    });
+    expect(parseCdrZip(status.rawCdrZip).status).toBe("accepted");
+  });
+});
+
+describe("packSummaryZip (FE-190)", () => {
+  it("names RA/RC ZIP and packs single XML entry", () => {
+    const xml = '<?xml version="1.0"?><VoidedDocuments/>';
+    const { zipBytes, fileName, fileStem } = packSummaryZip({
+      ruc: "20601234567",
+      kind: "RA",
+      referenceDateCompact: "20260915",
+      correlative: 1,
+      xml,
+    });
+    expect(fileStem).toBe("20601234567-RA-20260915-1");
+    expect(fileName).toBe("20601234567-RA-20260915-1.zip");
+    const zip = new AdmZip(zipBytes);
+    const entries = zip.getEntries().filter((e) => !e.isDirectory);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.entryName).toBe("20601234567-RA-20260915-1.xml");
   });
 });
 
@@ -188,5 +236,76 @@ describe("SoapBillServiceAdapter (FE-93)", () => {
       stage: "transport",
       message: "Client.AutenticacionIncorrecta",
     });
+  });
+
+  it("posts sendSummary and extracts ticket", async () => {
+    const soapResponse = `<?xml version="1.0"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ns2:sendSummaryResponse xmlns:ns2="http://service.sunat.gob.pe">
+      <ticket>123456789012</ticket>
+    </ns2:sendSummaryResponse>
+  </soap:Body>
+</soap:Envelope>`;
+
+    const fetchImpl = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+      const body = String(init?.body ?? "");
+      expect(body).toContain("ser:sendSummary");
+      expect(body).toContain("<fileName>20601234567-RA-20260915-1.zip</fileName>");
+      return new Response(soapResponse, {
+        status: 200,
+        headers: { "Content-Type": "text/xml" },
+      });
+    });
+
+    const port = new SoapBillServiceAdapter({ fetchImpl });
+    const packed = packSummaryZip({
+      ruc: "20601234567",
+      kind: "RA",
+      referenceDateCompact: "20260915",
+      correlative: 1,
+      xml: "<VoidedDocuments/>",
+    });
+    const result = await port.sendSummary({
+      zipBytes: packed.zipBytes,
+      fileName: packed.fileName,
+      solUser: "u",
+      solPassword: "p",
+    });
+    expect(result.ticket).toBe("123456789012");
+  });
+
+  it("posts getStatus and decodes status/content CDR", async () => {
+    const cdrZip = buildCdrZipFixture("accepted");
+    const cdrB64 = cdrZip.toString("base64");
+    const soapResponse = `<?xml version="1.0"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ns2:getStatusResponse xmlns:ns2="http://service.sunat.gob.pe">
+      <status>
+        <statusCode>0</statusCode>
+        <content>${cdrB64}</content>
+      </status>
+    </ns2:getStatusResponse>
+  </soap:Body>
+</soap:Envelope>`;
+
+    const fetchImpl = vi.fn(async (_url: string | URL, init?: RequestInit) => {
+      const body = String(init?.body ?? "");
+      expect(body).toContain("ser:getStatus");
+      expect(body).toContain("<ticket>123456789012</ticket>");
+      return new Response(soapResponse, {
+        status: 200,
+        headers: { "Content-Type": "text/xml" },
+      });
+    });
+
+    const port = new SoapBillServiceAdapter({ fetchImpl });
+    const result = await port.getStatus({
+      ticket: "123456789012",
+      solUser: "u",
+      solPassword: "p",
+    });
+    expect(parseCdrZip(result.rawCdrZip).status).toBe("accepted");
   });
 });

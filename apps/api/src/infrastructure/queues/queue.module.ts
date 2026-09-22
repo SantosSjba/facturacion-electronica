@@ -67,9 +67,9 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    // sunat-send worker is registered by DocumentsModule (real processor).
+    // Real workers registered by DocumentsModule.
     for (const name of QUEUE_NAMES) {
-      if (name === "sunat-send") continue;
+      if (name === "sunat-send" || name === "sunat-poll") continue;
       const worker = new Worker<QueueJobData>(
         name,
         async (job) => processNoopJob(name, job),

@@ -85,7 +85,26 @@ export class DocumentsService {
         ),
       )
       .limit(1);
-    const row = rows[0];
+    let row = rows[0];
+    if (!row) {
+      const m = serieNumber.match(/^([A-Z0-9]+)-0*(\d+)$/);
+      if (m?.[1] && m[2]) {
+        const byParts = await this.db
+          .select()
+          .from(documents)
+          .where(
+            and(
+              eq(documents.organizationId, input.organizationId),
+              eq(documents.companyId, input.companyId),
+              eq(documents.documentType, input.documentType),
+              eq(documents.serie, m[1]),
+              eq(documents.number, Number(m[2])),
+            ),
+          )
+          .limit(1);
+        row = byParts[0];
+      }
+    }
     if (!row) {
       throw AppError.notFound(
         `Affected document ${input.documentType} ${serieNumber} not found`,
@@ -196,6 +215,71 @@ export class DocumentsService {
     });
   }
 
+  async patchPayload(
+    documentId: string,
+    patch: Record<string, unknown>,
+  ): Promise<void> {
+    const rows = await this.db
+      .select({ payload: documents.payload })
+      .from(documents)
+      .where(eq(documents.id, documentId))
+      .limit(1);
+    const current = (rows[0]?.payload ?? {}) as Record<string, unknown>;
+    await this.db
+      .update(documents)
+      .set({
+        payload: { ...current, ...patch },
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, documentId));
+  }
+
+  async listByIds(
+    organizationId: string,
+    companyId: string,
+    ids: string[],
+  ): Promise<(typeof documents.$inferSelect)[]> {
+    if (!ids.length) return [];
+    const rows = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, organizationId),
+          eq(documents.companyId, companyId),
+        ),
+      );
+    const set = new Set(ids);
+    return rows.filter((r) => set.has(r.id));
+  }
+
+  async listPendingSummaryPool(input: {
+    organizationId: string;
+    companyId: string;
+    referenceDate: string;
+  }): Promise<(typeof documents.$inferSelect)[]> {
+    const rows = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, input.organizationId),
+          eq(documents.companyId, input.companyId),
+          eq(documents.issueDate, input.referenceDate),
+        ),
+      );
+    return rows.filter((row) => {
+      if (!["03", "07", "08"].includes(row.documentType)) return false;
+      if (
+        row.status !== "accepted" &&
+        row.status !== "accepted_with_observation"
+      ) {
+        return false;
+      }
+      return resolveSummaryStatus(row) === "pending";
+    });
+  }
+
   async transitionStatus(
     documentId: string,
     from: DocumentStatus,
@@ -280,7 +364,11 @@ function resolveSummaryStatus(
   const payload = (row.payload ?? {}) as {
     include_in_daily_summary?: boolean;
     send_individually?: boolean;
+    summary_status?: string;
   };
+  if (typeof payload.summary_status === "string" && payload.summary_status) {
+    return payload.summary_status;
+  }
   if (row.documentType === "03") {
     if (payload.send_individually === true) return "not_required";
     if (payload.include_in_daily_summary === false) return "not_required";

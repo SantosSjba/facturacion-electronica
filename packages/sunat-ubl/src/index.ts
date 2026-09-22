@@ -76,4 +76,19 @@ export {
   type BuildNoteXmlResult,
 } from "./adapters/note-xml.builder";
 
+export {
+  XmlVoidedDocumentsBuilder,
+  type BuildVoidedDocumentsXmlResult,
+  type VoidedDocumentLineCanonical,
+  type VoidedDocumentsCanonical,
+} from "./adapters/voided-documents-xml.builder";
+
+export {
+  XmlSummaryDocumentsBuilder,
+  type BuildSummaryDocumentsXmlResult,
+  type SummaryDocumentsCanonical,
+  type SummaryDocumentsLineCanonical,
+  type SummaryLineTotalsCanonical,
+} from "./adapters/summary-documents-xml.builder";
+
 export { ublInternal, ublValidationError } from "./errors";
