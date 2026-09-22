@@ -20,6 +20,14 @@ async function bootstrap(): Promise<void> {
 
   const config = app.get(ConfigService<Env, true>);
   const nodeEnv = config.get("NODE_ENV", { infer: true });
+  const corsOrigins = config.get("CORS_ORIGINS", { infer: true });
+
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "X-Request-Id"],
+  });
 
   if (nodeEnv !== "production") {
     const swaggerConfig = new DocumentBuilder()

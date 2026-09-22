@@ -37,10 +37,13 @@ pnpm dev:api
 # GET http://localhost:3000/ready  → database + redis "up"
 # GET http://localhost:3000/docs   → OpenAPI (non-production)
 # Demo login: owner@demo.local / DemoOwner!2026 (org slug: demo)
+
+pnpm dev:console
+# http://localhost:5173 — ops console (S10-APP; JWT + RBAC nav)
 ```
 
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
-`DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET` y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
+`DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (default `http://localhost:5173`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
 ### Contrato del monorepo
 
@@ -52,6 +55,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
 | `pnpm db:migrate` / `db:migrate:down` / `db:seed` | Postgres schema + seeds (`@factosys/db`) |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
+| `pnpm dev:console`                  | Vite — `@factosys/console` ops UI (S10)    |
 | `pnpm demo:api-mvp`                 | Demo Fake: ruleset → invoice → PDF (`scripts/demo-api-mvp.mjs`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
@@ -69,6 +73,7 @@ Nightly: `.github/workflows/xsl-nightly.yml` (`continue-on-error`).
 ```
 apps/
   api/                  # @factosys/api — NestJS clean architecture
+  console/              # @factosys/console — Vite React ops console (S10)
 packages/
   shared/               # @factosys/shared — AppError, Result
   domain/               # @factosys/domain — DocumentStatus, VOs

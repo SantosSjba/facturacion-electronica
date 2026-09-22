@@ -52,6 +52,16 @@ export const envSchema = z.object({
     .default("https://api-cpe.sunat.gob.pe"),
   OTEL_ENABLED: z.enum(["0", "1"]).default("0"),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
+  /** Comma-separated browser origins allowed for console CORS (e.g. Vite). */
+  CORS_ORIGINS: z
+    .string()
+    .default("http://localhost:5173")
+    .transform((v) =>
+      v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
   CREDENTIALS_MASTER_KEY: z
     .string()
     .min(1)

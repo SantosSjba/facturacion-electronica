@@ -1,0 +1,78 @@
+/**
+ * Factosys design tokens (S10-APP-05).
+ * Brand: deep slate + teal accent. Typography: DM Sans Variable (not Inter).
+ * Mapped onto shadcn CSS variables for primitives.
+ */
+:root {
+  --fs-font-sans: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --fs-bg: #f4f7f8;
+  --fs-fg: #0f1c24;
+  --fs-surface: #ffffff;
+  --fs-muted: #5c6b75;
+  --fs-border: #d5dee3;
+  --fs-accent: #0d9488;
+  --fs-accent-fg: #f0fdfa;
+  --fs-accent-soft: #ccfbf1;
+  --fs-danger: #b91c1c;
+  --fs-sidebar: #0f1c24;
+  --fs-sidebar-fg: #e8eef1;
+  --fs-sidebar-muted: #8aa0ad;
+  --fs-sidebar-active: #134e4a;
+
+  --radius: 0.5rem;
+
+  --background: var(--fs-bg);
+  --foreground: var(--fs-fg);
+  --card: var(--fs-surface);
+  --card-foreground: var(--fs-fg);
+  --popover: var(--fs-surface);
+  --popover-foreground: var(--fs-fg);
+  --primary: var(--fs-accent);
+  --primary-foreground: var(--fs-accent-fg);
+  --secondary: #e8eef1;
+  --secondary-foreground: var(--fs-fg);
+  --muted: #e8eef1;
+  --muted-foreground: var(--fs-muted);
+  --accent: var(--fs-accent-soft);
+  --accent-foreground: #115e59;
+  --destructive: var(--fs-danger);
+  --border: var(--fs-border);
+  --input: var(--fs-border);
+  --ring: var(--fs-accent);
+}
+
+.dark {
+  --fs-bg: #0b1419;
+  --fs-fg: #e8eef1;
+  --fs-surface: #132029;
+  --fs-muted: #8aa0ad;
+  --fs-border: #243540;
+  --fs-accent: #2dd4bf;
+  --fs-accent-fg: #042f2e;
+  --fs-accent-soft: #134e4a;
+  --fs-danger: #f87171;
+  --fs-sidebar: #071016;
+  --fs-sidebar-fg: #e8eef1;
+  --fs-sidebar-muted: #8aa0ad;
+  --fs-sidebar-active: #0f766e;
+
+  --background: var(--fs-bg);
+  --foreground: var(--fs-fg);
+  --card: var(--fs-surface);
+  --card-foreground: var(--fs-fg);
+  --popover: var(--fs-surface);
+  --popover-foreground: var(--fs-fg);
+  --primary: var(--fs-accent);
+  --primary-foreground: var(--fs-accent-fg);
+  --secondary: #1a2a33;
+  --secondary-foreground: var(--fs-fg);
+  --muted: #1a2a33;
+  --muted-foreground: var(--fs-muted);
+  --accent: var(--fs-accent-soft);
+  --accent-foreground: #99f6e4;
+  --destructive: var(--fs-danger);
+  --border: var(--fs-border);
+  --input: var(--fs-border);
+  --ring: var(--fs-accent);
+}
