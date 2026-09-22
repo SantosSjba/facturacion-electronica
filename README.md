@@ -50,11 +50,14 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
 | `pnpm spike:sendbill`               | Spike C — SendBill fake/beta (`tmp/spikes/sendbill/`) |
 | `pnpm sunat:unpack-schemas`         | Unpack XSD UBL zip → `.cache/xsd-ubl/`     |
-| `pnpm validate:xml --type=01 <xml>` | Gate XSD Invoice (exit 1 on fail)          |
+| `pnpm sunat:unpack-xsl`             | Unpack XSL 2.1 zip → `.cache/xsl-ubl-2.1/` |
+| `pnpm validate:xml --type=01 …`     | Gate XSD + Excel P0 (exit 1 on fail)       |
+| `pnpm validate:xsl --type=01 …`     | Smoke XSL Factura (nightly warn)           |
 
-CI (GitHub Actions): unpack XSD (cache por hash del zip) → `pnpm lint` → `pnpm test` → `pnpm build` → `pnpm validate:xml` sobre golden Invoice (Node 20 + cache pnpm).
+CI (GitHub Actions): unpack XSD → lint → test → build → `validate:xml --stages=xsd,excel` (Node 20).  
+Nightly: `.github/workflows/xsl-nightly.yml` (`continue-on-error`).
 
-## Estructura (S0 / S1 / S2 parcial)
+## Estructura (S0 / S1 / S2)
 
 ```
 apps/
@@ -65,18 +68,19 @@ packages/
   sunat-ubl/            # Spike B — Invoice UBL unsigned builder
   sunat-sign/           # Spike A — XMLDSig (xml-crypto)
   sunat-soap/           # Spike C — SendBill (Fake + SOAP UsernameToken)
-  sunat-validation/     # S1-GATE — XSD via xmllint-wasm
-  sunat-catalogs/       # stub — catalogs
+  sunat-validation/     # S1-GATE XSD + S2-VAL Excel P0 (+ XSL nightly)
+  sunat-catalogs/       # S2-VAL — JSON catalogs
   sunat-gre/            # stub — GRE REST
   pdf-ri/               # stub — PDF RI
 docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 .github/workflows/ci.yml
+.github/workflows/xsl-nightly.yml
 ```
 
-**S0 disponible:** tooling (S0-TOOL), API skeleton (S0-API), packages stub (S0-PKG), Docker/CI/higiene (S0-DEV).  
-**S1 disponible:** firma XML (S1-SIGN) + constructor Invoice UBL (S1-UBL) + gate XSD CI (S1-GATE).  
-**S2 disponible (parcial):** SendBill Spike C (S2-SOAP) — `pnpm spike:sendbill` (fake por defecto; beta con SOL).  
-**Fuera de alcance aún:** Excel P0 / XSL nightly (S2-VAL), wiring Nest→infra, Postgres (S3).
+**S0 disponible:** tooling, API skeleton, packages stub, Docker/CI.  
+**S1 disponible:** firma + UBL + gate XSD.  
+**S2 disponible:** SendBill Spike C + catálogos + Excel P0 (CI block) + XSL nightly warn.  
+**Fuera de alcance aún:** Nest wiring, Postgres (S3), XSL blocking.
 
 ## Packages / apps
 
@@ -88,8 +92,8 @@ docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
 | `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Builder Invoice UBL unsigned         |
 | `packages/sunat-sign`       | `@factosys/sunat-sign`       | Firma XMLDSig (`SignXmlPort`)        |
 | `packages/sunat-soap`       | `@factosys/sunat-soap`       | SendBill (`BillServicePort`)         |
-| `packages/sunat-validation` | `@factosys/sunat-validation` | Gate XSD (`SunatValidationPort`)     |
-| `packages/sunat-catalogs`   | `@factosys/sunat-catalogs`   | Stub catálogos                       |
+| `packages/sunat-validation` | `@factosys/sunat-validation` | Gate XSD + Excel P0                  |
+| `packages/sunat-catalogs`   | `@factosys/sunat-catalogs`   | Catálogos JSON (`CatalogPort`)       |
 | `packages/sunat-gre`        | `@factosys/sunat-gre`        | Stub GRE                             |
 | `packages/pdf-ri`           | `@factosys/pdf-ri`           | Stub PDF RI                          |
 

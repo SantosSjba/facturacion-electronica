@@ -1,0 +1,174 @@
+{
+  "catalog": "01",
+  "name": "Código de tipo de documento",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "01",
+      "description": "Factura"
+    },
+    {
+      "code": "03",
+      "description": "Boleta de venta"
+    },
+    {
+      "code": "04",
+      "description": "Liquidación de compra"
+    },
+    {
+      "code": "05",
+      "description": "Boletos de Transporte Aéreo que emiten las Compañías de Aviación Comercial por el servicio de transporte aéreo regular de pasajeros, emitido de manera manual, mecanizada o por medios electrónicos (BME)"
+    },
+    {
+      "code": "06",
+      "description": "Carta de porte aéreo"
+    },
+    {
+      "code": "07",
+      "description": "Nota de crédito"
+    },
+    {
+      "code": "08",
+      "description": "Nota de débito"
+    },
+    {
+      "code": "09",
+      "description": "Guía de remisión remitente"
+    },
+    {
+      "code": "11",
+      "description": "Póliza emitida por las Bolsas de Valores"
+    },
+    {
+      "code": "12",
+      "description": "Ticket de máquina registradora"
+    },
+    {
+      "code": "13",
+      "description": "Documento emitido por bancos, instituciones financieras, crediticias y de seguros que se encuentren bajo el control de la Superintendencia de Banca y Seguros"
+    },
+    {
+      "code": "14",
+      "description": "Recibo servicios públicos"
+    },
+    {
+      "code": "15",
+      "description": "Boletos emitidos por el servicio de transporte terrestre regular urbano de pasajeros y el ferroviario público de pasajeros prestado en vía férrea local"
+    },
+    {
+      "code": "16",
+      "description": "Boleto de viaje emitido por las empresas de transporte público interprovincial de pasajeros"
+    },
+    {
+      "code": "18",
+      "description": "Documentos emitidos por las AFP"
+    },
+    {
+      "code": "19",
+      "description": "Boleto por atracciones y espectáculos públicos"
+    },
+    {
+      "code": "20",
+      "description": "Comprobante de retención"
+    },
+    {
+      "code": "21",
+      "description": "Conocimiento de embarque por el servicio de transporte de carga marítima"
+    },
+    {
+      "code": "23",
+      "description": "Pólizas de Adjudicación por remate o adjudicación de bienes"
+    },
+    {
+      "code": "24",
+      "description": "Certificado de pago de regalías emitidas por PERUPETRO S.A."
+    },
+    {
+      "code": "25",
+      "description": "Documento de atribución"
+    },
+    {
+      "code": "28",
+      "description": "Etiquetas por el pago de la Tarifa Unificada de Uso de Aeropuerto – TUUA"
+    },
+    {
+      "code": "29",
+      "description": "Documentos emitidos por la COFOPRI"
+    },
+    {
+      "code": "30",
+      "description": "Documentos emitidos por las empresas que desempeñan el rol adquirente en los sistemas de pago mediante tarjetas de crédito y débito, emitidas por bancos e instituciones financieras o crediticias, domiciliados o no en el país."
+    },
+    {
+      "code": "31",
+      "description": "Guía de remisión transportista"
+    },
+    {
+      "code": "32",
+      "description": "Documentos emitidos por recaudadoras de la Garantía de Red Principal"
+    },
+    {
+      "code": "34",
+      "description": "Documento del Operador"
+    },
+    {
+      "code": "35",
+      "description": "Documento del Partícipe"
+    },
+    {
+      "code": "36",
+      "description": "Recibo de Distribución de Gas Natural"
+    },
+    {
+      "code": "37",
+      "description": "Documentos que emitan los concesionarios del servicio de revisiones técnicas"
+    },
+    {
+      "code": "40",
+      "description": "Comprobante de Percepción"
+    },
+    {
+      "code": "41",
+      "description": "Comprobante de Percepción – Venta interna ( físico - formato impreso)"
+    },
+    {
+      "code": "42",
+      "description": "Documentos emitidos por los adq. en los sistemas de pago por tarj. de crédito emitidas por ellas mismas"
+    },
+    {
+      "code": "43",
+      "description": "Boleto de compañías de aviación transporte aéreo no regular"
+    },
+    {
+      "code": "45",
+      "description": "Documentos emitidos por centros educativos y culturales, universidades, asociaciones y fundaciones"
+    },
+    {
+      "code": "55",
+      "description": "BVME para transporte ferroviario de pasajeros"
+    },
+    {
+      "code": "56",
+      "description": "Comprobante de pago SEAE / DAE-SEAE"
+    },
+    {
+      "code": "71",
+      "description": "Guía de remisión remitente complementaria"
+    },
+    {
+      "code": "72",
+      "description": "Guía de remisión transportista complementaria"
+    },
+    {
+      "code": "87",
+      "description": "Nota de crédito especial"
+    },
+    {
+      "code": "88",
+      "description": "Nota de débito especial"
+    }
+  ]
+}

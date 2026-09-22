@@ -56,21 +56,23 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
     root.ele("cbc:ID").txt(id).up();
     root.ele("cbc:IssueDate").txt(canonical.issue_date).up();
     root
-      .ele("cbc:InvoiceTypeCode", ListUri.invoiceTypeCode())
+      .ele("cbc:InvoiceTypeCode", {
+        ...ListUri.invoiceTypeCode(),
+        listID: canonical.operation_type,
+      })
       .txt(canonical.document_type)
       .up();
     root.ele("cbc:DocumentCurrencyCode", ListUri.currency()).txt(cur).up();
 
-    appendParty(
-      root,
-      "cac:AccountingSupplierParty",
-      canonical.supplier,
-    );
-    appendParty(
-      root,
-      "cac:AccountingCustomerParty",
-      canonical.customer,
-    );
+    appendParty(root, "cac:AccountingSupplierParty", canonical.supplier, {
+      establishmentCode: "0000",
+    });
+    appendParty(root, "cac:AccountingCustomerParty", canonical.customer);
+
+    // SUNAT FormaPago (MIGE-Factoring / cat. PaymentTerms) — Contado default for MVP golden
+    const paymentTerms = root.ele("cac:PaymentTerms");
+    paymentTerms.ele("cbc:ID").txt("FormaPago").up();
+    paymentTerms.ele("cbc:PaymentMeansID").txt("Contado").up();
 
     // Document TaxTotal
     const taxTotal = root.ele("cac:TaxTotal");
@@ -179,6 +181,7 @@ function appendParty(
   root: ReturnType<ReturnType<typeof create>["ele"]>,
   tag: "cac:AccountingSupplierParty" | "cac:AccountingCustomerParty",
   party: InvoiceCanonical["supplier"],
+  opts: { establishmentCode?: string } = {},
 ): void {
   const node = root.ele(tag).ele("cac:Party");
   node
@@ -199,10 +202,18 @@ function appendParty(
     .txt("1000")
     .up()
     .up();
-  node
-    .ele("cac:PartyLegalEntity")
-    .ele("cbc:RegistrationName")
-    .txt(party.name)
-    .up()
-    .up();
+  const legal = node.ele("cac:PartyLegalEntity");
+  legal.ele("cbc:RegistrationName").txt(party.name).up();
+  if (opts.establishmentCode) {
+    legal
+      .ele("cac:RegistrationAddress")
+      .ele("cbc:AddressTypeCode", {
+        listAgencyName: "PE:SUNAT",
+        listName: "SUNAT:Identificador de establecimiento",
+        listURI: "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo54",
+      })
+      .txt(opts.establishmentCode)
+      .up()
+      .up();
+  }
 }

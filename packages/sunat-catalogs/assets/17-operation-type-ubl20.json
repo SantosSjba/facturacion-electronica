@@ -1,0 +1,90 @@
+{
+  "catalog": "17",
+  "name": "Código de tipo de operación",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "01",
+      "description": "Venta lnterna"
+    },
+    {
+      "code": "02",
+      "description": "Exportación de bienes"
+    },
+    {
+      "code": "03",
+      "description": "No Domiciliados"
+    },
+    {
+      "code": "04",
+      "description": "Venta Interna – Anticipos"
+    },
+    {
+      "code": "05",
+      "description": "Venta Itinerante"
+    },
+    {
+      "code": "06",
+      "description": "Factura Guía"
+    },
+    {
+      "code": "07",
+      "description": "Venta Arroz Pilado"
+    },
+    {
+      "code": "08",
+      "description": "Factura - Comprobante de Percepción"
+    },
+    {
+      "code": "10",
+      "description": "Factura - Guía remitente"
+    },
+    {
+      "code": "11",
+      "description": "Factura - Guía transportista"
+    },
+    {
+      "code": "12",
+      "description": "Boleta de venta – Comprobante de Percepción."
+    },
+    {
+      "code": "13",
+      "description": "Gasto Deducible Persona Natural"
+    },
+    {
+      "code": "14",
+      "description": "Exportación de servicios – prestación de servicios de hospedaje No Dom"
+    },
+    {
+      "code": "15",
+      "description": "Exportación de servicios – Transporte de navieras"
+    },
+    {
+      "code": "16",
+      "description": "Exportación de servicios – servicios a naves y aeronaves de bandera extranjera"
+    },
+    {
+      "code": "17",
+      "description": "Exportación de servicios – RES"
+    },
+    {
+      "code": "18",
+      "description": "Exportación de servicios - Servicios que conformen un Paquete Turístico"
+    },
+    {
+      "code": "19",
+      "description": "Exportación de servicios – Servicios complementarios al transporte de carga"
+    },
+    {
+      "code": "20",
+      "description": "Exportación de servicios – Suministro de energía eléctrica a favor de sujetos domiciliados en ZED"
+    },
+    {
+      "code": "21",
+      "description": "Exportación de servicios – Prestación servicios realizados parcialmente en el extranjero"
+    }
+  ]
+}

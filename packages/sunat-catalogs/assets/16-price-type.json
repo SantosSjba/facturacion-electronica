@@ -1,0 +1,22 @@
+{
+  "catalog": "16",
+  "name": "Código de tipo de precio de venta unitario",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "01",
+      "description": "Precio unitario (incluye el IGV)"
+    },
+    {
+      "code": "02",
+      "description": "Valor referencial unitario en operaciones no onerosas (Gratuitas)"
+    },
+    {
+      "code": "03",
+      "description": "Tarifas reguladas"
+    }
+  ]
+}

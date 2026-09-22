@@ -1,0 +1,105 @@
+{
+  "catalog": "07",
+  "name": "Código de tipo de afectación del IGV",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "10",
+      "description": "Gravado - Operación Onerosa",
+      "codigo_de_tributo": "1000"
+    },
+    {
+      "code": "11",
+      "description": "Gravado – Retiro por premio",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "12",
+      "description": "Gravado – Retiro por donación",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "13",
+      "description": "Gravado – Retiro",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "14",
+      "description": "Gravado – Retiro por publicidad",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "15",
+      "description": "Gravado – Bonificaciones",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "16",
+      "description": "Gravado – Retiro por entrega a trabajadores",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "17",
+      "description": "Gravado - IVAP",
+      "codigo_de_tributo": "1016 o 9996"
+    },
+    {
+      "code": "20",
+      "description": "Exonerado - Operación Onerosa",
+      "codigo_de_tributo": "9997"
+    },
+    {
+      "code": "21",
+      "description": "Exonerado - Transferencia gratuita",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "30",
+      "description": "Inafecto - Operación Onerosa",
+      "codigo_de_tributo": "9998"
+    },
+    {
+      "code": "31",
+      "description": "Inafecto – Retiro por Bonificación",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "32",
+      "description": "Inafecto – Retiro",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "33",
+      "description": "Inafecto – Retiro por Muestras Médicas",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "34",
+      "description": "Inafecto - Retiro por Convenio Colectivo",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "35",
+      "description": "Inafecto – Retiro por premio",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "36",
+      "description": "Inafecto - Retiro por publicidad",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "37",
+      "description": "Inafecto - Transferencia gratuita",
+      "codigo_de_tributo": "9996"
+    },
+    {
+      "code": "40",
+      "description": "Exportación de Bienes o Servicios",
+      "codigo_de_tributo": "9995 o 9996"
+    }
+  ]
+}

@@ -3,15 +3,17 @@
  */
 export const SUNAT_VALIDATION_PORT: unique symbol = Symbol("SunatValidationPort");
 
-/** S1-GATE subset: Invoice (01) + XSD stage only. */
+/** Invoice (01) for S1/S2 gate. */
 export type SunatValidationDocumentType = "01";
-export type SunatValidationStage = "xsd";
+export type SunatValidationStage = "xsd" | "excel";
 
 export interface SunatValidationIssue {
   severity: "error";
   stage: SunatValidationStage;
   message: string;
   path?: string;
+  /** Official SUNAT return code when known (Excel / CódigosRetorno). */
+  sunatCode?: string;
 }
 
 export interface SunatValidationInput {
@@ -27,8 +29,8 @@ export interface SunatValidationResult {
 }
 
 /**
- * Port for local/CI SUNAT schema (+ later Excel/XSL) validation (doc 29 §11).
- * S1-GATE implements stage `xsd` for documentType `01` only.
+ * Port for local/CI SUNAT schema + Excel P0 validation (doc 29 §11).
+ * S2-VAL: stages `xsd` | `excel`, documentType `01`.
  */
 export interface SunatValidationPort {
   validateXml(input: SunatValidationInput): Promise<SunatValidationResult>;

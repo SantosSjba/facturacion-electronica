@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/coverage/**",
       "**/.turbo/**",
+      "**/.cache/**",
       "docs/sunat-oficial/**",
       "**/*.d.ts",
       "**/tmp/**",

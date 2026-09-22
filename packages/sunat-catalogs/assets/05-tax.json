@@ -1,0 +1,70 @@
+{
+  "catalog": "05",
+  "name": "Código de tipos de tributos y otros conceptos",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "1000",
+      "description": "IGV Impuesto General a las Ventas",
+      "codigo_internacional": "VAT",
+      "nombre": "IGV"
+    },
+    {
+      "code": "1016",
+      "description": "Impuesto a la Venta Arroz Pilado",
+      "codigo_internacional": "VAT",
+      "nombre": "IVAP"
+    },
+    {
+      "code": "2000",
+      "description": "ISC Impuesto Selectivo al Consumo",
+      "codigo_internacional": "EXC",
+      "nombre": "ISC"
+    },
+    {
+      "code": "3000",
+      "description": "Impuesto a la Renta",
+      "codigo_internacional": "TOX",
+      "nombre": "IR"
+    },
+    {
+      "code": "7152",
+      "description": "Impuesto a la bolsa plastica",
+      "codigo_internacional": "OTH",
+      "nombre": "ICBPER"
+    },
+    {
+      "code": "9995",
+      "description": "Exportación",
+      "codigo_internacional": "FRE",
+      "nombre": "EXP"
+    },
+    {
+      "code": "9996",
+      "description": "Gratuito",
+      "codigo_internacional": "FRE",
+      "nombre": "GRA"
+    },
+    {
+      "code": "9997",
+      "description": "Exonerado",
+      "codigo_internacional": "VAT",
+      "nombre": "EXO"
+    },
+    {
+      "code": "9998",
+      "description": "Inafecto",
+      "codigo_internacional": "FRE",
+      "nombre": "INA"
+    },
+    {
+      "code": "9999",
+      "description": "Otros tributos",
+      "codigo_internacional": "OTH",
+      "nombre": "OTROS"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "catalog": "06",
+  "name": "Código de tipo de documento de identidad",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "0",
+      "description": "DOC.TRIB.NO.DOM.SIN.RUC"
+    },
+    {
+      "code": "1",
+      "description": "Documento Nacional de Identidad"
+    },
+    {
+      "code": "4",
+      "description": "Carnet de extranjería"
+    },
+    {
+      "code": "6",
+      "description": "Registro Unico de Contributentes"
+    },
+    {
+      "code": "7",
+      "description": "Pasaporte"
+    },
+    {
+      "code": "A",
+      "description": "Cédula Diplomática de identidad"
+    },
+    {
+      "code": "B",
+      "description": "DOC.IDENT.PAIS.RESIDENCIA-NO.D"
+    },
+    {
+      "code": "C",
+      "description": "Tax Identification Number - TIN – Doc Trib PP.NN"
+    },
+    {
+      "code": "D",
+      "description": "Identification Number - IN – Doc Trib PP. JJ"
+    },
+    {
+      "code": "E",
+      "description": "TAM- Tarjeta Andina de Migración"
+    },
+    {
+      "code": "F",
+      "description": "Permiso Temporal de Permanencia - PTP"
+    },
+    {
+      "code": "G",
+      "description": "Salvoconducto"
+    },
+    {
+      "code": "H",
+      "description": "Carné Permiso Temp.Perman. - CPP"
+    }
+  ]
+}

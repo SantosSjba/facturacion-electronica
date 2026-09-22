@@ -16,7 +16,7 @@ env:
 
 jobs:
   lint-test-build:
-    name: lint · test · build · xsd-gate
+    name: lint · test · build · xsd+excel-gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -56,5 +56,5 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: XSD gate (golden Invoice 01)
-        run: pnpm validate:xml --type=01 packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml
+      - name: XSD + Excel P0 gate (golden Invoice 01)
+        run: pnpm validate:xml --type=01 --stages=xsd,excel packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml

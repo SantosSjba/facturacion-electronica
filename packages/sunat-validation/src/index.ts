@@ -1,5 +1,5 @@
 /**
- * @factosys/sunat-validation — XSD gate (S1-GATE).
+ * @factosys/sunat-validation — XSD + Excel P0 gate (S1-GATE / S2-VAL).
  */
 
 export const PACKAGE_NAME = "@factosys/sunat-validation" as const;
@@ -15,6 +15,8 @@ export {
 } from "./ports/sunat-validation.port";
 
 export { XmllintXsdValidationAdapter } from "./adapters/xmllint-xsd.adapter";
+export { ExcelP0ValidationAdapter } from "./adapters/excel-p0.adapter";
+export { CompositeSunatValidationAdapter } from "./adapters/composite-validation.adapter";
 
 export {
   INVOICE_XSD_RELATIVE,
@@ -25,5 +27,12 @@ export {
   resolveXsdCacheRoot,
   type SupportedXsdDocumentType,
 } from "./schemas/paths";
+
+export {
+  EXCEL_RULESET_VERSION,
+  isObsMigratedToError,
+  loadObsToErrorCodes,
+} from "./rules/obs-to-error";
+export { P0_SUNAT_CODES, runP0InvoiceRules } from "./rules/p0-invoice-rules";
 
 export { validationError, validationInternal } from "./errors";

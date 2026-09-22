@@ -1,0 +1,23 @@
+{
+  "catalog": "02",
+  "name": "Código de tipo de monedas",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "ISO 4217 Alpha — Anexo N°8 only references the ISO list (not enumerated). Seed for MVP/fixtures.",
+  "exported_at": "2026-09-17",
+  "completeness": "seed",
+  "items": [
+    {
+      "code": "PEN",
+      "description": "Sol"
+    },
+    {
+      "code": "USD",
+      "description": "US Dollar"
+    },
+    {
+      "code": "EUR",
+      "description": "Euro"
+    }
+  ],
+  "notes": "seed-from-fixtures-pending-full-export (ISO 4217 not enumerated in SUNAT tables)"
+}

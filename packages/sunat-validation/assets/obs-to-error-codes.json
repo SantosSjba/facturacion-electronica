@@ -1,0 +1,556 @@
+{
+  "rulesetVersion": "2026-08-26",
+  "source": "listado-observaciones-migran-a-error.xlsx",
+  "obsCodes": [
+    "3219",
+    "4022",
+    "4023",
+    "4024",
+    "4028",
+    "4212",
+    "4244",
+    "4287",
+    "4288",
+    "4289",
+    "4290",
+    "4293",
+    "4294",
+    "4295",
+    "4296",
+    "4297",
+    "4298",
+    "4299",
+    "4300",
+    "4301",
+    "4302",
+    "4303",
+    "4304",
+    "4305",
+    "4306",
+    "4307",
+    "4308",
+    "4309",
+    "4310",
+    "4311",
+    "4312",
+    "4314",
+    "4316",
+    "4317",
+    "4321",
+    "4322"
+  ],
+  "errorCodes": [
+    "3219",
+    "3270",
+    "3271",
+    "3272",
+    "3273",
+    "3274",
+    "3275",
+    "3276",
+    "3277",
+    "3278",
+    "3279",
+    "3280",
+    "3283",
+    "3284",
+    "3285",
+    "3286",
+    "3288",
+    "3289",
+    "3290",
+    "3291",
+    "3292",
+    "3293",
+    "3294",
+    "3295",
+    "3296",
+    "3297",
+    "3298",
+    "3299",
+    "3300",
+    "3301",
+    "3302",
+    "3303",
+    "3304",
+    "3305",
+    "3306",
+    "3307"
+  ],
+  "mappings": [
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4287",
+      "errorCode": "3270",
+      "message": "El precio unitario de la operación que está informando difiere de los cálculos realizados en base a la información remit"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4293",
+      "errorCode": "3292",
+      "message": "El importe total de impuestos por línea no coincide con la sumatoria de los impuestos por línea."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4294",
+      "errorCode": "3272",
+      "message": "La base imponible a nivel de línea difiere de la información consignada en el comprobante"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4288",
+      "errorCode": "3271",
+      "message": "El valor de venta por ítem difiere de los importes consignados."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4289",
+      "errorCode": "3290",
+      "message": "El valor de cargo/descuento por ítem difiere de los importes consignados."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4301",
+      "errorCode": "3294",
+      "message": "La sumatoria de impuestos globales no corresponde al monto total de impuestos."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4295",
+      "errorCode": "3273",
+      "message": "La sumatoria del total valor de venta - Exportaciones de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4297",
+      "errorCode": "3275",
+      "message": "La sumatoria del total valor de venta - operaciones exoneradas de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4296",
+      "errorCode": "3274",
+      "message": "La sumatoria del total valor de venta - operaciones inafectas de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4022",
+      "errorCode": "3283",
+      "message": "Si se utiliza la leyenda con código 2001, el total de operaciones exoneradas debe ser mayor a 0.00"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4023",
+      "errorCode": "3284",
+      "message": "Si se utiliza la leyenda con código 2002, el total de operaciones exoneradas debe ser mayor a 0.00"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4024",
+      "errorCode": "3285",
+      "message": "Si se utiliza la leyenda con código 2003, el total de operaciones exoneradas debe ser mayor a 0.00"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4244",
+      "errorCode": "3289",
+      "message": "Si se utiliza la leyenda con código 2008, el total de operaciones exoneradas debe ser mayor a 0.00"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4298",
+      "errorCode": "3276",
+      "message": "La sumatoria del total valor de venta - operaciones gratuitas de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4311",
+      "errorCode": "3302",
+      "message": "La sumatoria de los IGV de operaciones gratuitas de la línea (codigo tributo 9996) no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4299",
+      "errorCode": "3277",
+      "message": "La sumatoria del total valor de venta - operaciones gravadas de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4300",
+      "errorCode": "3293",
+      "message": "La sumatoria del total valor de venta - IVAP de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4290",
+      "errorCode": "3291",
+      "message": "El cálculo del IGV es Incorrecto"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4302",
+      "errorCode": "3295",
+      "message": "El importe del IVAP no corresponden al determinado por la informacion consignada."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4303",
+      "errorCode": "3296",
+      "message": "La sumatoria del monto base - ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4304",
+      "errorCode": "3297",
+      "message": "La sumatoria del monto base - Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4305",
+      "errorCode": "3298",
+      "message": "La sumatoria del total del importe del tributo ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4321",
+      "errorCode": "3306",
+      "message": "La sumatoria del total del importe del tributo ICBPER de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4306",
+      "errorCode": "3299",
+      "message": "La sumatoria del total del importe del tributo Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4322",
+      "errorCode": "3307",
+      "message": "El valor de cargo/descuento global difiere de los importes consignados"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4307",
+      "errorCode": "3300",
+      "message": "La sumatoria consignados en descuentos globales no corresponden al total."
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4308",
+      "errorCode": "3301",
+      "message": "La sumatoria consignados en cargos globales no corresponden al total"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4312",
+      "errorCode": "3280",
+      "message": "El importe total del comprobante no coincide con el valor calculado"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4212",
+      "errorCode": "3288",
+      "message": "Debe consignar el Total Valor de Venta"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4309",
+      "errorCode": "3278",
+      "message": "La sumatoria de valor de venta no corresponde a los importes consignados"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4317",
+      "errorCode": "3305",
+      "message": "Debe consignar el Total Precio de Venta"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4310",
+      "errorCode": "3279",
+      "message": "La sumatoria del Total del valor de venta más los impuestos no concuerda con la base imponible"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "4314",
+      "errorCode": "3303",
+      "message": "El monto para el redondeo del Importe Total excede el valor permitido"
+    },
+    {
+      "sheet": "Factura2_0",
+      "obsCode": "3219",
+      "errorCode": "3219",
+      "message": "El comprobante que se realizo el anticipo no se encuentra autorizado"
+    },
+    {
+      "sheet": "Percepciones1_0",
+      "obsCode": "4314",
+      "errorCode": "3303",
+      "message": "El monto para el redondeo del Importe Total excede el valor permitido"
+    },
+    {
+      "sheet": "Percepciones1_0",
+      "obsCode": "4316",
+      "errorCode": "3304",
+      "message": "La moneda del monto para el redondeo debe ser PEN"
+    },
+    {
+      "sheet": "Retenciones1_0",
+      "obsCode": "4314",
+      "errorCode": "3303",
+      "message": "El monto para el redondeo del Importe Total excede el valor permitido"
+    },
+    {
+      "sheet": "Retenciones1_0",
+      "obsCode": "4316",
+      "errorCode": "3304",
+      "message": "La moneda del monto para el redondeo debe ser PEN"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4028",
+      "errorCode": "3286",
+      "message": "El monto total de la nota de credito debe ser menor o igual al monto de la factura"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4293",
+      "errorCode": "3292",
+      "message": "El importe total de impuestos por línea no coincide con la sumatoria de los impuestos por línea."
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4294",
+      "errorCode": "3272",
+      "message": "La base imponible a nivel de línea difiere de la información consignada en el comprobante"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4288",
+      "errorCode": "3271",
+      "message": "El valor de venta por ítem difiere de los importes consignados."
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4301",
+      "errorCode": "3294",
+      "message": "La sumatoria de impuestos globales no corresponde al monto total de impuestos."
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4295",
+      "errorCode": "3273",
+      "message": "La sumatoria del total valor de venta - Exportaciones de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4297",
+      "errorCode": "3275",
+      "message": "La sumatoria del total valor de venta - operaciones exoneradas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4296",
+      "errorCode": "3274",
+      "message": "La sumatoria del total valor de venta - operaciones inafectas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4298",
+      "errorCode": "3276",
+      "message": "La sumatoria del total valor de venta - operaciones gratuitas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4299",
+      "errorCode": "3277",
+      "message": "La sumatoria del total valor de venta - operaciones gravadas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4300",
+      "errorCode": "3293",
+      "message": "La sumatoria del total valor de venta - IVAP de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4290",
+      "errorCode": "3291",
+      "message": "El cálculo del IGV es Incorrecto"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4302",
+      "errorCode": "3295",
+      "message": "El importe del IVAP no corresponden al determinado por la informacion consignada."
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4303",
+      "errorCode": "3296",
+      "message": "La sumatoria del monto base - ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4304",
+      "errorCode": "3297",
+      "message": "La sumatoria del monto base - Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4305",
+      "errorCode": "3298",
+      "message": "La sumatoria del total del importe del tributo ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4306",
+      "errorCode": "3299",
+      "message": "La sumatoria del total del importe del tributo Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4321",
+      "errorCode": "3306",
+      "message": "La sumatoria del total del importe del tributo ICBPER de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4312",
+      "errorCode": "3280",
+      "message": "El importe total del comprobante no coincide con el valor calculado"
+    },
+    {
+      "sheet": "NotaCredito2_0",
+      "obsCode": "4314",
+      "errorCode": "3303",
+      "message": "El monto para el redondeo del Importe Total excede el valor permitido"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4287",
+      "errorCode": "3270",
+      "message": "El precio unitario de la operación que está informando difiere de los cálculos realizados en base a la información remit"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4293",
+      "errorCode": "3292",
+      "message": "El importe total de impuestos por línea no coincide con la sumatoria de los impuestos por línea."
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4294",
+      "errorCode": "3272",
+      "message": "La base imponible a nivel de línea difiere de la información consignada en el comprobante"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4288",
+      "errorCode": "3271",
+      "message": "El valor de venta por ítem difiere de los importes consignados."
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4301",
+      "errorCode": "3294",
+      "message": "La sumatoria de impuestos globales no corresponde al monto total de impuestos."
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4295",
+      "errorCode": "3273",
+      "message": "La sumatoria del total valor de venta - Exportaciones de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4297",
+      "errorCode": "3275",
+      "message": "La sumatoria del total valor de venta - operaciones exoneradas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4296",
+      "errorCode": "3274",
+      "message": "La sumatoria del total valor de venta - operaciones inafectas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4298",
+      "errorCode": "3276",
+      "message": "La sumatoria del total valor de venta - operaciones gratuitas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4311",
+      "errorCode": "3302",
+      "message": "La sumatoria de los IGV de operaciones gratuitas de la línea (codigo tributo 9996) no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4299",
+      "errorCode": "3277",
+      "message": "La sumatoria del total valor de venta - operaciones gravadas de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4300",
+      "errorCode": "3293",
+      "message": "La sumatoria del total valor de venta - IVAP de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4290",
+      "errorCode": "3291",
+      "message": "El cálculo del IGV es Incorrecto"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4302",
+      "errorCode": "3295",
+      "message": "El importe del IVAP no corresponden al determinado por la informacion consignada."
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4303",
+      "errorCode": "3296",
+      "message": "La sumatoria del monto base - ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4304",
+      "errorCode": "3297",
+      "message": "La sumatoria del monto base - Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4305",
+      "errorCode": "3298",
+      "message": "La sumatoria del total del importe del tributo ISC de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4306",
+      "errorCode": "3299",
+      "message": "La sumatoria del total del importe del tributo Otros tributos de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4321",
+      "errorCode": "3306",
+      "message": "La sumatoria del total del importe del tributo ICBPER de línea no corresponden al total"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4312",
+      "errorCode": "3280",
+      "message": "El importe total del comprobante no coincide con el valor calculado"
+    },
+    {
+      "sheet": "NotaDebito2_0",
+      "obsCode": "4314",
+      "errorCode": "3303",
+      "message": "El monto para el redondeo del Importe Total excede el valor permitido"
+    }
+  ]
+}

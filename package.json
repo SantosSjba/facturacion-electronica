@@ -17,7 +17,9 @@
     "spike:ubl": "pnpm --filter @factosys/sunat-ubl exec tsx ./scripts/spike-ubl.ts",
     "spike:sendbill": "pnpm --filter @factosys/sunat-soap exec tsx ./scripts/spike-sendbill.ts",
     "sunat:unpack-schemas": "pnpm --filter @factosys/sunat-validation unpack-schemas",
-    "validate:xml": "tsx ./packages/sunat-validation/scripts/validate-xml.ts"
+    "sunat:unpack-xsl": "pnpm --filter @factosys/sunat-validation unpack-xsl",
+    "validate:xml": "tsx ./packages/sunat-validation/scripts/validate-xml.ts",
+    "validate:xsl": "node ./packages/sunat-validation/scripts/validate-xsl.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -26,10 +28,12 @@
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.8",
+    "saxon-js": "^2.7.0",
     "tsx": "^4.23.15",
     "turbo": "^2.11.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.1",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "xslt3": "^2.7.0"
   }
 }

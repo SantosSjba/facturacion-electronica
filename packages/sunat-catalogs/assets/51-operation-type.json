@@ -1,0 +1,165 @@
+{
+  "catalog": "51",
+  "name": "Código de tipo de operación",
+  "version": "cpe-2026-08-26+gre-2026-06-20",
+  "source": "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx (sheet Catálogos / Anexo N°8)",
+  "exported_at": "2026-09-17",
+  "completeness": "full",
+  "items": [
+    {
+      "code": "0101",
+      "description": "Venta interna no sujeta a Detracción o Percepción",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0112",
+      "description": "Venta Interna - Sustenta Gastos Deducibles Persona Natural",
+      "tipo_de_comprobante_asociado": "Factura"
+    },
+    {
+      "code": "0113",
+      "description": "Venta Interna-NRUS",
+      "tipo_de_comprobante_asociado": "Boleta"
+    },
+    {
+      "code": "0200",
+      "description": "Exportación de Bienes",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0201",
+      "description": "Exportación de Servicios – Prestación servicios realizados íntegramente en el país",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0202",
+      "description": "Exportación de Servicios – Prestación de servicios de hospedaje No Domiciliado",
+      "tipo_de_comprobante_asociado": "Factura"
+    },
+    {
+      "code": "0203",
+      "description": "Exportación de Servicios – Transporte de navieras",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0204",
+      "description": "Exportación de Servicios – Servicios a naves y aeronaves de bandera extranjera",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0205",
+      "description": "Exportación de Servicios - Servicios que conformen un Paquete Turístico",
+      "tipo_de_comprobante_asociado": "Factura"
+    },
+    {
+      "code": "0206",
+      "description": "Exportación de Servicios – Servicios complementarios al transporte de carga",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0207",
+      "description": "Exportación de Servicios – Suministro de energía eléctrica a favor de sujetos domiciliados en ZED",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0208",
+      "description": "Exportación de Servicios – Prestación servicios realizados parcialmente en el extranjero",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0301",
+      "description": "Operaciones con Carta de porte aéreo (emitidas en el ámbito nacional)",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0302",
+      "description": "Operaciones de Transporte ferroviario de pasajeros",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0401",
+      "description": "Ventas no domiciliados que no califican como exportación",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "0501",
+      "description": "Compra interna",
+      "tipo_de_comprobante_asociado": "Liquidación de compra"
+    },
+    {
+      "code": "0502",
+      "description": "Anticipos",
+      "tipo_de_comprobante_asociado": "Liquidación de compra"
+    },
+    {
+      "code": "0503",
+      "description": "Compra de oro",
+      "tipo_de_comprobante_asociado": "Liquidación de compra"
+    },
+    {
+      "code": "1001",
+      "description": "Operación Sujeta a Detracción",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "1002",
+      "description": "Operación Sujeta a Detracción- Recursos Hidrobiológicos",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "1003",
+      "description": "Operación Sujeta a Detracción- Servicios de Transporte Pasajeros",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "1004",
+      "description": "Operación Sujeta a Detracción- Servicios de Transporte Carga",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2001",
+      "description": "Operación Sujeta a Percepción",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2002",
+      "description": "Operación sujeta a Retención de Renta de segunda categoría",
+      "tipo_de_comprobante_asociado": "Factura"
+    },
+    {
+      "code": "2100",
+      "description": "Créditos a empresas",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2101",
+      "description": "Créditos de consumo revolvente",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2102",
+      "description": "Créditos de consumo no revolvente",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2103",
+      "description": "Otras operaciones no gravadas - Empresas del sistema financiero y cooperativas de ahorro y crédito no autorizadas a captar recursos del público",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2104",
+      "description": "Otras operaciones no gravadas - Empresas del sistema de seguros",
+      "tipo_de_comprobante_asociado": "Factura, Boletas"
+    },
+    {
+      "code": "2105",
+      "description": "Comprobante emitido por AFP",
+      "tipo_de_comprobante_asociado": "Boleta"
+    },
+    {
+      "code": "2106",
+      "description": "Venta Nacional a Turistas - Tax Free",
+      "tipo_de_comprobante_asociado": "Factura"
+    }
+  ]
+}

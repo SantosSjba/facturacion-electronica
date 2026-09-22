@@ -1,0 +1,54 @@
+name: XSL nightly (warn)
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: xsl-nightly-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.12.1"
+
+jobs:
+  xsl-factura-smoke:
+    name: ValidaExprRegFactura (warn)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install xsltproc (libxslt + libexslt)
+        run: sudo apt-get update && sudo apt-get install -y xsltproc
+
+      - name: Cache XSL unpack
+        uses: actions/cache@v4
+        with:
+          path: packages/sunat-validation/.cache/xsl-ubl-2.1
+          key: xsl-ubl-2.1-${{ hashFiles('docs/sunat-oficial/04-esquemas-validacion/xsl-ubl-2.1-2022-09-06.zip', 'docs/sunat-oficial/04-esquemas-validacion/sfs-vali-commons.zip') }}
+
+      - name: Unpack XSL + SFS commons
+        run: pnpm sunat:unpack-xsl
+
+      - name: XSL smoke (golden Invoice 01)
+        run: pnpm validate:xsl --type=01 packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml

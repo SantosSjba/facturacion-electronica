@@ -1,0 +1,33 @@
+{
+  "title": "Matriz afectación IGV (cat. 07) × tax scheme (cat. 05) — Invoice MVP",
+  "version": "2026-09-17",
+  "source": "guia-xml-factura-ubl-2.1 + reglas CPE + catalogs 05/07",
+  "completeness": "mvp-seed",
+  "pairs": [
+    { "tax_affectation": "10", "label": "Gravado - Operación Onerosa", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "11", "label": "Gravado - Retiro por premio", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "12", "label": "Gravado - Retiro por donación", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "13", "label": "Gravado - Retiro", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "14", "label": "Gravado - Retiro por publicidad", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "15", "label": "Gravado - Bonificaciones", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "16", "label": "Gravado - Retiro por entrega a trabajadores", "tax_scheme_id": "1000", "tax_name": "IGV", "igv_percent_typical": 18 },
+    { "tax_affectation": "17", "label": "Gravado - IVAP", "tax_scheme_id": "1016", "tax_name": "IVAP", "igv_percent_typical": null },
+    { "tax_affectation": "20", "label": "Exonerado - Operación Onerosa", "tax_scheme_id": "9997", "tax_name": "EXO", "igv_percent_typical": 0 },
+    { "tax_affectation": "21", "label": "Exonerado - Transferencia gratuita", "tax_scheme_id": "9997", "tax_name": "EXO", "igv_percent_typical": 0 },
+    { "tax_affectation": "30", "label": "Inafecto - Operación Onerosa", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "31", "label": "Inafecto - Retiro por bonificación", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "32", "label": "Inafecto - Retiro", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "33", "label": "Inafecto - Retiro por muestras médicas", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "34", "label": "Inafecto - Retiro por convenio colectivo", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "35", "label": "Inafecto - Retiro por premio", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "36", "label": "Inafecto - Retiro por publicidad", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "37", "label": "Inafecto - Transferencia gratuita", "tax_scheme_id": "9998", "tax_name": "INA", "igv_percent_typical": 0 },
+    { "tax_affectation": "40", "label": "Exportación", "tax_scheme_id": "9995", "tax_name": "EXP", "igv_percent_typical": 0 },
+    { "tax_affectation": "10", "secondary_scheme": "2000", "label": "Gravado + ISC (cuando aplique)", "notes": "ISC en línea adicional / TaxTotal separado" },
+    { "tax_affectation": "10", "secondary_scheme": "7152", "label": "Gravado + ICBPER (cuando aplique)", "notes": "Bolsa plástica" }
+  ],
+  "notes": [
+    "Motor debe rechazar pares no listados o no vigentes en ruleset pineado.",
+    "Gratuitas suelen exigir leyenda cat. 52 además del scheme 9996 en algunos flujos — ver guía y Excel."
+  ]
+}
