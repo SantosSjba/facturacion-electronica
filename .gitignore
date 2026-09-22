@@ -22,6 +22,10 @@ secrets/
 tmp/
 tmp/spikes/**
 
+# XSD unpack cache (official zip stays in docs/sunat-oficial)
+packages/sunat-validation/.cache/
+docs/sunat-oficial/.cache/
+
 # IDE / OS
 .idea/
 .vscode/*

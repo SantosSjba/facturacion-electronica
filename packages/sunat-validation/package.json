@@ -19,12 +19,17 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "vitest run",
+    "unpack-schemas": "node ./scripts/unpack-schemas.mjs",
+    "validate:xml": "tsx ./scripts/validate-xml.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
   "dependencies": {
-    "@factosys/shared": "workspace:*"
+    "@factosys/shared": "workspace:*",
+    "xmllint-wasm": "^5.3.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.1"
   }
 }

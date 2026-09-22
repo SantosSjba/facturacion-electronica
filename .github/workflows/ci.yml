@@ -16,7 +16,7 @@ env:
 
 jobs:
   lint-test-build:
-    name: lint · test · build
+    name: lint · test · build · xsd-gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -38,6 +38,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache XSD unpack
+        uses: actions/cache@v4
+        with:
+          path: packages/sunat-validation/.cache/xsd-ubl
+          key: xsd-ubl-${{ hashFiles('docs/sunat-oficial/04-esquemas-validacion/xsd-ubl.zip') }}
+
+      - name: Unpack SUNAT XSD schemas
+        run: pnpm sunat:unpack-schemas
+
       - name: Lint
         run: pnpm lint
 
@@ -46,3 +55,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: XSD gate (golden Invoice 01)
+        run: pnpm validate:xml --type=01 packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml

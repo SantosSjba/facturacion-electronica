@@ -91,7 +91,7 @@ describe("builder unsigned (FE-70 / FE-76)", () => {
     expect(doc.documentElement?.localName || doc.documentElement?.nodeName).toMatch(
       /Invoice/,
     );
-    expect(xml).toContain("<ext:ExtensionContent");
+    expect(xml).not.toContain("UBLExtensions");
     expect(xml).toContain(`<cbc:ID>${documentId("F001", 1)}</cbc:ID>`);
     expect(xml).toContain("<cbc:PayableAmount");
     expect(xml).toContain(">118.00<");

@@ -47,13 +47,8 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
       "xmlns:ext": NS.ext,
     });
 
-    root
-      .ele("ext:UBLExtensions")
-      .ele("ext:UBLExtension")
-      .ele("ext:ExtensionContent")
-      .up()
-      .up()
-      .up();
+    // Unsigned docs omit empty UBLExtensions: ExtensionContent requires ##other (XSD).
+    // XmlCryptoSignAdapter inserts UBLExtensions + ds:Signature at sign time.
 
     root.ele("cbc:UBLVersionID").txt("2.1").up();
     root.ele("cbc:CustomizationID").txt("2.0").up();
@@ -192,12 +187,7 @@ function appendParty(
     .txt(party.identity_number)
     .up()
     .up();
-  node
-    .ele("cac:PartyLegalEntity")
-    .ele("cbc:RegistrationName")
-    .txt(party.name)
-    .up()
-    .up();
+  // UBL PartyType: PartyTaxScheme precedes PartyLegalEntity
   const taxScheme = node.ele("cac:PartyTaxScheme");
   taxScheme
     .ele("cbc:CompanyID", ListUri.companyId(party.identity_type))
@@ -207,6 +197,12 @@ function appendParty(
     .ele("cac:TaxScheme")
     .ele("cbc:ID")
     .txt("1000")
+    .up()
+    .up();
+  node
+    .ele("cac:PartyLegalEntity")
+    .ele("cbc:RegistrationName")
+    .txt(party.name)
     .up()
     .up();
 }

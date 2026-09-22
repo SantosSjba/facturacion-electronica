@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
-  <ext:UBLExtensions>
-    <ext:UBLExtension>
-      <ext:ExtensionContent/>
-    </ext:UBLExtension>
-  </ext:UBLExtensions>
   <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
   <cbc:CustomizationID>2.0</cbc:CustomizationID>
   <cbc:ProfileID schemeName="SUNAT:Identificador de Tipo de Operación" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo17">0101</cbc:ProfileID>
@@ -17,15 +12,15 @@
       <cac:PartyIdentification>
         <cbc:ID schemeID="6">20601234567</cbc:ID>
       </cac:PartyIdentification>
-      <cac:PartyLegalEntity>
-        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
-      </cac:PartyLegalEntity>
       <cac:PartyTaxScheme>
         <cbc:CompanyID schemeID="6" schemeName="SUNAT:Identificador de Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID>1000</cbc:ID>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingSupplierParty>
   <cac:AccountingCustomerParty>
@@ -33,15 +28,15 @@
       <cac:PartyIdentification>
         <cbc:ID schemeID="6">20123456789</cbc:ID>
       </cac:PartyIdentification>
-      <cac:PartyLegalEntity>
-        <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
-      </cac:PartyLegalEntity>
       <cac:PartyTaxScheme>
         <cbc:CompanyID schemeID="6" schemeName="SUNAT:Identificador de Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20123456789</cbc:CompanyID>
         <cac:TaxScheme>
           <cbc:ID>1000</cbc:ID>
         </cac:TaxScheme>
       </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
     </cac:Party>
   </cac:AccountingCustomerParty>
   <cac:TaxTotal>

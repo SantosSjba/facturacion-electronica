@@ -23,7 +23,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["*.mjs", "eslint.config.mjs"],
+          allowDefaultProject: ["*.mjs", "eslint.config.mjs", "**/scripts/**/*.ts"],
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -31,7 +31,7 @@ export default tseslint.config(
   },
   eslintConfigPrettier,
   {
-    files: ["scripts/**/*.{js,mjs,cjs}"],
+    files: ["**/scripts/**/*.{js,mjs,cjs}"],
     languageOptions: {
       globals: {
         console: "readonly",
