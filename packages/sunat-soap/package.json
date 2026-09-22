@@ -22,9 +22,16 @@
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
   "dependencies": {
-    "@factosys/shared": "workspace:*"
+    "@factosys/shared": "workspace:*",
+    "@xmldom/xmldom": "^0.9.12",
+    "adm-zip": "^0.6.1",
+    "xmlbuilder2": "^4.0.3"
   },
   "devDependencies": {
+    "@factosys/sunat-sign": "workspace:*",
+    "@factosys/sunat-ubl": "workspace:*",
+    "@types/adm-zip": "^0.5.8",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.1"
   }
 }

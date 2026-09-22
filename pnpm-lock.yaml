@@ -178,7 +178,28 @@ importers:
       '@factosys/shared':
         specifier: workspace:*
         version: link:../shared
+      '@xmldom/xmldom':
+        specifier: ^0.9.12
+        version: 0.9.12
+      adm-zip:
+        specifier: ^0.6.1
+        version: 0.6.1
+      xmlbuilder2:
+        specifier: ^4.0.3
+        version: 4.0.3
     devDependencies:
+      '@factosys/sunat-sign':
+        specifier: workspace:*
+        version: link:../sunat-sign
+      '@factosys/sunat-ubl':
+        specifier: workspace:*
+        version: link:../sunat-ubl
+      '@types/adm-zip':
+        specifier: ^0.5.8
+        version: 0.5.8
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       vitest:
         specifier: ^5.0.1
         version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15))
