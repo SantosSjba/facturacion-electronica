@@ -3,9 +3,11 @@ import {
   Get,
   Header,
   Param,
+  Query,
   StreamableFile,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
@@ -16,6 +18,26 @@ import {
   RequireScopes,
 } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
+import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
+
+const listQuerySchema = z.object({
+  company_id: z.string().uuid().optional(),
+  document_type: z.string().min(2).max(2).optional(),
+  status: z.string().min(1).optional(),
+  date_from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  date_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  serie_number: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.string().uuid().optional(),
+});
+
+type ListQuery = z.infer<typeof listQuerySchema>;
 
 @ApiTags("Documents")
 @ApiBearerAuth()
@@ -25,6 +47,27 @@ export class DocumentsController {
     private readonly documents: DocumentsService,
     private readonly pdf: PdfService,
   ) {}
+
+  @Get()
+  @ApiKeyAuth()
+  @RequireScopes("documents:read")
+  @ApiOperation({ summary: "List documents (filters + cursor)" })
+  async list(
+    @CurrentAuth() auth: AuthContext,
+    @Query(new ZodValidationPipe(listQuerySchema)) query: ListQuery,
+  ) {
+    const orgId = this.orgId(auth);
+    return this.documents.list(orgId, {
+      companyId: query.company_id,
+      documentType: query.document_type,
+      status: query.status,
+      dateFrom: query.date_from,
+      dateTo: query.date_to,
+      serieNumber: query.serie_number,
+      limit: query.limit,
+      cursor: query.cursor,
+    });
+  }
 
   @Get(":id")
   @ApiKeyAuth()

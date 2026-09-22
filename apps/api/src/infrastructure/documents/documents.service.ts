@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable, Optional } from "@nestjs/common";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, lt, or } from "drizzle-orm";
 import {
   documentArtifacts,
   documentEvents,
@@ -23,9 +23,20 @@ export interface DocumentPublic {
   document_type: string;
   serie_number: string | null;
   status: string;
+  environment: string;
+  issue_date: string | null;
+  customer: {
+    identity_type: string | null;
+    identity_number: string | null;
+    name: string | null;
+  };
+  currency: string | null;
+  totals: Record<string, unknown> | null;
   sunat_ticket: string | null;
   sunat_code: string | null;
+  sunat_message: string | null;
   summary_status: string | null;
+  error: DocumentPublicError | null;
   links: {
     self: string;
     xml: string;
@@ -35,6 +46,29 @@ export interface DocumentPublic {
   };
   created_at: Date;
   updated_at: Date;
+}
+
+export interface DocumentPublicError {
+  code?: string;
+  message?: string;
+  sunat_code?: string;
+  details?: unknown[];
+}
+
+export interface DocumentListFilters {
+  companyId?: string;
+  documentType?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  serieNumber?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface DocumentListResult {
+  items: DocumentPublic[];
+  next_cursor: string | null;
 }
 
 @Injectable()
@@ -53,9 +87,20 @@ export class DocumentsService {
       document_type: row.documentType,
       serie_number: row.serieNumber,
       status: row.status,
+      environment: row.environment,
+      issue_date: row.issueDate ?? null,
+      customer: {
+        identity_type: row.customerIdentityType ?? null,
+        identity_number: row.customerIdentityNumber ?? null,
+        name: row.customerName ?? null,
+      },
+      currency: row.currency ?? null,
+      totals: (row.totals as Record<string, unknown> | null) ?? null,
       sunat_ticket: row.sunatTicket,
       sunat_code: row.sunatResponseCode,
+      sunat_message: row.sunatResponseMessage ?? null,
       summary_status: resolveSummaryStatus(row),
+      error: redactDocumentError(row.error),
       links: {
         self: `/v1/documents/${id}`,
         xml: `/v1/documents/${id}/xml`,
@@ -65,6 +110,78 @@ export class DocumentsService {
       },
       created_at: row.createdAt,
       updated_at: row.updatedAt,
+    };
+  }
+
+  async list(
+    organizationId: string,
+    filters: DocumentListFilters = {},
+  ): Promise<DocumentListResult> {
+    const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
+    const conditions = [eq(documents.organizationId, organizationId)];
+
+    if (filters.companyId) {
+      conditions.push(eq(documents.companyId, filters.companyId));
+    }
+    if (filters.documentType) {
+      conditions.push(eq(documents.documentType, filters.documentType));
+    }
+    if (filters.status) {
+      conditions.push(eq(documents.status, filters.status));
+    }
+    if (filters.dateFrom) {
+      conditions.push(gte(documents.issueDate, filters.dateFrom));
+    }
+    if (filters.dateTo) {
+      conditions.push(lte(documents.issueDate, filters.dateTo));
+    }
+    if (filters.serieNumber?.trim()) {
+      conditions.push(
+        ilike(documents.serieNumber, `%${filters.serieNumber.trim()}%`),
+      );
+    }
+
+    if (filters.cursor) {
+      const cursorRows = await this.db
+        .select({
+          id: documents.id,
+          createdAt: documents.createdAt,
+        })
+        .from(documents)
+        .where(
+          and(
+            eq(documents.id, filters.cursor),
+            eq(documents.organizationId, organizationId),
+          ),
+        )
+        .limit(1);
+      const cursorRow = cursorRows[0];
+      if (cursorRow) {
+        conditions.push(
+          or(
+            lt(documents.createdAt, cursorRow.createdAt),
+            and(
+              eq(documents.createdAt, cursorRow.createdAt),
+              lt(documents.id, cursorRow.id),
+            ),
+          )!,
+        );
+      }
+    }
+
+    const rows = await this.db
+      .select()
+      .from(documents)
+      .where(and(...conditions))
+      .orderBy(desc(documents.createdAt), desc(documents.id))
+      .limit(limit + 1);
+
+    const page = rows.slice(0, limit);
+    const next = rows.length > limit ? (page[page.length - 1]?.id ?? null) : null;
+
+    return {
+      items: page.map((r) => this.toPublic(r)),
+      next_cursor: next,
     };
   }
 
@@ -405,4 +522,17 @@ function resolveSummaryStatus(
     return "pending";
   }
   return null;
+}
+
+function redactDocumentError(
+  raw: unknown,
+): DocumentPublicError | null {
+  if (!raw || typeof raw !== "object") return null;
+  const err = raw as Record<string, unknown>;
+  const out: DocumentPublicError = {};
+  if (typeof err["code"] === "string") out.code = err["code"];
+  if (typeof err["message"] === "string") out.message = err["message"];
+  if (typeof err["sunat_code"] === "string") out.sunat_code = err["sunat_code"];
+  if (Array.isArray(err["details"])) out.details = err["details"];
+  return Object.keys(out).length > 0 ? out : null;
 }

@@ -1,0 +1,432 @@
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+import type { Company, DocumentSeries } from "@/modules/companies/types";
+import { Input } from "@/shared/ui/components/input";
+import { Label } from "@/shared/ui/components/label";
+import { Select } from "@/shared/ui/components/select";
+import { Button } from "@/shared/ui/components/button";
+
+import { fetchSeries } from "../../api";
+import type { CustomerInput, InvoiceLineInput } from "../../types";
+
+export interface CommonHeaderState {
+  company_id: string;
+  serie: string;
+  number: string;
+  operation_type: string;
+  issue_date: string;
+  issue_time: string;
+  due_date: string;
+  currency: string;
+  totals_mode: "auto" | "strict";
+  purchase_order: string;
+  idempotency_key: string;
+}
+
+export function emptyHeader(idempotencyKey: string): CommonHeaderState {
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    company_id: "",
+    serie: "",
+    number: "",
+    operation_type: "0101",
+    issue_date: today,
+    issue_time: "",
+    due_date: "",
+    currency: "PEN",
+    totals_mode: "auto",
+    purchase_order: "",
+    idempotency_key: idempotencyKey,
+  };
+}
+
+export function emptyCustomer(): CustomerInput {
+  return {
+    identity_type: "6",
+    identity_number: "",
+    name: "",
+    email: "",
+  };
+}
+
+export function emptyLine(id = 1): InvoiceLineInput {
+  return {
+    id,
+    quantity: 1,
+    unit_code: "NIU",
+    description: "",
+    unit_value: 0,
+    unit_price: undefined,
+    tax_affectation: "10",
+    igv_percent: 18,
+    tax_scheme_id: "1000",
+  };
+}
+
+export function HeaderStep({
+  value,
+  onChange,
+  companies,
+  documentType,
+  seriePrefix,
+  showOperationType = true,
+  extra,
+}: {
+  value: CommonHeaderState;
+  onChange: (next: CommonHeaderState) => void;
+  companies: Company[];
+  documentType: string;
+  seriePrefix?: RegExp;
+  showOperationType?: boolean;
+  extra?: React.ReactNode;
+}) {
+  const seriesQuery = useQuery({
+    queryKey: ["series", value.company_id],
+    queryFn: () => fetchSeries(value.company_id),
+    enabled: Boolean(value.company_id),
+  });
+
+  const series = (seriesQuery.data ?? []).filter((s: DocumentSeries) => {
+    if (s.documentType !== documentType || !s.isActive) return false;
+    if (seriePrefix && !seriePrefix.test(s.serie)) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!value.serie && series[0]) {
+      onChange({ ...value, serie: series[0].serie });
+    }
+  }, [series, value, onChange]);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Empresa</Label>
+        <Select
+          value={value.company_id}
+          onChange={(e) =>
+            onChange({ ...value, company_id: e.target.value, serie: "" })
+          }
+        >
+          <option value="">Seleccionar…</option>
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.ruc} — {c.legal_name} ({c.environment})
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Serie</Label>
+        <Select
+          value={value.serie}
+          onChange={(e) => onChange({ ...value, serie: e.target.value })}
+          disabled={!value.company_id}
+        >
+          <option value="">Seleccionar…</option>
+          {series.map((s) => (
+            <option key={s.id} value={s.serie}>
+              {s.serie} (next {s.nextNumber})
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Número (opcional)</Label>
+        <Input
+          type="number"
+          min={1}
+          value={value.number}
+          onChange={(e) => onChange({ ...value, number: e.target.value })}
+        />
+      </div>
+      {showOperationType ? (
+        <div className="space-y-1.5">
+          <Label>Tipo de operación</Label>
+          <Input
+            value={value.operation_type}
+            onChange={(e) =>
+              onChange({ ...value, operation_type: e.target.value })
+            }
+            maxLength={4}
+          />
+        </div>
+      ) : null}
+      <div className="space-y-1.5">
+        <Label>Fecha emisión</Label>
+        <Input
+          type="date"
+          value={value.issue_date}
+          onChange={(e) => onChange({ ...value, issue_date: e.target.value })}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Hora (opcional)</Label>
+        <Input
+          type="time"
+          step={1}
+          value={value.issue_time}
+          onChange={(e) => onChange({ ...value, issue_time: e.target.value })}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Moneda</Label>
+        <Select
+          value={value.currency}
+          onChange={(e) => onChange({ ...value, currency: e.target.value })}
+        >
+          <option value="PEN">PEN</option>
+          <option value="USD">USD</option>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Totals mode</Label>
+        <Select
+          value={value.totals_mode}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              totals_mode: e.target.value as "auto" | "strict",
+            })
+          }
+        >
+          <option value="auto">auto</option>
+          <option value="strict">strict</option>
+        </Select>
+      </div>
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Idempotency-Key</Label>
+        <div className="flex gap-2">
+          <Input readOnly value={value.idempotency_key} className="font-mono" />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              void navigator.clipboard.writeText(value.idempotency_key)
+            }
+          >
+            Copiar
+          </Button>
+        </div>
+      </div>
+      {extra}
+    </div>
+  );
+}
+
+export function CustomerStep({
+  value,
+  onChange,
+  identityHint,
+}: {
+  value: CustomerInput;
+  onChange: (next: CustomerInput) => void;
+  identityHint?: string;
+}) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-1.5">
+        <Label>Tipo doc. identidad</Label>
+        <Select
+          value={value.identity_type}
+          onChange={(e) =>
+            onChange({ ...value, identity_type: e.target.value })
+          }
+        >
+          <option value="6">6 RUC</option>
+          <option value="1">1 DNI</option>
+          <option value="4">4 Carnet extranjería</option>
+          <option value="0">0 DOC.TRIB.NO.DOM.SIN.RUC</option>
+        </Select>
+        {identityHint ? (
+          <p className="text-xs text-[var(--muted-foreground)]">{identityHint}</p>
+        ) : null}
+      </div>
+      <div className="space-y-1.5">
+        <Label>Número</Label>
+        <Input
+          value={value.identity_number}
+          onChange={(e) =>
+            onChange({ ...value, identity_number: e.target.value })
+          }
+        />
+      </div>
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Nombre / Razón social</Label>
+        <Input
+          value={value.name}
+          onChange={(e) => onChange({ ...value, name: e.target.value })}
+        />
+      </div>
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Email (opcional)</Label>
+        <Input
+          type="email"
+          value={value.email ?? ""}
+          onChange={(e) => onChange({ ...value, email: e.target.value })}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function LinesStep({
+  lines,
+  onChange,
+}: {
+  lines: InvoiceLineInput[];
+  onChange: (next: InvoiceLineInput[]) => void;
+}) {
+  function update(i: number, patch: Partial<InvoiceLineInput>) {
+    onChange(lines.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
+  }
+
+  return (
+    <div className="space-y-4">
+      {lines.map((line, i) => (
+        <div
+          key={line.id}
+          className="grid gap-3 rounded-md border border-[var(--border)] p-3 sm:grid-cols-2"
+        >
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Descripción</Label>
+            <Input
+              value={line.description}
+              onChange={(e) => update(i, { description: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Cantidad</Label>
+            <Input
+              type="number"
+              min={0.0001}
+              step="any"
+              value={line.quantity}
+              onChange={(e) =>
+                update(i, { quantity: Number(e.target.value) || 0 })
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Unidad</Label>
+            <Input
+              value={line.unit_code}
+              onChange={(e) => update(i, { unit_code: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Valor unitario</Label>
+            <Input
+              type="number"
+              step="any"
+              value={line.unit_value}
+              onChange={(e) =>
+                update(i, { unit_value: Number(e.target.value) || 0 })
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Precio unitario (opc.)</Label>
+            <Input
+              type="number"
+              step="any"
+              value={line.unit_price ?? ""}
+              onChange={(e) =>
+                update(i, {
+                  unit_price: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Afectación IGV</Label>
+            <Select
+              value={line.tax_affectation}
+              onChange={(e) => update(i, { tax_affectation: e.target.value })}
+            >
+              <option value="10">10 Gravado</option>
+              <option value="20">20 Exonerado</option>
+              <option value="30">30 Inafecto</option>
+              <option value="40">40 Exportación</option>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>% IGV</Label>
+            <Input
+              type="number"
+              value={line.igv_percent ?? ""}
+              onChange={(e) =>
+                update(i, {
+                  igv_percent: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                })
+              }
+            />
+          </div>
+          {lines.length > 1 ? (
+            <div className="sm:col-span-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange(lines.filter((_, idx) => idx !== i))}
+              >
+                Quitar línea
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() =>
+          onChange([
+            ...lines,
+            emptyLine(Math.max(...lines.map((l) => l.id), 0) + 1),
+          ])
+        }
+      >
+        Agregar línea
+      </Button>
+    </div>
+  );
+}
+
+export function ReviewStep({
+  payload,
+  error,
+}: {
+  payload: unknown;
+  error?: string | null;
+}) {
+  const [copied, setCopied] = useState(false);
+  const json = JSON.stringify(payload, null, 2);
+
+  return (
+    <div className="space-y-3">
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            void navigator.clipboard.writeText(json);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? "Copiado" : "Copiar JSON"}
+        </Button>
+      </div>
+      <pre className="max-h-96 overflow-auto rounded-md bg-[var(--muted)] p-3 text-xs">
+        {json}
+      </pre>
+    </div>
+  );
+}

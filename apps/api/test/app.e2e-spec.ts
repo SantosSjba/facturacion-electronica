@@ -1443,4 +1443,100 @@ describe("API e2e", () => {
       }
     }
   });
+
+  it("JWT owner can list documents and emit invoice (S11-DOC dual auth)", async () => {
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const hasF001 = (
+      seriesList.body as { serie: string; documentType: string }[]
+    ).some((s) => s.serie === "F001" && s.documentType === "01");
+    if (!hasF001) {
+      await request(server)
+        .post(`/companies/${companyId}/series`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ document_type: "01", serie: "F001", next_number: 1 })
+        .expect(201);
+    }
+
+    const listed = await request(server)
+      .get("/v1/documents")
+      .query({ company_id: companyId, limit: 10 })
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(Array.isArray(listed.body.items)).toBe(true);
+    expect(listed.body).toHaveProperty("next_cursor");
+
+    const invoiceBody = {
+      company_id: companyId,
+      serie: "F001",
+      operation_type: "0101",
+      issue_date: "2026-09-17",
+      currency: "PEN",
+      totals_mode: "auto",
+      customer: {
+        identity_type: "6",
+        identity_number: "20123456789",
+        name: "JWT Emit Co",
+      },
+      lines: [
+        {
+          id: 1,
+          quantity: 1,
+          unit_code: "NIU",
+          description: "JWT smoke line",
+          unit_value: 50,
+          unit_price: 59,
+          tax_affectation: "10",
+          igv_percent: 18,
+          tax_scheme_id: "1000",
+        },
+      ],
+    };
+
+    const created = await request(server)
+      .post("/v1/invoices")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Idempotency-Key", `jwt-inv-${Date.now()}`)
+      .send(invoiceBody)
+      .expect(201);
+    expect(created.body.id).toBeTruthy();
+    expect(created.body.environment).toBeTruthy();
+    expect(created.body.customer).toMatchObject({ name: "JWT Emit Co" });
+
+    let status = created.body.status as string;
+    for (
+      let i = 0;
+      i < 40 &&
+      !["accepted", "accepted_with_observation", "rejected", "failed", "cancelled"].includes(
+        status,
+      );
+      i++
+    ) {
+      await new Promise((r) => setTimeout(r, 250));
+      const got = await request(server)
+        .get(`/v1/documents/${created.body.id}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      status = got.body.status as string;
+    }
+    expect([
+      "accepted",
+      "accepted_with_observation",
+      "queued",
+      "sent",
+      "ticket_pending",
+    ]).toContain(status);
+  });
 });

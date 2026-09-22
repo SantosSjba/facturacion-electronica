@@ -16,7 +16,16 @@ import {
   ValidationsStub,
   WebhooksStub,
 } from "@/modules/developers/pages/DevelopersStubs";
-import { DocumentsStub } from "@/modules/documents/pages/DocumentsStub";
+import { DailySummaryFormPage } from "@/modules/documents/pages/DailySummaryFormPage";
+import { DocumentDetailPage } from "@/modules/documents/pages/DocumentDetailPage";
+import { DocumentsListPage } from "@/modules/documents/pages/DocumentsListPage";
+import { InvoiceWizardPage } from "@/modules/documents/pages/InvoiceWizardPage";
+import {
+  CreditNoteWizardPage,
+  DebitNoteWizardPage,
+} from "@/modules/documents/pages/NoteWizardPages";
+import { ReceiptWizardPage } from "@/modules/documents/pages/ReceiptWizardPage";
+import { VoidedDocumentFormPage } from "@/modules/documents/pages/VoidedDocumentFormPage";
 import { GreStub } from "@/modules/gre/pages/GreStub";
 import { PermissionsMatrixPage } from "@/modules/users/pages/PermissionsMatrixPage";
 import { UserDetailPage } from "@/modules/users/pages/UserDetailPage";
@@ -66,7 +75,32 @@ export function AppRouter() {
                 element={<PermissionsMatrixPage />}
               />
               <Route path="users/:id" element={<UserDetailPage />} />
-              <Route path="documents" element={<DocumentsStub />} />
+              <Route path="documents" element={<DocumentsListPage />} />
+              <Route
+                path="documents/emit/invoice"
+                element={<InvoiceWizardPage />}
+              />
+              <Route
+                path="documents/emit/receipt"
+                element={<ReceiptWizardPage />}
+              />
+              <Route
+                path="documents/emit/credit-note"
+                element={<CreditNoteWizardPage />}
+              />
+              <Route
+                path="documents/emit/debit-note"
+                element={<DebitNoteWizardPage />}
+              />
+              <Route
+                path="documents/emit/voided"
+                element={<VoidedDocumentFormPage />}
+              />
+              <Route
+                path="documents/emit/daily-summary"
+                element={<DailySummaryFormPage />}
+              />
+              <Route path="documents/:id" element={<DocumentDetailPage />} />
               <Route path="gre" element={<GreStub />} />
               <Route path="developers/api-keys" element={<ApiKeysStub />} />
               <Route path="developers/webhooks" element={<WebhooksStub />} />

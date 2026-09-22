@@ -48,8 +48,8 @@ export class ReceiptsController {
     @Body(new ZodValidationPipe(receiptCreateSchema, 422)) body: ReceiptCreate,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (auth.kind !== "api_key") {
-      throw AppError.forbidden("API key required");
+    if (auth.kind !== "api_key" && auth.kind !== "user") {
+      throw AppError.unauthorized();
     }
     if (!key) {
       throw AppError.validation(
