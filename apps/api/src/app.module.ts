@@ -11,6 +11,7 @@ import { ObjectStorageModule } from "./infrastructure/storage/object-storage.mod
 import { AuthModule } from "./interfaces/http/auth/auth.module";
 import { CompaniesModule } from "./interfaces/http/companies/companies.module";
 import { AppExceptionFilter } from "./interfaces/http/filters/app-exception.filter";
+import { MetaModule } from "./interfaces/http/meta/meta.module";
 import { HealthModule } from "./interfaces/http/health/health.module";
 import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.middleware";
 import { DocumentsModule } from "./interfaces/http/v1/documents.module";
@@ -31,6 +32,7 @@ import { ValidationsModule } from "./interfaces/http/v1/validations.module";
     DocumentsModule,
     WebhooksModule,
     ValidationsModule,
+    MetaModule,
     HealthModule,
   ],
   controllers: [],

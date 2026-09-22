@@ -1370,6 +1370,7 @@ describe("API e2e", () => {
     const pdfBuf = pdf.body as Buffer;
     expect(pdfBuf.subarray(0, 5).toString("utf8")).toBe("%PDF-");
 
+    const uniqueNumber = `accepted-${Date.now()}`;
     const val1 = await request(server)
       .post("/v1/validations/cpe")
       .set("Authorization", `Bearer ${secret}`)
@@ -1377,8 +1378,8 @@ describe("API e2e", () => {
         company_id: companyId,
         ruc: "20123456789",
         document_type: "01",
-        serie: "VALID",
-        number: "1",
+        serie: "F001",
+        number: uniqueNumber,
         issue_date: "2026-09-17",
         total_amount: 118.0,
       })
@@ -1394,12 +1395,52 @@ describe("API e2e", () => {
         company_id: companyId,
         ruc: "20123456789",
         document_type: "01",
-        serie: "VALID",
-        number: "1",
+        serie: "F001",
+        number: uniqueNumber,
         issue_date: "2026-09-17",
         total_amount: 118.0,
       })
       .expect(200);
     expect(val2.body.cached).toBe(true);
+  });
+
+  it("S9: GET /meta/ruleset is public and returns pinned ruleset", async () => {
+    const res = await request(server).get("/meta/ruleset").expect(200);
+    expect(res.body.ruleset_version).toBe("2026-08-26");
+    expect(res.body.source_sha256).toBeTruthy();
+    expect(res.body.default_for.sandbox.ruleset).toBe("2026-08-26");
+    expect(res.body.supported.ruleset).toContain("2026-08-26");
+  });
+
+  it("S9: typed AppErrorCode matrix is stable for integrators", async () => {
+    const cases: {
+      code: string;
+      status: number;
+      retryable?: boolean;
+    }[] = [
+      { code: "FACTOSYS_VALIDATION", status: 400, retryable: false },
+      { code: "FACTOSYS_UNAUTHORIZED", status: 401 },
+      { code: "FACTOSYS_FORBIDDEN", status: 403 },
+      { code: "FACTOSYS_NOT_FOUND", status: 404 },
+      { code: "FACTOSYS_CONFLICT", status: 409 },
+      { code: "FACTOSYS_IDEMPOTENCY_CONFLICT", status: 409 },
+      { code: "FACTOSYS_RATE_LIMITED", status: 429, retryable: true },
+      { code: "FACTOSYS_SUNAT_REJECTED", status: 422, retryable: false },
+      { code: "FACTOSYS_HTTP", status: 502, retryable: true },
+      { code: "FACTOSYS_INTERNAL", status: 500, retryable: true },
+    ];
+
+    for (const [i, c] of cases.entries()) {
+      const rid = `aaaaaaaa-bbbb-cccc-dddd-${String(i).padStart(12, "0")}`;
+      const res = await request(server)
+        .get(`/__test/errors/${c.code}`)
+        .set("x-request-id", rid)
+        .expect(c.status);
+      expect(res.body.code).toBe(c.code);
+      expect(res.body.request_id).toBe(rid);
+      if (c.retryable !== undefined) {
+        expect(res.body.retryable).toBe(c.retryable);
+      }
+    }
   });
 });

@@ -3,7 +3,15 @@ import { uuidv7 } from "uuidv7";
 export { createDb, createSqlClient, type Db, type SqlClient } from "./client";
 export { DB } from "./tokens";
 export * from "./schema";
-export { seedDemo, DEMO_ORG_SLUG, DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD } from "./seeds/demo";
+export {
+  seedDemo,
+  DEMO_ORG_SLUG,
+  DEMO_OWNER_EMAIL,
+  DEMO_OWNER_PASSWORD,
+  RULESET_VERSION,
+  RULESET_SHA256,
+  RULESET_ARTIFACT,
+} from "./seeds/demo";
 export {
   seedRbacMatrix,
   PERMISSION_CODES,

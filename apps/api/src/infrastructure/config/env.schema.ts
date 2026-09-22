@@ -50,6 +50,8 @@ export const envSchema = z.object({
     .string()
     .url()
     .default("https://api-cpe.sunat.gob.pe"),
+  OTEL_ENABLED: z.enum(["0", "1"]).default("0"),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
   CREDENTIALS_MASTER_KEY: z
     .string()
     .min(1)

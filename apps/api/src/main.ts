@@ -7,8 +7,11 @@ import { Logger } from "nestjs-pino";
 
 import { AppModule } from "./app.module";
 import type { Env } from "./infrastructure/config/env.schema";
+import { startOtelIfEnabled } from "./infrastructure/observability/otel";
 
 async function bootstrap(): Promise<void> {
+  await startOtelIfEnabled();
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
@@ -22,9 +25,9 @@ async function bootstrap(): Promise<void> {
     const swaggerConfig = new DocumentBuilder()
       .setTitle("Factosys API")
       .setDescription(
-        "Electronic invoicing API — CPE + GRE + Webhooks + PDF RI + Validez CPE (S8)",
+        "Electronic invoicing API — CPE + GRE + Webhooks + PDF + Validez + Meta ruleset (S9)",
       )
-      .setVersion("0.6.0")
+      .setVersion("0.7.0")
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);

@@ -11,6 +11,7 @@ import type { DocumentStatus } from "@factosys/domain";
 
 import type { Env } from "../config/env.schema";
 import type { QueueJobData } from "../queues/queue.tokens";
+import { withSpan } from "../observability/otel";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 import { CredentialsResolver } from "../documents/credentials-resolver";
 import { DocumentsService } from "../documents/documents.service";
@@ -37,6 +38,22 @@ export class SunatSendProcessor {
       throw new Error("sunat-send job missing documentId");
     }
 
+    return withSpan(
+      "sunat.send",
+      {
+        "factosys.document_id": documentId,
+        "factosys.organization_id": organizationId,
+        "factosys.company_id": companyId,
+      },
+      async () => this.processInner(organizationId, companyId, documentId),
+    );
+  }
+
+  private async processInner(
+    organizationId: string,
+    companyId: string,
+    documentId: string,
+  ): Promise<{ ok: true; status: string }> {
     const doc = await this.documents.getById(organizationId, documentId);
     if (doc.status !== "queued") {
       this.logger.warn(

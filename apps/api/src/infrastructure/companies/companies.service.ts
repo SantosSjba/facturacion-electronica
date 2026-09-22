@@ -174,7 +174,7 @@ export class CompaniesService {
       trade_name: row.tradeName,
       environment: row.environment,
       address: row.address,
-      catalog_pin: row.catalogPin,
+      catalog_pin: (row.catalogPin ?? {}) as Record<string, string>,
       timezone: row.timezone,
       created_at: row.createdAt,
       updated_at: row.updatedAt,

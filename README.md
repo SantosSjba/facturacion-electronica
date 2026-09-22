@@ -52,6 +52,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
 | `pnpm db:migrate` / `db:migrate:down` / `db:seed` | Postgres schema + seeds (`@factosys/db`) |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
+| `pnpm demo:api-mvp`                 | Demo Fake: ruleset → invoice → PDF (`scripts/demo-api-mvp.mjs`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
 | `pnpm spike:sendbill`               | Spike C — SendBill fake/beta (`tmp/spikes/sendbill/`) |
@@ -71,6 +72,7 @@ apps/
 packages/
   shared/               # @factosys/shared — AppError, Result
   domain/               # @factosys/domain — DocumentStatus, VOs
+  sdk/                  # @factosys/sdk — cliente TS mínimo (S9)
   sunat-ubl/            # Spike B — Invoice UBL unsigned builder
   sunat-sign/           # Spike A — XMLDSig (xml-crypto)
   sunat-soap/           # Spike C — SendBill (Fake + SOAP UsernameToken)
@@ -102,6 +104,9 @@ docker-compose.yml      # Postgres 16 (:5433), Redis 7, MinIO (S0-DEV)
 | `packages/sunat-validation` | `@factosys/sunat-validation` | Gate XSD + Excel P0                  |
 | `packages/sunat-catalogs`   | `@factosys/sunat-catalogs`   | Catálogos JSON (`CatalogPort`)       |
 | `packages/sunat-gre`        | `@factosys/sunat-gre`        | Stub GRE                             |
-| `packages/pdf-ri`           | `@factosys/pdf-ri`           | Stub PDF RI                          |
+| `packages/pdf-ri`           | `@factosys/pdf-ri`           | RI PDF Fake/Playwright (S8)          |
+| `packages/sdk`              | `@factosys/sdk`              | Cliente TS mínimo (S9)               |
+
+Checklist sandbox/beta: [`docs/checklist-sandbox-beta.md`](docs/checklist-sandbox-beta.md).
 
 Importar siempre por nombre de workspace (`@factosys/...`), no por path relativo entre packages.

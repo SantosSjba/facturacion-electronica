@@ -23,7 +23,8 @@
     "db:generate": "pnpm --filter @factosys/db generate",
     "db:migrate": "pnpm --filter @factosys/db migrate",
     "db:migrate:down": "pnpm --filter @factosys/db migrate:down",
-    "db:seed": "pnpm --filter @factosys/db seed"
+    "db:seed": "pnpm --filter @factosys/db seed",
+    "demo:api-mvp": "tsx ./scripts/demo-api-mvp.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
