@@ -19,7 +19,11 @@
     "sunat:unpack-schemas": "pnpm --filter @factosys/sunat-validation unpack-schemas",
     "sunat:unpack-xsl": "pnpm --filter @factosys/sunat-validation unpack-xsl",
     "validate:xml": "tsx ./packages/sunat-validation/scripts/validate-xml.ts",
-    "validate:xsl": "node ./packages/sunat-validation/scripts/validate-xsl.mjs"
+    "validate:xsl": "node ./packages/sunat-validation/scripts/validate-xsl.mjs",
+    "db:generate": "pnpm --filter @factosys/db generate",
+    "db:migrate": "pnpm --filter @factosys/db migrate",
+    "db:migrate:down": "pnpm --filter @factosys/db migrate:down",
+    "db:seed": "pnpm --filter @factosys/db seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,38 @@
+{
+  "name": "@factosys/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Postgres schema, migrations and client (Drizzle)",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "drizzle"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "generate": "drizzle-kit generate",
+    "migrate": "node ./scripts/migrate.mjs",
+    "migrate:down": "node ./scripts/migrate-down.mjs",
+    "seed": "node ./scripts/seed.mjs",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.5",
+    "postgres": "^3.4.7",
+    "uuidv7": "^1.0.2"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "vitest": "^5.0.1"
+  }
+}

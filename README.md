@@ -27,15 +27,18 @@ cp .env.example .env
 
 # Infra local (credenciales de desarrollo en compose — no usar en producción)
 docker compose up -d
-docker compose ps   # postgres :5432, redis :6379, minio :9000 / console :9001
+docker compose ps   # postgres :5433, redis :6379, minio :9000 / console :9001
+
+pnpm db:migrate
+pnpm db:seed
 
 pnpm dev:api
 # GET http://localhost:3000/health
-# GET http://localhost:3000/ready
+# GET http://localhost:3000/ready  → database: "up"
 ```
 
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
-`DATABASE_URL`, `REDIS_URL` y `MINIO_*` en `.env.example` apuntan al compose; Nest aún no los consume (wiring en sprints posteriores).
+`DATABASE_URL` (Postgres en host **5433**), `REDIS_URL` y `MINIO_*` en `.env.example` apuntan al compose. Nest valida `DATABASE_URL` y `/ready` hace ping a Postgres.
 
 ### Contrato del monorepo
 
@@ -45,6 +48,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm test`                         | Turbo: Vitest unit + e2e API               |
 | `pnpm lint`                         | ESLint flat en el monorepo                 |
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
+| `pnpm db:migrate` / `db:migrate:down` / `db:seed` | Postgres schema + seeds (`@factosys/db`) |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
@@ -72,7 +76,8 @@ packages/
   sunat-catalogs/       # S2-VAL — JSON catalogs
   sunat-gre/            # stub — GRE REST
   pdf-ri/               # stub — PDF RI
-docker-compose.yml      # Postgres 16, Redis 7, MinIO (S0-DEV)
+  db/                   # @factosys/db — Drizzle schema + migrations + seeds
+docker-compose.yml      # Postgres 16 (:5433), Redis 7, MinIO (S0-DEV)
 .github/workflows/ci.yml
 .github/workflows/xsl-nightly.yml
 ```

@@ -13,12 +13,28 @@ concurrency:
 env:
   NODE_VERSION: "20"
   PNPM_VERSION: "10.12.1"
+  DATABASE_URL: postgresql://factosys:factosys@localhost:5432/factosys
 
 jobs:
   lint-test-build:
-    name: lint · test · build · xsd+excel-gate
+    name: lint · test · build · xsd+excel-gate · db-migrate
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: factosys
+          POSTGRES_PASSWORD: factosys
+          POSTGRES_DB: factosys
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U factosys -d factosys"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout
@@ -50,11 +66,18 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
-
       - name: Build
         run: pnpm build
+
+      - name: DB migrate up → down → up
+        run: |
+          pnpm db:migrate
+          pnpm db:migrate:down
+          pnpm db:migrate
+          pnpm db:seed
+
+      - name: Test
+        run: pnpm test
 
       - name: XSD + Excel P0 gate (golden Invoice 01)
         run: pnpm validate:xml --type=01 --stages=xsd,excel packages/sunat-ubl/testdata/golden/01-invoice-gravada.unsigned.xml

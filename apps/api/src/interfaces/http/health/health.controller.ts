@@ -1,16 +1,21 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Inject, ServiceUnavailableException } from "@nestjs/common";
 import {
   HealthCheck,
   HealthCheckService,
   type HealthCheckResult,
   MemoryHealthIndicator,
 } from "@nestjs/terminus";
+import { sql } from "drizzle-orm";
+import type { Db } from "@factosys/db";
+
+import { DB } from "../../../infrastructure/persistence/db.tokens";
 
 @Controller()
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly memory: MemoryHealthIndicator,
+    @Inject(DB) private readonly db: Db,
   ) {}
 
   /** Liveness: process is up. */
@@ -21,15 +26,22 @@ export class HealthController {
   }
 
   /**
-   * Readiness stub (S0): no Postgres/Redis yet.
-   * Returns 200 JSON so orchestrators can probe the route.
+   * Readiness: Postgres reachable (S3-DB). Redis still deferred to S3-INFRA.
    */
   @Get("ready")
-  ready(): { status: "ok"; checks: Record<string, string> } {
+  async ready(): Promise<{ status: "ok"; checks: Record<string, string> }> {
+    try {
+      await this.db.execute(sql`select 1`);
+    } catch {
+      throw new ServiceUnavailableException({
+        status: "error",
+        checks: { database: "down", redis: "skipped" },
+      });
+    }
     return {
       status: "ok",
       checks: {
-        database: "skipped",
+        database: "up",
         redis: "skipped",
       },
     };

@@ -35,11 +35,11 @@ describe("API e2e", () => {
     expect(res.body).toMatchObject({ status: "ok" });
   });
 
-  it("GET /ready returns stub 200 JSON", async () => {
+  it("GET /ready returns 200 when database is up", async () => {
     const res = await request(server).get("/ready").expect(200);
     expect(res.body).toEqual({
       status: "ok",
-      checks: { database: "skipped", redis: "skipped" },
+      checks: { database: "up", redis: "skipped" },
     });
   });
 

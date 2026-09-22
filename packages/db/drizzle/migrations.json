@@ -1,0 +1,9 @@
+[
+  {
+    "id": "0001_core_tables",
+    "when": 1,
+    "tag": "core_tables",
+    "up": "0001_core_tables.sql",
+    "down": "0001_core_tables.down.sql"
+  }
+]
