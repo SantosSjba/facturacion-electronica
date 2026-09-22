@@ -100,7 +100,90 @@ importers:
         specifier: ^5.0.1
         version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
 
+  packages/domain:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/pdf-ri:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
   packages/shared: {}
+
+  packages/sunat-catalogs:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/sunat-gre:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/sunat-sign:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/sunat-soap:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/sunat-ubl:
+    dependencies:
+      '@factosys/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
+
+  packages/sunat-validation:
+    dependencies:
+      '@factosys/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(vite@8.3.0(@types/node@26.6.2)(terser@5.51.2))
 
 packages:
 

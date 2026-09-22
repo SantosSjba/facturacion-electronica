@@ -17,3 +17,11 @@ export function ok<T>(value: T): ResultOk<T> {
 export function err<E>(error: E): ResultErr<E> {
   return { ok: false, error };
 }
+
+export function isOk<T, E>(result: Result<T, E>): result is ResultOk<T> {
+  return result.ok;
+}
+
+export function isErr<T, E>(result: Result<T, E>): result is ResultErr<E> {
+  return !result.ok;
+}

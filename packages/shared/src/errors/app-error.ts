@@ -1,3 +1,5 @@
+import { AppErrorCode } from "./app-error-code";
+
 export type ErrorStage =
   "request" | "prevalidation" | "sign" | "transport" | "sunat_cdr" | "webhook";
 
@@ -43,5 +45,45 @@ export class AppError extends Error {
     this.sunatCode = params.sunatCode;
     this.sunatMessage = params.sunatMessage;
     this.rulesetVersion = params.rulesetVersion;
+  }
+
+  static validation(
+    message: string,
+    details?: AppErrorDetail[],
+    extras?: Omit<AppErrorParams, "code" | "message" | "details" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      stage: "request",
+      ...extras,
+      code: AppErrorCode.VALIDATION,
+      message,
+      httpStatus: 400,
+      details,
+    });
+  }
+
+  static notFound(
+    message: string,
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus">,
+  ): AppError {
+    return new AppError({
+      ...extras,
+      code: AppErrorCode.NOT_FOUND,
+      message,
+      httpStatus: 404,
+    });
+  }
+
+  static internal(
+    message: string,
+    extras?: Omit<AppErrorParams, "code" | "message" | "httpStatus" | "retryable">,
+  ): AppError {
+    return new AppError({
+      ...extras,
+      code: AppErrorCode.INTERNAL,
+      message,
+      httpStatus: 500,
+      retryable: true,
+    });
   }
 }

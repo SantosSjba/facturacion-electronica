@@ -1,0 +1,30 @@
+{
+  "name": "@factosys/sunat-gre",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GRE REST client (post-MVP CPE spike)",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
+  },
+  "dependencies": {
+    "@factosys/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
+  }
+}

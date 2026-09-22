@@ -22,7 +22,7 @@ cp .env.example .env
 
 | Script                              | Descripción                                |
 | ----------------------------------- | ------------------------------------------ |
-| `pnpm build`                        | Turbo: compila packages + API (`dist/`)    |
+| `pnpm build`                        | Turbo: compila todos los packages + API    |
 | `pnpm test`                         | Turbo: Vitest unit + e2e API               |
 | `pnpm lint`                         | ESLint flat en el monorepo                 |
 | `pnpm format` / `pnpm format:check` | Formatea / verifica con Prettier           |
@@ -30,8 +30,6 @@ cp .env.example .env
 | `pnpm spike:sign`                   | Stub — spike firma XML (S1)                |
 | `pnpm spike:ubl`                    | Stub — spike constructor Invoice UBL (S1)  |
 | `pnpm spike:sendbill`               | Stub — spike SendBill SOAP (S2)            |
-
-Los stubs `spike:*` salen con código ≠ 0 hasta S1–S2.
 
 ## API local
 
@@ -45,18 +43,34 @@ pnpm dev:api
 
 ```
 apps/
-  api/                # @factosys/api — NestJS clean architecture
+  api/                  # @factosys/api — NestJS clean architecture
 packages/
-  shared/             # @factosys/shared — AppError, Result, primitives
+  shared/               # @factosys/shared — AppError, Result
+  domain/               # @factosys/domain — DocumentStatus, VOs
+  sunat-ubl/            # stub — UBL builders
+  sunat-sign/           # stub — XML signature
+  sunat-soap/           # stub — billService SOAP
+  sunat-validation/     # stub — XSD / rules
+  sunat-catalogs/       # stub — catalogs
+  sunat-gre/            # stub — GRE REST
+  pdf-ri/               # stub — PDF RI
 ```
 
-**Fuera de S0-API:** lógica SUNAT, packages `domain`/`sunat-*`, Docker/CI (S0-PKG / S0-DEV).
+**Fuera de S0-PKG:** lógica SUNAT real, Docker/CI (S0-DEV / S1+).
 
 ## Packages / apps
 
-| Path              | Nombre npm         | Rol                                                |
-| ----------------- | ------------------ | -------------------------------------------------- |
-| `apps/api`        | `@factosys/api`    | HTTP API NestJS (health, config Zod, Pino, filter) |
-| `packages/shared` | `@factosys/shared` | `AppError`, `Result`, utilidades                   |
+| Path                        | Nombre npm                   | Rol                                  |
+| --------------------------- | ---------------------------- | ------------------------------------ |
+| `apps/api`                  | `@factosys/api`              | HTTP API NestJS                      |
+| `packages/shared`           | `@factosys/shared`           | `AppError`, `AppErrorCode`, `Result` |
+| `packages/domain`           | `@factosys/domain`           | `DocumentStatus`, VOs (sin Nest)     |
+| `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Stub UBL builders                    |
+| `packages/sunat-sign`       | `@factosys/sunat-sign`       | Stub firma XML                       |
+| `packages/sunat-soap`       | `@factosys/sunat-soap`       | Stub SOAP                            |
+| `packages/sunat-validation` | `@factosys/sunat-validation` | Stub validación XSD                  |
+| `packages/sunat-catalogs`   | `@factosys/sunat-catalogs`   | Stub catálogos                       |
+| `packages/sunat-gre`        | `@factosys/sunat-gre`        | Stub GRE                             |
+| `packages/pdf-ri`           | `@factosys/pdf-ri`           | Stub PDF RI                          |
 
-Importar siempre por nombre de workspace (`@factosys/shared`), no por path relativo entre packages.
+Importar siempre por nombre de workspace (`@factosys/...`), no por path relativo entre packages.
