@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, Power, PowerOff } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
 import { Badge } from "@/shared/ui/components/badge";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
@@ -14,6 +19,7 @@ import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import { cn } from "@/shared/ui/utils";
 
 import { createSeries, fetchSeries, patchSeries } from "../../api";
 
@@ -100,20 +106,25 @@ export function SeriesTab() {
           <TBody>
             {rows.map((s) => (
               <TR key={s.id}>
-                <TD className="font-mono">{s.documentType}</TD>
-                <TD className="font-mono">{s.serie}</TD>
-                <TD>{s.nextNumber}</TD>
-                <TD>
+                <TD label="Tipo" className="font-mono">
+                  {s.documentType}
+                </TD>
+                <TD label="Serie" className="font-mono">
+                  {s.serie}
+                </TD>
+                <TD label="Next">{s.nextNumber}</TD>
+                <TD label="Activa">
                   <Badge variant={s.isActive ? "success" : "muted"}>
                     {s.isActive ? "sí" : "no"}
                   </Badge>
                 </TD>
-                <TD>
+                <TD actions>
                   {canWrite ? (
                     <Button
                       type="button"
-                      size="sm"
+                      size="icon-label-sm"
                       variant="outline"
+                      aria-label={s.isActive ? "Desactivar" : "Activar"}
                       disabled={toggleMutation.isPending}
                       onClick={() =>
                         toggleMutation.mutate({
@@ -122,7 +133,14 @@ export function SeriesTab() {
                         })
                       }
                     >
-                      {s.isActive ? "Desactivar" : "Activar"}
+                      {s.isActive ? (
+                        <PowerOff className={buttonIconClassName} />
+                      ) : (
+                        <Power className={buttonIconClassName} />
+                      )}
+                      <ButtonLabel>
+                        {s.isActive ? "Desactivar" : "Activar"}
+                      </ButtonLabel>
                     </Button>
                   ) : null}
                 </TD>
@@ -189,8 +207,20 @@ export function SeriesTab() {
             </div>
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creando…" : "Crear serie"}
+          <Button
+            type="submit"
+            size="icon-label"
+            aria-label="Crear serie"
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Plus className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {createMutation.isPending ? "Creando…" : "Crear serie"}
+            </ButtonLabel>
           </Button>
         </form>
       ) : null}

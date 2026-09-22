@@ -1,10 +1,16 @@
+import { X } from "lucide-react";
+
 import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
 } from "@/shared/ui/components/dialog";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Badge } from "@/shared/ui/components/badge";
 import { MutedText } from "@/shared/ui/components/muted-text";
 
@@ -67,8 +73,14 @@ export function AuditDetailDrawer({
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" onClick={onClose}>
-              Cerrar
+            <Button
+              type="button"
+              size="icon-label-sm"
+              aria-label="Cerrar"
+              onClick={onClose}
+            >
+              <X className={buttonIconClassName} />
+              <ButtonLabel>Cerrar</ButtonLabel>
             </Button>
           </DialogFooter>
         </>

@@ -28,12 +28,12 @@ export function UsersTable({ users }: { users: OrgUser[] }) {
       <TBody>
         {users.map((u) => (
           <TR key={u.id}>
-            <TD>
+            <TD label="Email">
               <TextLink to={`/users/${u.id}`}>{u.email}</TextLink>
             </TD>
-            <TD>{u.name}</TD>
-            <TD>
-              <div className="flex flex-wrap gap-1">
+            <TD label="Nombre">{u.name}</TD>
+            <TD label="Roles">
+              <div className="flex flex-wrap gap-1 max-md:justify-end">
                 {u.roles.map((r) => (
                   <Badge key={r} variant="outline">
                     {r}
@@ -41,12 +41,12 @@ export function UsersTable({ users }: { users: OrgUser[] }) {
                 ))}
               </div>
             </TD>
-            <TD>
+            <TD label="Estado">
               <Badge variant={u.status === "active" ? "success" : "muted"}>
                 {u.status}
               </Badge>
             </TD>
-            <TD>
+            <TD label="Último login">
               <MutedText as="span">{formatDate(u.lastLoginAt)}</MutedText>
             </TD>
           </TR>

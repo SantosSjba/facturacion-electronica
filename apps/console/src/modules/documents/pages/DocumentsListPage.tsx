@@ -6,7 +6,10 @@ import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { CursorPagination } from "@/shared/ui/Pagination";
+import {
+  CursorPagination,
+  DEFAULT_PAGE_SIZE,
+} from "@/shared/ui/Pagination";
 
 import { fetchCompanies, fetchDocuments } from "../api";
 import { DocumentFilters } from "../components/DocumentFilters";
@@ -24,6 +27,7 @@ export function DocumentsListPage() {
   const [filters, setFilters] = useState<DocumentFiltersState>(
     EMPTY_DOCUMENT_FILTERS,
   );
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [stack, setStack] = useState<string[]>([]);
 
@@ -33,13 +37,19 @@ export function DocumentsListPage() {
   });
 
   const docsQuery = useQuery({
-    queryKey: ["documents", filters, cursor],
+    queryKey: ["documents", filters, cursor, pageSize],
     queryFn: () =>
-      fetchDocuments(filtersToParams(filters, { limit: 50, cursor })),
+      fetchDocuments(filtersToParams(filters, { limit: pageSize, cursor })),
   });
 
   function onFiltersChange(next: DocumentFiltersState) {
     setFilters(next);
+    setCursor(undefined);
+    setStack([]);
+  }
+
+  function onPageSizeChange(next: number) {
+    setPageSize(next);
     setCursor(undefined);
     setStack([]);
   }
@@ -85,19 +95,21 @@ export function DocumentsListPage() {
               <CursorPagination
                 page={stack.length + 1}
                 itemCount={docsQuery.data?.items.length ?? 0}
+                pageSize={pageSize}
                 canPrevious={stack.length > 0}
                 canNext={Boolean(docsQuery.data?.next_cursor)}
+                onPageSizeChange={onPageSizeChange}
                 onPrevious={() => {
-                    const prev = [...stack];
-                    const last = prev.pop();
-                    setStack(prev);
-                    setCursor(last || undefined);
-                  }}
+                  const prev = [...stack];
+                  const last = prev.pop();
+                  setStack(prev);
+                  setCursor(last || undefined);
+                }}
                 onNext={() => {
-                    if (!docsQuery.data?.next_cursor) return;
-                    setStack((s) => [...s, cursor ?? ""]);
-                    setCursor(docsQuery.data.next_cursor ?? undefined);
-                  }}
+                  if (!docsQuery.data?.next_cursor) return;
+                  setStack((s) => [...s, cursor ?? ""]);
+                  setCursor(docsQuery.data.next_cursor ?? undefined);
+                }}
               />
             </>
           )}

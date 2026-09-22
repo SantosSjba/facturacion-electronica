@@ -1,13 +1,19 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Link as LinkIcon } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import {
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+} from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
-import { TextLink } from "@/shared/ui/components/text-link";
+import { cn } from "@/shared/ui/utils";
 
 import { fetchOrgRoles } from "../api";
 
@@ -51,10 +57,16 @@ export function PermissionsMatrixPage() {
         title="Matriz de permisos"
         description="Vista de solo lectura: rol → permisos (doc 33). Sin edición de matriz."
         actions={
-          <TextLink to="/users" className="inline-flex items-center gap-1 text-sm">
-            <LinkIcon className="h-3.5 w-3.5" />
-            Usuarios
-          </TextLink>
+          <Link
+            to="/users"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+            )}
+            aria-label="Usuarios"
+          >
+            <LinkIcon className={buttonIconClassName} />
+            <ButtonLabel>Usuarios</ButtonLabel>
+          </Link>
         }
       />
 
@@ -72,14 +84,16 @@ export function PermissionsMatrixPage() {
         <TBody>
           {permissionRows.map((perm) => (
             <TR key={perm}>
-              <TD className="font-mono text-xs">{perm}</TD>
+              <TD label="Permiso" className="font-mono text-xs">
+                {perm}
+              </TD>
               {roles.map((r) => {
                 const has = (r.permissions ?? []).includes(perm);
                 return (
-                  <TD key={r.id} className="text-center">
+                  <TD key={r.id} label={r.code} className="text-center">
                     {has ? (
                       <Check
-                        className="mx-auto h-4 w-4 text-success-600 dark:text-success-500"
+                        className="mx-auto h-4 w-4 text-success-600 dark:text-success-500 max-md:ms-auto max-md:me-0"
                         aria-label="concedido"
                       />
                     ) : (

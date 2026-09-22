@@ -1,6 +1,6 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
-import { Button } from "./components/button";
+import { Button, ButtonLabel, buttonIconClassName } from "./components/button";
 import { cn } from "./utils";
 
 export interface ErrorStateProps {
@@ -37,8 +37,15 @@ export function ErrorState({
         </div>
       </div>
       {onRetry ? (
-        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-          Reintentar
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-label-sm"
+          onClick={onRetry}
+          aria-label="Reintentar"
+        >
+          <RefreshCw className={buttonIconClassName} />
+          <ButtonLabel>Reintentar</ButtonLabel>
         </Button>
       ) : null}
     </div>

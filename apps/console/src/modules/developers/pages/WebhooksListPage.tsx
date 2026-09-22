@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Plus } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import {
   Dialog,
   DialogBody,
@@ -104,8 +108,14 @@ export function WebhooksListPage() {
         description="Suscripciones a eventos. Desactiva con PATCH; no hay DELETE."
         actions={
           canManage ? (
-            <Button type="button" onClick={() => setCreateOpen(true)}>
-              Nuevo webhook
+            <Button
+              type="button"
+              size="icon-label-sm"
+              aria-label="Nuevo webhook"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className={buttonIconClassName} />
+              <ButtonLabel>Nuevo webhook</ButtonLabel>
             </Button>
           ) : null
         }
@@ -137,8 +147,14 @@ export function WebhooksListPage() {
             description="Crea un endpoint HTTPS para recibir document.status_changed."
             action={
               canManage ? (
-                <Button type="button" onClick={() => setCreateOpen(true)}>
-                  Nuevo webhook
+                <Button
+                  type="button"
+                  size="icon-label-sm"
+                  aria-label="Nuevo webhook"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className={buttonIconClassName} />
+                  <ButtonLabel>Nuevo webhook</ButtonLabel>
                 </Button>
               ) : undefined
             }
@@ -206,8 +222,14 @@ export function WebhooksListPage() {
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button type="button" onClick={() => setRotatedSecret(null)}>
-            Entendido
+          <Button
+            type="button"
+            size="icon-label-sm"
+            aria-label="Entendido"
+            onClick={() => setRotatedSecret(null)}
+          >
+            <Check className={buttonIconClassName} />
+            <ButtonLabel>Entendido</ButtonLabel>
           </Button>
         </DialogFooter>
       </Dialog>

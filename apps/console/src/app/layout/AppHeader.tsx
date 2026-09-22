@@ -3,8 +3,6 @@ import {
   LogOut,
   Menu,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Sun,
   UserRound,
   X,
@@ -12,7 +10,11 @@ import {
 import { useCallback, useRef, useState } from "react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { useTheme } from "@/shared/ui/theme-context";
 import { useClickOutside } from "@/shared/ui/use-click-outside";
 import { cn } from "@/shared/ui/utils";
@@ -22,46 +24,31 @@ import { useSidebar } from "../sidebar-context";
 export function AppHeader() {
   const { user, logout } = useSession();
   const { theme, toggleTheme } = useTheme();
-  const { isExpanded, isMobile, isMobileOpen, toggleMobileSidebar, toggleSidebar } = useSidebar();
+  const { isMobileOpen, toggleMobileSidebar, setIsMobileOpen } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const closeUserMenu = useCallback(() => setMenuOpen(false), []);
   useClickOutside(userMenuRef, closeUserMenu, menuOpen);
   const initials = user?.email.slice(0, 2).toUpperCase() ?? "FS";
 
-  function handleSidebarToggle() {
-    if (isMobile) toggleMobileSidebar();
-    else toggleSidebar();
+  function toggleUserMenu() {
+    setMenuOpen((open) => {
+      if (!open) setIsMobileOpen(false);
+      return !open;
+    });
   }
 
   return (
     <header className="sticky top-0 z-40 flex w-full border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900">
       <div className="flex grow items-center justify-between px-4 py-3 sm:px-6 lg:py-4">
+        {/* Desktop uses sidebar "Contraer menú"; header toggle is mobile-only. */}
         <button
           type="button"
-          className="flex size-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 lg:size-11 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5"
-          onClick={handleSidebarToggle}
-          aria-label={
-            isMobile
-              ? isMobileOpen
-                ? "Cerrar menú"
-                : "Abrir menú"
-              : isExpanded
-                ? "Contraer menú"
-                : "Expandir menú"
-          }
+          className="flex size-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 lg:hidden dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5"
+          onClick={toggleMobileSidebar}
+          aria-label={isMobileOpen ? "Cerrar menú" : "Abrir menú"}
         >
-          {isMobile ? (
-            isMobileOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )
-          ) : isExpanded ? (
-            <PanelLeftClose className="size-5" />
-          ) : (
-            <PanelLeftOpen className="size-5" />
-          )}
+          {isMobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
 
         <div className="ms-auto flex items-center gap-2 2xsm:gap-3">
@@ -78,7 +65,7 @@ export function AppHeader() {
             <button
               type="button"
               className="flex items-center text-gray-700 dark:text-gray-400"
-              onClick={() => setMenuOpen((value) => !value)}
+              onClick={toggleUserMenu}
               aria-expanded={menuOpen}
             >
               <span className="me-3 flex size-11 items-center justify-center overflow-hidden rounded-full bg-brand-50 text-sm font-semibold text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
@@ -116,9 +103,11 @@ export function AppHeader() {
                   type="button"
                   variant="ghost"
                   className="justify-start text-gray-700 dark:text-gray-400"
+                  aria-label="Cerrar sesión"
                   onClick={() => void logout()}
                 >
-                  <LogOut className="size-5" /> Cerrar sesión
+                  <LogOut className={buttonIconClassName} />
+                  <ButtonLabel>Cerrar sesión</ButtonLabel>
                 </Button>
               </div>
             ) : null}

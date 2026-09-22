@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
@@ -37,8 +42,14 @@ export function ApiKeysListPage() {
         description="Claves de integración máquina. El secreto solo se muestra al crear."
         actions={
           canManage ? (
-            <Button type="button" onClick={() => setCreateOpen(true)}>
-              Nueva API key
+            <Button
+              type="button"
+              size="icon-label-sm"
+              aria-label="Nueva API key"
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className={buttonIconClassName} />
+              <ButtonLabel>Nueva API key</ButtonLabel>
             </Button>
           ) : null
         }
@@ -64,8 +75,14 @@ export function ApiKeysListPage() {
             description="Crea una clave para integrar sistemas externos."
             action={
               canManage ? (
-                <Button type="button" onClick={() => setCreateOpen(true)}>
-                  Nueva API key
+                <Button
+                  type="button"
+                  size="icon-label-sm"
+                  aria-label="Nueva API key"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className={buttonIconClassName} />
+                  <ButtonLabel>Nueva API key</ButtonLabel>
                 </Button>
               ) : undefined
             }

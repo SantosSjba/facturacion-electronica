@@ -1,6 +1,10 @@
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Send } from "lucide-react";
 
 export function WizardShell({
   title,
@@ -68,28 +72,41 @@ export function WizardShell({
         <Button
           type="button"
           variant="outline"
+          size="icon-label"
+          aria-label="Atrás"
           onClick={onBack}
           disabled={step === 0 || submitting}
         >
-          Atrás
+          <ArrowLeft className={buttonIconClassName} />
+          <ButtonLabel>Atrás</ButtonLabel>
         </Button>
         {isLast ? (
           <Button
             type="button"
+            size="icon-label"
+            aria-label={submitting ? "Emitiendo…" : "Emitir"}
             data-testid="wizard-submit"
             onClick={onSubmit}
             disabled={submitting}
           >
-            {submitting ? "Emitiendo…" : "Emitir"}
+            {submitting ? (
+              <Loader2 className={`${buttonIconClassName} animate-spin`} />
+            ) : (
+              <Send className={buttonIconClassName} />
+            )}
+            <ButtonLabel>{submitting ? "Emitiendo…" : "Emitir"}</ButtonLabel>
           </Button>
         ) : (
           <Button
             type="button"
+            size="icon-label"
+            aria-label="Siguiente"
             data-testid="wizard-next"
             onClick={onNext}
             disabled={Boolean(nextError) || submitting}
           >
-            Siguiente
+            <ArrowRight className={buttonIconClassName} />
+            <ButtonLabel>Siguiente</ButtonLabel>
           </Button>
         )}
       </div>

@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Plus, Shield } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Button, buttonVariants } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+} from "@/shared/ui/components/button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { Pagination } from "@/shared/ui/Pagination";
+import { DEFAULT_PAGE_SIZE, Pagination } from "@/shared/ui/Pagination";
 import { cn } from "@/shared/ui/utils";
 
 import { fetchOrgRoles, fetchOrgUsers } from "../api";
@@ -19,7 +24,6 @@ import { UsersTable } from "../components/UsersTable";
 import { filterUsers, type UserFiltersState } from "../filters";
 
 export function UsersListPage() {
-  const pageSize = 10;
   const { hasPermission } = useSession();
   const canWrite = hasPermission("users:write");
   const [filters, setFilters] = useState<UserFiltersState>({
@@ -29,6 +33,7 @@ export function UsersListPage() {
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const usersQuery = useQuery({
     queryKey: ["org-users"],
@@ -46,7 +51,7 @@ export function UsersListPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  useEffect(() => setPage(1), [filters]);
+  useEffect(() => setPage(1), [filters, pageSize]);
   useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
 
   const loading = usersQuery.isLoading || rolesQuery.isLoading;
@@ -61,14 +66,23 @@ export function UsersListPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/users/permissions"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+              )}
+              aria-label="Matriz de permisos"
             >
-              <Shield className="h-4 w-4" />
-              Matriz de permisos
+              <Shield className={buttonIconClassName} />
+              <ButtonLabel>Matriz de permisos</ButtonLabel>
             </Link>
             {canWrite ? (
-              <Button type="button" onClick={() => setCreateOpen(true)}>
-                Invitar / crear
+              <Button
+                type="button"
+                size="icon-label-sm"
+                aria-label="Invitar / crear"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className={buttonIconClassName} />
+                <ButtonLabel>Invitar / crear</ButtonLabel>
               </Button>
             ) : null}
           </div>
@@ -104,7 +118,14 @@ export function UsersListPage() {
           ) : (
             <>
               <UsersTable users={visible} />
-              <Pagination page={page} pageCount={pageCount} total={filtered.length} pageSize={pageSize} onPageChange={setPage} />
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                total={filtered.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </>
           )}
         </div>

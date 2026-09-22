@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, Filter, Loader2 } from "lucide-react";
 
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { DEFAULT_PAGE_SIZE } from "@/shared/ui/Pagination";
+import { cn } from "@/shared/ui/utils";
 
 import { fetchAuditEvents } from "../api";
 import { AuditDetailDrawer } from "../components/AuditDetailDrawer";
@@ -29,7 +36,7 @@ export function AuditListPage() {
         actor: applied.actor || undefined,
         date_from: applied.date_from || undefined,
         date_to: applied.date_to || undefined,
-        limit: 50,
+        limit: DEFAULT_PAGE_SIZE,
         cursor,
       }),
   });
@@ -60,8 +67,14 @@ export function AuditListPage() {
 
       <div className="mb-4 space-y-3">
         <AuditFilters value={filters} onChange={setFilters} />
-        <Button type="button" size="sm" onClick={applyFilters}>
-          Aplicar filtros
+        <Button
+          type="button"
+          size="icon-label-sm"
+          aria-label="Aplicar filtros"
+          onClick={applyFilters}
+        >
+          <Filter className={buttonIconClassName} />
+          <ButtonLabel>Aplicar filtros</ButtonLabel>
         </Button>
       </div>
 
@@ -93,10 +106,19 @@ export function AuditListPage() {
               <Button
                 type="button"
                 variant="outline"
+                size="icon-label-sm"
+                aria-label="Cargar más"
                 disabled={query.isFetching}
                 onClick={loadMore}
               >
-                {query.isFetching ? "Cargando…" : "Cargar más"}
+                {query.isFetching ? (
+                  <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                ) : (
+                  <ChevronDown className={buttonIconClassName} />
+                )}
+                <ButtonLabel>
+                  {query.isFetching ? "Cargando…" : "Cargar más"}
+                </ButtonLabel>
               </Button>
             ) : null}
           </div>

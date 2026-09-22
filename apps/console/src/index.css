@@ -337,13 +337,24 @@
 }
 
 @layer utilities {
-  /* For Remove Date Icon */
-  input[type="date"]::-webkit-inner-spin-button,
-  input[type="time"]::-webkit-inner-spin-button,
+  /* Keep native temporal pickers visible and usable (date, time, datetime-local, month, week). */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"] {
+    -webkit-appearance: auto;
+    appearance: auto;
+  }
+
   input[type="date"]::-webkit-calendar-picker-indicator,
-  input[type="time"]::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator,
+  input[type="week"]::-webkit-calendar-picker-indicator {
+    display: block;
+    cursor: pointer;
+    opacity: 1;
   }
 }
 
@@ -402,10 +413,10 @@
   @apply fill-gray-800! font-semibold! dark:fill-white/90!;
 }
 
+/* Optional: hide native indicator only when a custom overlay icon is used */
 .input-date-icon::-webkit-inner-spin-button,
 .input-date-icon::-webkit-calendar-picker-indicator {
   opacity: 0;
-  -webkit-appearance: none;
 }
 
 .stocks-slider-outer .swiper-button-next:after,

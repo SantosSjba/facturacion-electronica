@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Save } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { cn } from "@/shared/ui/utils";
 
 import { putSolCredentials } from "../../api";
 import type { Company } from "../../types";
@@ -91,8 +97,20 @@ export function SolTab() {
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
           {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Guardando…" : "Guardar SOL"}
+          <Button
+            type="submit"
+            size="icon-label"
+            aria-label="Guardar SOL"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Save className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {mutation.isPending ? "Guardando…" : "Guardar SOL"}
+            </ButtonLabel>
           </Button>
         </form>
       ) : (

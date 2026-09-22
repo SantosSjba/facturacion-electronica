@@ -7,7 +7,7 @@ describe("gre filters", () => {
     expect(EMPTY_GRE_FILTERS.document_type).toBe("09,31");
     expect(filtersToParams(EMPTY_GRE_FILTERS)).toEqual({
       document_type: "09,31",
-      limit: 50,
+      limit: 10,
     });
   });
 
@@ -17,7 +17,7 @@ describe("gre filters", () => {
         ...EMPTY_GRE_FILTERS,
         document_type: "",
       }),
-    ).toEqual({ limit: 50 });
+    ).toEqual({ limit: 10 });
   });
 
   it("maps filled filters", () => {
@@ -34,7 +34,7 @@ describe("gre filters", () => {
       document_type: "09",
       status: "accepted",
       serie_number: "T001-1",
-      limit: 50,
+      limit: 10,
     });
   });
 });

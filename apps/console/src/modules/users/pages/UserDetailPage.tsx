@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button, buttonVariants } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
-import { TextLink } from "@/shared/ui/components/text-link";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
@@ -89,12 +94,16 @@ export function UserDetailPage() {
           title="No encontrado"
           message="Usuario no existe en la organización."
         />
-        <TextLink
+        <Link
           to="/users"
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+          )}
+          aria-label="Volver a usuarios"
         >
-          Volver a usuarios
-        </TextLink>
+          <ArrowLeft className={buttonIconClassName} />
+          <ButtonLabel>Volver a usuarios</ButtonLabel>
+        </Link>
       </div>
     );
   }
@@ -105,9 +114,16 @@ export function UserDetailPage() {
         title={user.email}
         description="Detalle de usuario — editar nombre, estado y roles."
         actions={
-          <TextLink to="/users" className="text-sm">
-            ← Volver
-          </TextLink>
+          <Link
+            to="/users"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+            )}
+            aria-label="Volver"
+          >
+            <ArrowLeft className={buttonIconClassName} />
+            <ButtonLabel>Volver</ButtonLabel>
+          </Link>
         }
       />
 
@@ -143,10 +159,19 @@ export function UserDetailPage() {
         {canWrite ? (
           <Button
             type="button"
+            size="icon-label"
+            aria-label="Guardar perfil"
             onClick={() => patchMutation.mutate()}
             disabled={patchMutation.isPending}
           >
-            {patchMutation.isPending ? "Guardando…" : "Guardar perfil"}
+            {patchMutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Save className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {patchMutation.isPending ? "Guardando…" : "Guardar perfil"}
+            </ButtonLabel>
           </Button>
         ) : null}
 
@@ -161,10 +186,19 @@ export function UserDetailPage() {
           <Button
             type="button"
             variant="secondary"
+            size="icon-label"
+            aria-label="Guardar roles"
             onClick={() => rolesMutation.mutate()}
             disabled={rolesMutation.isPending || displayRoles.length < 1}
           >
-            {rolesMutation.isPending ? "Actualizando roles…" : "Guardar roles"}
+            {rolesMutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Save className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {rolesMutation.isPending ? "Actualizando roles…" : "Guardar roles"}
+            </ButtonLabel>
           </Button>
         ) : null}
 

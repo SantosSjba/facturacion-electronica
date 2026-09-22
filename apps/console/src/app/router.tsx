@@ -9,7 +9,6 @@ import { SeriesTab } from "@/modules/companies/components/tabs/SeriesTab";
 import { SolTab } from "@/modules/companies/components/tabs/SolTab";
 import { CompaniesListPage } from "@/modules/companies/pages/CompaniesListPage";
 import { CompanyDetailPage } from "@/modules/companies/pages/CompanyDetailPage";
-import { CompanyFormPage } from "@/modules/companies/pages/CompanyFormPage";
 import { ApiKeysListPage } from "@/modules/developers/pages/ApiKeysListPage";
 import { AuditListPage } from "@/modules/developers/pages/AuditListPage";
 import { ValidationsPage } from "@/modules/developers/pages/ValidationsPage";
@@ -53,14 +52,6 @@ export function AppRouter() {
             <Route element={<AppShell />}>
               <Route index element={<HomeRedirect />} />
               <Route path="companies" element={<CompaniesListPage />} />
-              <Route
-                path="companies/new"
-                element={<CompanyFormPage mode="create" />}
-              />
-              <Route
-                path="companies/:id/edit"
-                element={<CompanyFormPage mode="edit" />}
-              />
               <Route path="companies/:id" element={<CompanyDetailPage />}>
                 <Route index element={<Navigate to="overview" replace />} />
                 <Route path="overview" element={<OverviewTab />} />

@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Send } from "lucide-react";
 
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 
 const EMIT_LINKS = [
   { to: "/documents/emit/invoice", label: "Factura (01)" },
@@ -20,12 +24,14 @@ export function EmitMenu() {
     <div className="relative">
       <Button
         type="button"
-        size="sm"
+        size="icon-label-sm"
+        aria-label="Emitir"
         data-testid="emit-menu"
         onClick={() => setOpen((v) => !v)}
       >
-        Emitir
-        <ChevronDown className="h-4 w-4" />
+        <Send className={buttonIconClassName} />
+        <ButtonLabel>Emitir</ButtonLabel>
+        <ChevronDown className={buttonIconClassName} />
       </Button>
       {open ? (
         <div className="absolute right-0 z-20 mt-1 min-w-[14rem] rounded-md border border-gray-200 bg-white py-1 shadow-md dark:border-gray-800 dark:bg-gray-900">

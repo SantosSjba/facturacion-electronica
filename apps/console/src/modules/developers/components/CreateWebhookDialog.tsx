@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Loader2, Plus, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Checkbox } from "@/shared/ui/components/checkbox";
 import {
   Dialog,
@@ -15,6 +19,7 @@ import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
+import { cn } from "@/shared/ui/utils";
 
 import { createWebhook } from "../api";
 
@@ -108,8 +113,14 @@ export function CreateWebhookDialog({
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" onClick={resetAndClose}>
-              Entendido
+            <Button
+              type="button"
+              size="icon-label-sm"
+              aria-label="Entendido"
+              onClick={resetAndClose}
+            >
+              <Check className={buttonIconClassName} />
+              <ButtonLabel>Entendido</ButtonLabel>
             </Button>
           </DialogFooter>
         </>
@@ -157,11 +168,30 @@ export function CreateWebhookDialog({
             </fieldset>
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={resetAndClose}>
-              Cancelar
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-label-sm"
+              aria-label="Cancelar"
+              onClick={resetAndClose}
+            >
+              <X className={buttonIconClassName} />
+              <ButtonLabel>Cancelar</ButtonLabel>
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creando…" : "Crear"}
+            <Button
+              type="submit"
+              size="icon-label-sm"
+              aria-label="Crear"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+              ) : (
+                <Plus className={buttonIconClassName} />
+              )}
+              <ButtonLabel>
+                {mutation.isPending ? "Creando…" : "Crear"}
+              </ButtonLabel>
             </Button>
           </DialogFooter>
         </form>

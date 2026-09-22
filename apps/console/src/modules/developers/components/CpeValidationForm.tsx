@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Search } from "lucide-react";
 
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
 import { FieldError } from "@/shared/ui/FieldError";
+import { cn } from "@/shared/ui/utils";
 import { fetchCompanies } from "@/modules/companies/api";
 
 import type { CpeValidationInput } from "../types";
@@ -165,8 +171,20 @@ export function CpeValidationForm({
           <FieldError message={fieldErrors.total_amount} />
         </div>
       </div>
-      <Button type="submit" disabled={disabled || submitting}>
-        {submitting ? "Consultando…" : "Consultar validez"}
+      <Button
+        type="submit"
+        size="icon-label"
+        aria-label="Consultar validez"
+        disabled={disabled || submitting}
+      >
+        {submitting ? (
+          <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+        ) : (
+          <Search className={buttonIconClassName} />
+        )}
+        <ButtonLabel>
+          {submitting ? "Consultando…" : "Consultar validez"}
+        </ButtonLabel>
       </Button>
     </form>
   );

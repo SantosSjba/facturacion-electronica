@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Upload } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { cn } from "@/shared/ui/utils";
 
 import { putCertificate } from "../../api";
 import type { Company } from "../../types";
@@ -100,8 +106,20 @@ export function CertificateTab() {
           </div>
           {error ? <ErrorState title="Error" message={error} /> : null}
           {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Subiendo…" : "Subir certificado"}
+          <Button
+            type="submit"
+            size="icon-label"
+            aria-label="Subir certificado"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Upload className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {mutation.isPending ? "Subiendo…" : "Subir certificado"}
+            </ButtonLabel>
           </Button>
         </form>
       ) : (

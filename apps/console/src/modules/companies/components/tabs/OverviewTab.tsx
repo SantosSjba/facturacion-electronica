@@ -1,14 +1,22 @@
+import { Pencil } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 
 import { Badge } from "@/shared/ui/components/badge";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
-import { TextLink } from "@/shared/ui/components/text-link";
 import { useSession } from "@/shared/auth/session-context";
 
 import type { Company } from "../../types";
 
 export function OverviewTab() {
-  const { company } = useOutletContext<{ company: Company }>();
+  const { company, onEdit } = useOutletContext<{
+    company: Company;
+    onEdit?: () => void;
+  }>();
   const { hasPermission } = useSession();
   const canWrite = hasPermission("companies:write");
 
@@ -20,7 +28,9 @@ export function OverviewTab() {
       <div>
         <MutedText className="text-xs uppercase">Certificado</MutedText>
         <Badge
-          variant={company.certificate_status === "active" ? "success" : "muted"}
+          variant={
+            company.certificate_status === "active" ? "success" : "muted"
+          }
         >
           {company.certificate_status}
         </Badge>
@@ -33,19 +43,23 @@ export function OverviewTab() {
         label="GRE configurado"
         value={company.gre_configured ? "sí" : "no"}
       />
-      <Field
-        label="Ruleset pin"
-        value={company.catalog_pin?.ruleset ?? "—"}
-      />
+      <Field label="Ruleset pin" value={company.catalog_pin?.ruleset ?? "—"} />
       <Field
         label="Creado"
         value={new Date(company.created_at).toLocaleString()}
       />
-      {canWrite ? (
+      {canWrite && onEdit ? (
         <div className="sm:col-span-2">
-          <TextLink to={`/companies/${company.id}/edit`} className="text-sm">
-            Editar metadatos
-          </TextLink>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-label-sm"
+            aria-label="Editar metadatos"
+            onClick={onEdit}
+          >
+            <Pencil className={buttonIconClassName} />
+            <ButtonLabel>Editar metadatos</ButtonLabel>
+          </Button>
         </div>
       ) : null}
     </div>
@@ -56,7 +70,9 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <MutedText className="text-xs uppercase">{label}</MutedText>
-      <p className="text-sm font-medium text-gray-800 dark:text-white/90">{value}</p>
+      <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+        {value}
+      </p>
     </div>
   );
 }

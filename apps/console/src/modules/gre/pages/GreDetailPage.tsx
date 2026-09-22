@@ -1,5 +1,6 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
 
 import { ArtifactButtons } from "@/modules/documents/components/ArtifactButtons";
 import { DocumentTimeline } from "@/modules/documents/components/DocumentTimeline";
@@ -8,9 +9,14 @@ import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { Badge } from "@/shared/ui/components/badge";
+import {
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+} from "@/shared/ui/components/button";
 import { Card, CardTitle } from "@/shared/ui/components/card";
 import { MutedText } from "@/shared/ui/components/muted-text";
-import { TextLink } from "@/shared/ui/components/text-link";
+import { cn } from "@/shared/ui/utils";
 
 import { fetchDocument, fetchDocumentTrace } from "../api";
 
@@ -70,9 +76,16 @@ export function GreDetailPage() {
         title={`${doc.document_type} ${doc.serie_number ?? ""}`.trim()}
         description={`ID ${doc.id}`}
         actions={
-          <TextLink to="/gre" className="text-sm">
-            ← Volver a GRE
-          </TextLink>
+          <Link
+            to="/gre"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+            )}
+            aria-label="Volver a GRE"
+          >
+            <ArrowLeft className={buttonIconClassName} />
+            <ButtonLabel>Volver a GRE</ButtonLabel>
+          </Link>
         }
       />
 

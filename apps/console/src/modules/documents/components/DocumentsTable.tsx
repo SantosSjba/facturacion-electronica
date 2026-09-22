@@ -31,21 +31,23 @@ export function DocumentsTable({ documents }: { documents: DocumentPublic[] }) {
       <TBody>
         {documents.map((d) => (
           <TR key={d.id}>
-            <TD className="font-mono text-sm">{d.document_type}</TD>
-            <TD>
+            <TD label="Tipo" className="font-mono text-sm">
+              {d.document_type}
+            </TD>
+            <TD label="Serie-Número">
               <TextLink to={`/documents/${d.id}`}>
                 {d.serie_number ?? d.id.slice(0, 8)}
               </TextLink>
             </TD>
-            <TD>{d.issue_date ?? "—"}</TD>
-            <TD>{d.customer?.name ?? "—"}</TD>
-            <TD>
+            <TD label="Emisión">{d.issue_date ?? "—"}</TD>
+            <TD label="Cliente">{d.customer?.name ?? "—"}</TD>
+            <TD label="Estado">
               <StatusBadge status={d.status} />
             </TD>
-            <TD className="font-mono text-sm">
+            <TD label="SUNAT" className="font-mono text-sm">
               <MutedText as="span">{d.sunat_code ?? "—"}</MutedText>
             </TD>
-            <TD>
+            <TD label="Creado">
               <MutedText as="span">{formatDate(d.created_at)}</MutedText>
             </TD>
           </TR>

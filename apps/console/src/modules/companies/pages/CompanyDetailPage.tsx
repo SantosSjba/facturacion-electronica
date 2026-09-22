@@ -1,14 +1,22 @@
-import { NavLink, Outlet, useParams } from "react-router-dom";
+import { useState } from "react";
+import { ArrowLeft, Pencil } from "lucide-react";
+import { Link, NavLink, Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { useSession } from "@/shared/auth/session-context";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { TextLink } from "@/shared/ui/components/text-link";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+} from "@/shared/ui/components/button";
 import { cn } from "@/shared/ui/utils";
 
 import { fetchCompany } from "../api";
+import { CompanyFormDialog } from "../components/CompanyFormDialog";
 
 const TABS = [
   { to: "overview", label: "Overview" },
@@ -23,6 +31,7 @@ export function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { hasPermission } = useSession();
   const canWrite = hasPermission("companies:write");
+  const [editOpen, setEditOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ["company", id],
@@ -51,11 +60,29 @@ export function CompanyDetailPage() {
         title={company.legal_name}
         description={`${company.ruc} · ${company.environment}`}
         actions={
-          <div className="flex gap-3 text-sm">
+          <div className="flex gap-2">
             {canWrite ? (
-              <TextLink to={`/companies/${company.id}/edit`}>Editar</TextLink>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-label-sm"
+                aria-label="Editar"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pencil className={buttonIconClassName} />
+                <ButtonLabel>Editar</ButtonLabel>
+              </Button>
             ) : null}
-            <TextLink to="/companies">← Lista</TextLink>
+            <Link
+              to="/companies"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "icon-label-sm" }),
+              )}
+              aria-label="Lista"
+            >
+              <ArrowLeft className={buttonIconClassName} />
+              <ButtonLabel>Lista</ButtonLabel>
+            </Link>
           </div>
         }
       />
@@ -79,7 +106,16 @@ export function CompanyDetailPage() {
         ))}
       </nav>
 
-      <Outlet context={{ company }} />
+      <Outlet context={{ company, onEdit: () => setEditOpen(true) }} />
+
+      {canWrite && id ? (
+        <CompanyFormDialog
+          mode="edit"
+          companyId={id}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

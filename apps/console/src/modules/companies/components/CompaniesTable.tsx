@@ -27,16 +27,14 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
       <TBody>
         {companies.map((c) => (
           <TR key={c.id}>
-            <TD>
-              <TextLink to={`/companies/${c.id}/overview`}>
-                {c.ruc}
-              </TextLink>
+            <TD label="RUC">
+              <TextLink to={`/companies/${c.id}/overview`}>{c.ruc}</TextLink>
             </TD>
-            <TD>{c.legal_name}</TD>
-            <TD>
+            <TD label="Razón social">{c.legal_name}</TD>
+            <TD label="Ambiente">
               <Badge variant="outline">{c.environment}</Badge>
             </TD>
-            <TD>
+            <TD label="Certificado">
               <Badge
                 variant={
                   c.certificate_status === "active" ? "success" : "muted"
@@ -45,7 +43,7 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
                 {c.certificate_status}
               </Badge>
             </TD>
-            <TD>
+            <TD label="Actualizado">
               <MutedText as="span">{formatDate(c.updated_at)}</MutedText>
             </TD>
           </TR>

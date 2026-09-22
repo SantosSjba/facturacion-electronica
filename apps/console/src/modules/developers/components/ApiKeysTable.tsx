@@ -1,7 +1,14 @@
+import { Ban, Loader2 } from "lucide-react";
+
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Badge } from "@/shared/ui/components/badge";
-import { Button } from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import { cn } from "@/shared/ui/utils";
 
 import type { ApiKey } from "../types";
 
@@ -40,7 +47,7 @@ export function ApiKeysTable({
       <TBody>
         {keys.map((k) => (
           <TR key={k.id}>
-            <TD>
+            <TD label="Nombre">
               <div className="font-medium text-gray-800 dark:text-white/90">
                 {k.name}
               </div>
@@ -50,11 +57,11 @@ export function ApiKeysTable({
                 </MutedText>
               ) : null}
             </TD>
-            <TD>
+            <TD label="Prefix">
               <code className="text-theme-xs">{k.keyPrefix}…</code>
             </TD>
-            <TD>
-              <div className="flex flex-wrap gap-1">
+            <TD label="Scopes">
+              <div className="flex flex-wrap gap-1 max-md:justify-end">
                 {k.scopes.map((s) => (
                   <Badge key={s} variant="outline">
                     {s}
@@ -62,24 +69,30 @@ export function ApiKeysTable({
                 ))}
               </div>
             </TD>
-            <TD>
+            <TD label="Estado">
               <Badge variant={k.status === "active" ? "success" : "muted"}>
                 {k.status}
               </Badge>
             </TD>
-            <TD>
+            <TD label="Último uso">
               <MutedText as="span">{formatDate(k.lastUsedAt)}</MutedText>
             </TD>
-            <TD className="text-end">
+            <TD actions>
               {canManage && k.status === "active" ? (
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="icon-label-sm"
+                  aria-label="Revocar"
                   disabled={revokingId === k.id}
                   onClick={() => onRevoke(k.id)}
                 >
-                  Revocar
+                  {revokingId === k.id ? (
+                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                  ) : (
+                    <Ban className={buttonIconClassName} />
+                  )}
+                  <ButtonLabel>Revocar</ButtonLabel>
                 </Button>
               ) : null}
             </TD>

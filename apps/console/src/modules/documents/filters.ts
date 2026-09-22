@@ -1,4 +1,5 @@
 import type { DocumentListParams } from "./types";
+import { DEFAULT_PAGE_SIZE } from "@/shared/ui/Pagination";
 
 export interface DocumentFiltersState {
   company_id: string;
@@ -29,7 +30,7 @@ export function filtersToParams(
     date_from: filters.date_from || undefined,
     date_to: filters.date_to || undefined,
     serie_number: filters.serie_number || undefined,
-    limit: extras.limit ?? 50,
+    limit: extras.limit ?? DEFAULT_PAGE_SIZE,
     cursor: extras.cursor,
   };
 }

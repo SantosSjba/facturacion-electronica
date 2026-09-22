@@ -8,7 +8,7 @@ import { TERMINAL_STATUSES } from "./types";
 
 describe("documents filters", () => {
   it("omits empty filter fields", () => {
-    expect(filtersToParams(EMPTY_DOCUMENT_FILTERS)).toEqual({ limit: 50 });
+    expect(filtersToParams(EMPTY_DOCUMENT_FILTERS)).toEqual({ limit: 10 });
   });
 
   it("maps filled filters", () => {
@@ -23,7 +23,7 @@ describe("documents filters", () => {
       company_id: "11111111-1111-1111-1111-111111111111",
       document_type: "01",
       status: "accepted",
-      limit: 50,
+      limit: 10,
     });
   });
 });

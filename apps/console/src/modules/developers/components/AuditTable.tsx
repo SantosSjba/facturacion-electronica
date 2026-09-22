@@ -1,5 +1,11 @@
+import { Eye } from "lucide-react";
+
 import { Badge } from "@/shared/ui/components/badge";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
 
@@ -34,34 +40,36 @@ export function AuditTable({
       <TBody>
         {events.map((e) => (
           <TR key={e.id}>
-            <TD>
+            <TD label="Fecha">
               <MutedText as="span">{formatDate(e.created_at)}</MutedText>
             </TD>
-            <TD>
-              <div className="flex flex-col gap-0.5">
+            <TD label="Actor">
+              <div className="flex flex-col gap-0.5 max-md:items-end">
                 <Badge variant="outline">{e.actor_type}</Badge>
                 <MutedText as="span" className="font-mono text-theme-xs">
                   {e.actor_id ?? "—"}
                 </MutedText>
               </div>
             </TD>
-            <TD>
+            <TD label="Action">
               <code className="text-theme-xs">{e.action}</code>
             </TD>
-            <TD>
+            <TD label="Resource">
               <MutedText as="span" className="font-mono text-theme-xs">
                 {e.resource_type ?? "—"}
                 {e.resource_id ? ` / ${e.resource_id}` : ""}
               </MutedText>
             </TD>
-            <TD className="text-end">
+            <TD actions>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="icon-label-sm"
+                aria-label="Detalle"
                 onClick={() => onSelect(e)}
               >
-                Detalle
+                <Eye className={buttonIconClassName} />
+                <ButtonLabel>Detalle</ButtonLabel>
               </Button>
             </TD>
           </TR>

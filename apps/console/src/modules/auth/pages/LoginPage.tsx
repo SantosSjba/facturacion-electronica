@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Moon, ShieldCheck, Sun } from "lucide-react";
+import { Eye, EyeOff, Loader2, LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
 import { useTheme } from "@/shared/ui/theme-context";
+import { cn } from "@/shared/ui/utils";
 
 const defaultOrgSlug =
   (import.meta.env.VITE_DEFAULT_ORG_SLUG as string | undefined) || "demo";
@@ -124,11 +129,18 @@ export function LoginPage() {
 
           <Button
             type="submit"
+            size="icon-label"
             className="w-full"
+            aria-label="Entrar"
             disabled={submitting}
             data-testid="login-submit"
           >
-            {submitting ? "Entrando…" : "Entrar"}
+            {submitting ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <LogIn className={buttonIconClassName} />
+            )}
+            <ButtonLabel>{submitting ? "Entrando…" : "Entrar"}</ButtonLabel>
           </Button>
 
           <p className="text-center text-sm text-gray-500 dark:text-gray-400">

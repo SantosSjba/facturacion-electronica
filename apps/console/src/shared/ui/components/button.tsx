@@ -23,6 +23,9 @@ export const buttonVariants = cva(
         sm: "h-9 px-4 py-2 text-xs",
         lg: "h-12 px-6 py-3.5",
         icon: "size-10 p-0",
+        /** Icon always; label via ButtonLabel (hidden below sm). Square on mobile. */
+        "icon-label": "size-11 shrink-0 p-0 sm:h-11 sm:w-auto sm:px-5 sm:py-3",
+        "icon-label-sm": "size-9 shrink-0 p-0 text-xs sm:h-9 sm:w-auto sm:px-4 sm:py-2",
       },
     },
     defaultVariants: {
@@ -47,3 +50,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ),
 );
 Button.displayName = "Button";
+
+/** Visible from `sm` up; pair with an icon + `aria-label` for mobile. */
+export function ButtonLabel({ children }: { children: React.ReactNode }) {
+  return <span className="hidden sm:inline">{children}</span>;
+}
+
+export const buttonIconClassName = "size-4 shrink-0";

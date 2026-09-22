@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Send } from "lucide-react";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
@@ -168,8 +173,18 @@ export function DailySummaryFormPage() {
 
         {error ? <p className="text-sm text-error-600 dark:text-error-500">{error}</p> : null}
 
-        <Button type="submit" disabled={submitting || !companyId}>
-          {submitting ? "Enviando…" : "Emitir RC"}
+        <Button
+          type="submit"
+          size="icon-label"
+          aria-label={submitting ? "Enviando…" : "Emitir RC"}
+          disabled={submitting || !companyId}
+        >
+          {submitting ? (
+            <Loader2 className={`${buttonIconClassName} animate-spin`} />
+          ) : (
+            <Send className={buttonIconClassName} />
+          )}
+          <ButtonLabel>{submitting ? "Enviando…" : "Emitir RC"}</ButtonLabel>
         </Button>
       </form>
     </div>

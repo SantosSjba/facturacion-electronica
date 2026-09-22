@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Truck } from "lucide-react";
 
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 
 const EMIT_LINKS = [
   { to: "/gre/emit/09", label: "GRE Remitente (09)" },
@@ -14,9 +18,15 @@ export function EmitGreMenu() {
 
   return (
     <div className="relative">
-      <Button type="button" size="sm" onClick={() => setOpen((v) => !v)}>
-        Emitir GRE
-        <ChevronDown className="h-4 w-4" />
+      <Button
+        type="button"
+        size="icon-label-sm"
+        aria-label="Emitir GRE"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Truck className={buttonIconClassName} />
+        <ButtonLabel>Emitir GRE</ButtonLabel>
+        <ChevronDown className={buttonIconClassName} />
       </Button>
       {open ? (
         <div className="absolute right-0 z-20 mt-1 min-w-[14rem] rounded-md border border-gray-200 bg-white py-1 shadow-md dark:border-gray-800 dark:bg-gray-900">

@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2, Plus, Send } from "lucide-react";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
@@ -184,6 +189,8 @@ export function VoidedDocumentFormPage() {
           <Button
             type="button"
             variant="outline"
+            size="icon-label"
+            aria-label="Agregar documento"
             onClick={() =>
               setLines((prev) => [
                 ...prev,
@@ -195,7 +202,8 @@ export function VoidedDocumentFormPage() {
               ])
             }
           >
-            Agregar documento
+            <Plus className={buttonIconClassName} />
+            <ButtonLabel>Agregar documento</ButtonLabel>
           </Button>
         </div>
 
@@ -206,8 +214,18 @@ export function VoidedDocumentFormPage() {
           </MutedText>
         ) : null}
 
-        <Button type="submit" disabled={submitting || !companyId}>
-          {submitting ? "Enviando…" : "Emitir RA"}
+        <Button
+          type="submit"
+          size="icon-label"
+          aria-label={submitting ? "Enviando…" : "Emitir RA"}
+          disabled={submitting || !companyId}
+        >
+          {submitting ? (
+            <Loader2 className={`${buttonIconClassName} animate-spin`} />
+          ) : (
+            <Send className={buttonIconClassName} />
+          )}
+          <ButtonLabel>{submitting ? "Enviando…" : "Emitir RA"}</ButtonLabel>
         </Button>
       </form>
     </div>

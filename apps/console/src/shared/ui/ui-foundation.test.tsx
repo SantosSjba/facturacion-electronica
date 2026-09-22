@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 
 import { SidebarProvider, useSidebar } from "@/app/sidebar-context";
 
 import { Dialog, DialogBody, DialogFooter, DialogHeader } from "./components/dialog";
+import { Table, TBody, TD, TH, THead, TR } from "./components/table";
 import { ThemeProvider, useTheme } from "./theme-context";
 
 function SidebarHarness() {
@@ -82,5 +84,57 @@ describe("TailAdmin UI foundation", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps input focus while typing even when onClose identity changes each render", () => {
+    function Harness() {
+      const [value, setValue] = useState("");
+      return (
+        <Dialog open onClose={() => undefined} ariaLabel="Formulario">
+          <DialogBody>
+            <input
+              aria-label="Razón social"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+            />
+          </DialogBody>
+        </Dialog>
+      );
+    }
+
+    render(<Harness />);
+    const input = screen.getByLabelText("Razón social");
+    input.focus();
+    fireEvent.change(input, { target: { value: "A" } });
+    fireEvent.change(input, { target: { value: "Ac" } });
+    fireEvent.change(input, { target: { value: "Acm" } });
+    expect((input as HTMLInputElement).value).toBe("Acm");
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("renders responsive table cells with mobile labels and actions", () => {
+    render(
+      <Table>
+        <THead>
+          <TR>
+            <TH>Nombre</TH>
+            <TH />
+          </TR>
+        </THead>
+        <TBody>
+          <TR>
+            <TD label="Nombre">Acme</TD>
+            <TD actions>
+              <button type="button">Editar</button>
+            </TD>
+          </TR>
+        </TBody>
+      </Table>,
+    );
+
+    expect(screen.getByText("Acme")).toBeTruthy();
+    expect(screen.getAllByText("Nombre").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: "Editar" })).toBeTruthy();
+    expect(document.querySelector("td[data-actions]")).toBeTruthy();
   });
 });

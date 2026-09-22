@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
+import { cn } from "@/shared/ui/utils";
 
 import { createOrgUser } from "../api";
 import type { OrgRole, UserStatus } from "../types";
@@ -139,11 +145,30 @@ export function CreateUserDialog({
           {error ? <ErrorState title="Error" message={error} /> : null}
         </DialogBody>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-label-sm"
+            aria-label="Cancelar"
+            onClick={onClose}
+          >
+            <X className={buttonIconClassName} />
+            <ButtonLabel>Cancelar</ButtonLabel>
           </Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Creando…" : "Crear"}
+          <Button
+            type="submit"
+            size="icon-label-sm"
+            aria-label="Crear"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+            ) : (
+              <Plus className={buttonIconClassName} />
+            )}
+            <ButtonLabel>
+              {mutation.isPending ? "Creando…" : "Crear"}
+            </ButtonLabel>
           </Button>
         </DialogFooter>
       </form>

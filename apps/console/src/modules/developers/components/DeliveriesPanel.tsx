@@ -77,10 +77,10 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
         <TBody>
           {rows.map((d) => (
             <TR key={d.id}>
-              <TD>
+              <TD label="Evento">
                 <code className="text-theme-xs">{d.event_type}</code>
               </TD>
-              <TD>
+              <TD label="Estado">
                 <Badge
                   variant={
                     d.status === "delivered"
@@ -93,9 +93,9 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
                   {d.status}
                 </Badge>
               </TD>
-              <TD>{d.attempt_count}</TD>
-              <TD>{d.http_status ?? "—"}</TD>
-              <TD>
+              <TD label="Intentos">{d.attempt_count}</TD>
+              <TD label="HTTP">{d.http_status ?? "—"}</TD>
+              <TD label="Creado">
                 <MutedText as="span">{formatDate(d.created_at)}</MutedText>
               </TD>
             </TR>

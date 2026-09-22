@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Check, Copy, Plus, Trash2 } from "lucide-react";
 
 import type { Company, DocumentSeries } from "@/modules/companies/types";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
-import { Button } from "@/shared/ui/components/button";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { FieldError } from "@/shared/ui/FieldError";
 
@@ -213,11 +218,14 @@ export function HeaderStep({
           <Button
             type="button"
             variant="outline"
+            size="icon-label-sm"
+            aria-label="Copiar"
             onClick={() =>
               void navigator.clipboard.writeText(value.idempotency_key)
             }
           >
-            Copiar
+            <Copy className={buttonIconClassName} />
+            <ButtonLabel>Copiar</ButtonLabel>
           </Button>
         </div>
       </div>
@@ -420,10 +428,12 @@ export function LinesStep({
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-label-sm"
+                aria-label="Quitar línea"
                 onClick={() => onChange(lines.filter((_, idx) => idx !== i))}
               >
-                Quitar línea
+                <Trash2 className={buttonIconClassName} />
+                <ButtonLabel>Quitar línea</ButtonLabel>
               </Button>
             </div>
           ) : null}
@@ -432,6 +442,8 @@ export function LinesStep({
       <Button
         type="button"
         variant="outline"
+        size="icon-label"
+        aria-label="Agregar línea"
         onClick={() =>
           onChange([
             ...lines,
@@ -439,7 +451,8 @@ export function LinesStep({
           ])
         }
       >
-        Agregar línea
+        <Plus className={buttonIconClassName} />
+        <ButtonLabel>Agregar línea</ButtonLabel>
       </Button>
     </div>
   );
@@ -462,14 +475,20 @@ export function ReviewStep({
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="icon-label-sm"
+          aria-label={copied ? "Copiado" : "Copiar JSON"}
           onClick={() => {
             void navigator.clipboard.writeText(json);
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
           }}
         >
-          {copied ? "Copiado" : "Copiar JSON"}
+          {copied ? (
+            <Check className={buttonIconClassName} />
+          ) : (
+            <Copy className={buttonIconClassName} />
+          )}
+          <ButtonLabel>{copied ? "Copiado" : "Copiar JSON"}</ButtonLabel>
         </Button>
       </div>
       <pre className="max-h-96 overflow-auto rounded-md bg-gray-100 p-3 text-xs dark:bg-white/5">
