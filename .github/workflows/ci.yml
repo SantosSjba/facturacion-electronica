@@ -16,6 +16,12 @@ env:
   DATABASE_URL: postgresql://factosys:factosys@localhost:5432/factosys
   REDIS_URL: redis://localhost:6379
   JWT_ACCESS_SECRET: ci-test-jwt-access-secret-32b
+  MINIO_ENDPOINT: http://localhost:9000
+  MINIO_ACCESS_KEY: factosys
+  MINIO_SECRET_KEY: factosysdev
+  MINIO_BUCKET: factosys-dev
+  MINIO_REGION: us-east-1
+  CREDENTIALS_MASTER_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
 
 jobs:
   lint-test-build:
@@ -45,6 +51,18 @@ jobs:
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 3s
+          --health-retries 10
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: factosys
+          MINIO_ROOT_PASSWORD: factosysdev
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 10
 
     steps:

@@ -4,6 +4,8 @@ const DEFAULT_DATABASE_URL =
   "postgresql://factosys:factosys@localhost:5433/factosys";
 const DEFAULT_REDIS_URL = "redis://localhost:6379";
 const DEFAULT_JWT_SECRET = "dev-only-change-me-jwt-access-secret-32b";
+/** 32 zero bytes, base64 — DEV/TEST ONLY. */
+const DEFAULT_CREDENTIALS_MASTER_KEY = Buffer.alloc(32, 7).toString("base64");
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -22,6 +24,22 @@ export const envSchema = z.object({
   JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(604_800),
   RATE_LIMIT_RPM_DEFAULT: z.coerce.number().int().positive().default(120),
+  MINIO_ENDPOINT: z.string().url().default("http://localhost:9000"),
+  MINIO_ACCESS_KEY: z.string().min(1).default("factosys"),
+  MINIO_SECRET_KEY: z.string().min(1).default("factosysdev"),
+  MINIO_BUCKET: z.string().min(1).default("factosys-dev"),
+  MINIO_REGION: z.string().min(1).default("us-east-1"),
+  CREDENTIALS_MASTER_KEY: z
+    .string()
+    .min(1)
+    .default(DEFAULT_CREDENTIALS_MASTER_KEY)
+    .refine((v) => {
+      try {
+        return Buffer.from(v, "base64").length === 32;
+      } catch {
+        return false;
+      }
+    }, "CREDENTIALS_MASTER_KEY must be base64-encoded 32 bytes"),
 });
 
 export type Env = z.infer<typeof envSchema>;

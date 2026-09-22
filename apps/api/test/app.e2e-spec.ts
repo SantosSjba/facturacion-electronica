@@ -1,5 +1,6 @@
 import { type INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { generateTestPfx } from "@factosys/sunat-sign";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import type { App } from "supertest/types";
@@ -11,6 +12,7 @@ describe("API e2e", () => {
   let server: App;
   let accessToken: string;
   let apiKeySecret: string;
+  let companyId: string;
 
   beforeAll(async () => {
     process.env["NODE_ENV"] = "test";
@@ -18,6 +20,9 @@ describe("API e2e", () => {
     process.env["JWT_ACCESS_SECRET"] =
       process.env["JWT_ACCESS_SECRET"] ?? "test-jwt-access-secret-32bytes!!";
     process.env["RATE_LIMIT_RPM_DEFAULT"] = "5000";
+    process.env["CREDENTIALS_MASTER_KEY"] =
+      process.env["CREDENTIALS_MASTER_KEY"] ??
+      Buffer.alloc(32, 7).toString("base64");
 
     const moduleRef = await Test.createTestingModule({
       imports: [E2eAppModule],
@@ -152,5 +157,98 @@ describe("API e2e", () => {
         roles: ["viewer"],
       })
       .expect(403);
+  });
+
+  it("CRUD company + credentials + series allocate without duplicates", async () => {
+    const suffix = String(Date.now()).slice(-6);
+    // Build unique valid-ish RUC: use known valid base and accept conflict retry
+    const created = await request(server)
+      .post("/companies")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        ruc: "20100070970",
+        legal_name: `E2E Co ${suffix}`,
+        environment: "sandbox",
+      });
+
+    if (created.status === 409) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const found = (list.body as { ruc: string; id: string }[]).find(
+        (c) => c.ruc === "20100070970",
+      );
+      expect(found).toBeTruthy();
+      if (!found) throw new Error("company missing after conflict");
+      companyId = found.id;
+    } else {
+      expect(created.status).toBe(201);
+      companyId = created.body.id as string;
+      expect(created.body.certificate_status).toBe("missing");
+      expect(created.body.sol_configured).toBe(false);
+    }
+
+    const prod = await request(server)
+      .post("/companies")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        ruc: "20100070970",
+        legal_name: `E2E Co Prod ${suffix}`,
+        environment: "production",
+      });
+    expect([201, 409]).toContain(prod.status);
+
+    const password = "TestPfx1!";
+    const { pfx } = generateTestPfx(password);
+    await request(server)
+      .put(`/companies/${companyId}/certificate`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .attach("file", pfx, "test.pfx")
+      .field("password", password)
+      .expect(204);
+
+    await request(server)
+      .put(`/companies/${companyId}/sol-credentials`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ username: "20100070970MODDATOS", password: "sol-secret" })
+      .expect(204);
+
+    await request(server)
+      .put(`/companies/${companyId}/gre-credentials`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ client_id: "gre-client", client_secret: "gre-secret" })
+      .expect(204);
+
+    const got = await request(server)
+      .get(`/companies/${companyId}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(got.body.certificate_status).toBe("active");
+    expect(got.body.sol_configured).toBe(true);
+    expect(got.body.gre_configured).toBe(true);
+    expect(JSON.stringify(got.body)).not.toMatch(/sol-secret|gre-secret|TestPfx/);
+
+    const serieName = `F${suffix.slice(0, 3)}`.toUpperCase();
+    await request(server)
+      .post(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ document_type: "01", serie: serieName, next_number: 1 })
+      .expect(201);
+
+    const allocations = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        request(server)
+          .post(`/companies/${companyId}/series/allocate`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({ document_type: "01", serie: serieName }),
+      ),
+    );
+    const numbers = allocations.map((r) => {
+      expect(r.status).toBe(201);
+      return r.body.number as number;
+    });
+    expect(new Set(numbers).size).toBe(8);
+    expect(Math.max(...numbers) - Math.min(...numbers)).toBe(7);
   });
 });

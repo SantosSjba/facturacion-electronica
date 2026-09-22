@@ -9,6 +9,12 @@ export interface LoadedPfx {
   certificatePem: string;
   /** Subject DN string safe for redacted logs (no key material). */
   subject: string;
+  /** Leaf cert notBefore (ISO). */
+  notBefore: string;
+  /** Leaf cert notAfter (ISO). */
+  notAfter: string;
+  /** Common Name if present. */
+  subjectCn: string | null;
 }
 
 /**
@@ -61,7 +67,15 @@ export function loadPfx(certificate: Buffer, password: string): LoadedPfx {
     privateKeyPem: forge.pki.privateKeyToPem(privateKey),
     certificatePem: forge.pki.certificateToPem(cert),
     subject: formatSubject(cert),
+    notBefore: cert.validity.notBefore.toISOString(),
+    notAfter: cert.validity.notAfter.toISOString(),
+    subjectCn: subjectCn(cert),
   };
+}
+
+function subjectCn(cert: forge.pki.Certificate): string | null {
+  const cn = cert.subject.getField("CN");
+  return cn?.value != null ? String(cn.value) : null;
 }
 
 /** Subject attributes only — safe for logs / meta.json. */

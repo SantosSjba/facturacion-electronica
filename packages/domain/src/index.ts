@@ -7,4 +7,4 @@ export const DOMAIN_PACKAGE_NAME = "@factosys/domain" as const;
 
 export { DOCUMENT_STATUS_VALUES, DocumentStatus } from "./document-status";
 
-export { DocumentSeries, IdentityDocument, Money } from "./vos";
+export { DocumentSeries, IdentityDocument, Money, assertValidRuc, isValidRuc } from "./vos";
