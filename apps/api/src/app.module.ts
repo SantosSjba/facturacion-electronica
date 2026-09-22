@@ -1,6 +1,7 @@
 import { type MiddlewareConsumer, Module, type NestModule } from "@nestjs/common";
 import { APP_FILTER } from "@nestjs/core";
 
+import { AuditModule } from "./infrastructure/audit/audit.module";
 import { AppConfigModule } from "./infrastructure/config/config.module";
 import { IdempotencyModule } from "./infrastructure/idempotency/idempotency.module";
 import { LoggingModule } from "./infrastructure/logging/logging.module";
@@ -27,6 +28,7 @@ import { ValidationsModule } from "./interfaces/http/v1/validations.module";
     ObjectStorageModule,
     QueuesModule,
     IdempotencyModule,
+    AuditModule,
     AuthModule,
     CompaniesModule,
     DocumentsModule,

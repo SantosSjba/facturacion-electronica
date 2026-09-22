@@ -10,12 +10,10 @@ import { SolTab } from "@/modules/companies/components/tabs/SolTab";
 import { CompaniesListPage } from "@/modules/companies/pages/CompaniesListPage";
 import { CompanyDetailPage } from "@/modules/companies/pages/CompanyDetailPage";
 import { CompanyFormPage } from "@/modules/companies/pages/CompanyFormPage";
-import {
-  ApiKeysStub,
-  AuditStub,
-  ValidationsStub,
-  WebhooksStub,
-} from "@/modules/developers/pages/DevelopersStubs";
+import { ApiKeysListPage } from "@/modules/developers/pages/ApiKeysListPage";
+import { AuditListPage } from "@/modules/developers/pages/AuditListPage";
+import { ValidationsPage } from "@/modules/developers/pages/ValidationsPage";
+import { WebhooksListPage } from "@/modules/developers/pages/WebhooksListPage";
 import { DailySummaryFormPage } from "@/modules/documents/pages/DailySummaryFormPage";
 import { DocumentDetailPage } from "@/modules/documents/pages/DocumentDetailPage";
 import { DocumentsListPage } from "@/modules/documents/pages/DocumentsListPage";
@@ -108,12 +106,12 @@ export function AppRouter() {
               <Route path="gre/emit/09" element={<Gre09WizardPage />} />
               <Route path="gre/emit/31" element={<Gre31WizardPage />} />
               <Route path="gre/:id" element={<GreDetailPage />} />
-              <Route path="developers/api-keys" element={<ApiKeysStub />} />
-              <Route path="developers/webhooks" element={<WebhooksStub />} />
-              <Route path="developers/audit" element={<AuditStub />} />
+              <Route path="developers/api-keys" element={<ApiKeysListPage />} />
+              <Route path="developers/webhooks" element={<WebhooksListPage />} />
+              <Route path="developers/audit" element={<AuditListPage />} />
               <Route
                 path="developers/validations"
-                element={<ValidationsStub />}
+                element={<ValidationsPage />}
               />
             </Route>
           </Route>

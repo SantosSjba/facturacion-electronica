@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
+import { useSession } from "@/shared/auth/session-context";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
@@ -25,6 +26,8 @@ import type { CustomerInput, InvoiceCreateInput, InvoiceLineInput } from "../typ
 const STEPS = ["Cabecera", "Cliente", "Líneas", "Extras", "Revisión"];
 
 export function InvoiceWizardPage() {
+  const { hasPermission } = useSession();
+  const canWrite = hasPermission("documents:write");
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [idem] = useState(() => newIdempotencyKey());
@@ -38,6 +41,7 @@ export function InvoiceWizardPage() {
   const companiesQuery = useQuery({
     queryKey: ["companies"],
     queryFn: fetchCompanies,
+    enabled: canWrite,
   });
 
   const payload: InvoiceCreateInput = useMemo(() => {
@@ -67,6 +71,14 @@ export function InvoiceWizardPage() {
     }
     return body;
   }, [header, customer, lines, purchaseOrder]);
+
+  if (!canWrite) {
+    return (
+      <ErrorState
+        message="No tienes permiso documents:write para emitir facturas."
+      />
+    );
+  }
 
   async function onSubmit() {
     setError(null);

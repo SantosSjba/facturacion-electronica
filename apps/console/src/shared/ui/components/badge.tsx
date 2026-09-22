@@ -7,13 +7,14 @@ export function Badge({
   className,
   variant = "primary",
   color,
+  ...props
 }: {
   children: React.ReactNode;
   className?: string;
   /** @deprecated use `color` — kept for callers using success|muted|outline|default */
   variant?: "default" | "success" | "muted" | "outline" | "error" | BadgeColor;
   color?: BadgeColor;
-}) {
+} & React.HTMLAttributes<HTMLSpanElement>) {
   const resolved: BadgeColor =
     color ??
     (variant === "default"
@@ -38,6 +39,7 @@ export function Badge({
           "border border-gray-300 text-gray-700 dark:border-gray-700 dark:text-gray-400",
         className,
       )}
+      {...props}
     >
       {children}
     </span>

@@ -28,6 +28,7 @@ export function ArtifactButtons({ documentId }: { documentId: string }) {
             key={kind}
             type="button"
             variant="outline"
+            data-testid={`artifact-${kind}`}
             disabled={busy !== null}
             onClick={() => void onDownload(kind)}
           >

@@ -74,12 +74,18 @@ export function WizardShell({
           Atrás
         </Button>
         {isLast ? (
-          <Button type="button" onClick={onSubmit} disabled={submitting}>
+          <Button
+            type="button"
+            data-testid="wizard-submit"
+            onClick={onSubmit}
+            disabled={submitting}
+          >
             {submitting ? "Emitiendo…" : "Emitir"}
           </Button>
         ) : (
           <Button
             type="button"
+            data-testid="wizard-next"
             onClick={onNext}
             disabled={Boolean(nextError) || submitting}
           >

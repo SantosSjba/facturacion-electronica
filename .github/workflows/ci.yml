@@ -28,7 +28,7 @@ jobs:
   lint-test-build:
     name: lint · test · build · xsd+excel-gate · db-migrate
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     services:
       postgres:
@@ -120,3 +120,55 @@ jobs:
 
       - name: XSD + Excel P2 gate (golden ND 08)
         run: pnpm validate:xml --type=08 --stages=xsd,excel packages/sunat-ubl/testdata/golden/08-debit-note-interest.unsigned.xml
+
+      - name: Start API (Fake) for console E2E + DoD
+        env:
+          NODE_ENV: test
+          PORT: 3000
+          LOG_LEVEL: warn
+          SUNAT_BILL_MODE: fake
+          SUNAT_GRE_MODE: fake
+          SUNAT_VALIDEZ_MODE: fake
+          PDF_RI_MODE: fake
+          CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+          WEBHOOK_ALLOW_LOCALHOST: "1"
+        run: |
+          node apps/api/dist/main.js &
+          echo $! > /tmp/factosys-api.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3000/health >/dev/null; then
+              echo "API ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start"
+          exit 1
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @factosys/console exec playwright install --with-deps chromium
+
+      - name: Start console preview
+        run: |
+          pnpm --filter @factosys/console preview -- --host localhost --port 5173 &
+          echo $! > /tmp/factosys-console.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5173/ >/dev/null; then
+              echo "Console ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Console preview failed"
+          exit 1
+
+      - name: Console Playwright E2E
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:5173
+        run: pnpm --filter @factosys/console test:e2e
+
+      - name: Verify DoD producto (HTTP)
+        env:
+          FACTOSYS_BASE_URL: http://127.0.0.1:3000
+        run: pnpm verify:dod

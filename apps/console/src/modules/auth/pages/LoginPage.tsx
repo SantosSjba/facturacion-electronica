@@ -72,6 +72,7 @@ export function LoginPage() {
             <Input
               id="organization_slug"
               name="organization_slug"
+              data-testid="login-org"
               autoComplete="organization"
               value={organizationSlug}
               aria-invalid={Boolean(fieldErrors.organization)}
@@ -86,6 +87,7 @@ export function LoginPage() {
               id="email"
               name="email"
               type="email"
+              data-testid="login-email"
               autoComplete="username"
               value={email}
               placeholder="usuario@empresa.com"
@@ -102,6 +104,7 @@ export function LoginPage() {
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                data-testid="login-password"
                 autoComplete="current-password"
                 minLength={8}
                 value={password}
@@ -119,7 +122,12 @@ export function LoginPage() {
 
           {error ? <ErrorState title="Error de acceso" message={error} /> : null}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={submitting}
+            data-testid="login-submit"
+          >
             {submitting ? "Entrando…" : "Entrar"}
           </Button>
 

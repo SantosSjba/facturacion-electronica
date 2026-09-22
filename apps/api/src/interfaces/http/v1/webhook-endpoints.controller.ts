@@ -6,11 +6,14 @@ import {
   Param,
   Patch,
   Post,
+  Req,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
+import { AuditService } from "../../../infrastructure/audit/audit.service";
 import { WebhooksService } from "../../../infrastructure/webhooks/webhooks.service";
 import type { AuthContext } from "../auth/auth-context";
 import {
@@ -19,6 +22,7 @@ import {
 } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
+import { actorFromAuth, requestMeta } from "../audit/audit-request.util";
 
 const createSchema = z.object({
   url: z.string().url(),
@@ -39,7 +43,10 @@ type PatchBody = z.infer<typeof patchSchema>;
 @ApiBearerAuth()
 @Controller("v1/webhook-endpoints")
 export class WebhookEndpointsController {
-  constructor(private readonly webhooks: WebhooksService) {}
+  constructor(
+    private readonly webhooks: WebhooksService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @ApiKeyAuth()
@@ -54,16 +61,33 @@ export class WebhookEndpointsController {
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
   @ApiOperation({ summary: "Create webhook endpoint — secret returned once" })
-  create(
+  async create(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodValidationPipe(createSchema)) body: CreateBody,
+    @Req() req: Request,
   ) {
-    return this.webhooks.create({
+    const created = await this.webhooks.create({
       organizationId: this.orgId(auth),
       companyId: body.company_id ?? null,
       url: body.url,
       events: body.events,
     });
+    const actor = actorFromAuth(auth);
+    await this.audit.append({
+      organizationId: this.orgId(auth),
+      companyId: created.company_id,
+      ...actor,
+      action: "webhook.created",
+      resourceType: "webhook_endpoint",
+      resourceId: created.id,
+      ...requestMeta(req),
+      data: {
+        url: created.url,
+        events: created.events,
+        secret: created.secret,
+      },
+    });
+    return created;
   }
 
   @Get(":id")
@@ -78,16 +102,33 @@ export class WebhookEndpointsController {
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
   @ApiOperation({ summary: "Update webhook endpoint (events/status/url)" })
-  patch(
+  async patch(
     @CurrentAuth() auth: AuthContext,
     @Param("id") id: string,
     @Body(new ZodValidationPipe(patchSchema)) body: PatchBody,
+    @Req() req: Request,
   ) {
-    return this.webhooks.patch(this.orgId(auth), id, {
+    const updated = await this.webhooks.patch(this.orgId(auth), id, {
       url: body.url,
       events: body.events,
       status: body.status,
     });
+    const actor = actorFromAuth(auth);
+    await this.audit.append({
+      organizationId: this.orgId(auth),
+      companyId: updated.company_id,
+      ...actor,
+      action: "webhook.updated",
+      resourceType: "webhook_endpoint",
+      resourceId: updated.id,
+      ...requestMeta(req),
+      data: {
+        url: updated.url,
+        events: updated.events,
+        status: updated.status,
+      },
+    });
+    return updated;
   }
 
   @Post(":id/rotate-secret")
@@ -95,8 +136,24 @@ export class WebhookEndpointsController {
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
   @ApiOperation({ summary: "Rotate webhook secret — returned once" })
-  rotate(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
-    return this.webhooks.rotateSecret(this.orgId(auth), id);
+  async rotate(
+    @CurrentAuth() auth: AuthContext,
+    @Param("id") id: string,
+    @Req() req: Request,
+  ) {
+    const rotated = await this.webhooks.rotateSecret(this.orgId(auth), id);
+    const actor = actorFromAuth(auth);
+    await this.audit.append({
+      organizationId: this.orgId(auth),
+      companyId: rotated.company_id,
+      ...actor,
+      action: "webhook.secret_rotated",
+      resourceType: "webhook_endpoint",
+      resourceId: rotated.id,
+      ...requestMeta(req),
+      data: { secret: rotated.secret },
+    });
+    return rotated;
   }
 
   @Get(":id/deliveries")

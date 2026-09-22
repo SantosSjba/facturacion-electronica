@@ -10,5 +10,5 @@ export function StatusBadge({ status }: { status: DocumentStatus }) {
         ? "error"
         : "muted";
 
-  return <Badge color={color}>{status}</Badge>;
+  return <Badge color={color} data-testid="document-status">{status}</Badge>;
 }

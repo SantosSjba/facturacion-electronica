@@ -21,14 +21,19 @@ export const DEMO_OWNER_EMAIL = "owner@demo.local";
 /** Dev-only password for demo owner — never use in production. */
 export const DEMO_OWNER_PASSWORD = "DemoOwner!2026";
 
+export const DEMO_VIEWER_EMAIL = "viewer@demo.local";
+/** Dev-only password for demo viewer — never use in production. */
+export const DEMO_VIEWER_PASSWORD = "DemoViewer!2026";
+
 /**
- * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner user.
+ * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner + viewer.
  * No API key secrets.
  */
 export async function seedDemo(db: Db): Promise<{
   organizationId: string;
   catalogVersionId: string;
   ownerUserId: string;
+  viewerUserId: string;
 }> {
   const existingOrg = await db
     .select()
@@ -125,5 +130,48 @@ export async function seedDemo(db: Db): Promise<{
     await db.insert(userRoles).values({ userId: ownerUserId, roleId: ownerRoleId });
   }
 
-  return { organizationId, catalogVersionId, ownerUserId };
+  const existingViewer = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.organizationId, organizationId),
+        eq(users.email, DEMO_VIEWER_EMAIL),
+      ),
+    )
+    .limit(1);
+
+  let viewerUserId = existingViewer[0]?.id;
+  if (!viewerUserId) {
+    viewerUserId = uuidv7();
+    const passwordHash = await hash(DEMO_VIEWER_PASSWORD);
+    await db.insert(users).values({
+      id: viewerUserId,
+      organizationId,
+      email: DEMO_VIEWER_EMAIL,
+      name: "Demo Viewer",
+      passwordHash,
+      status: "active",
+    });
+  }
+
+  const viewerRoleId = roleIds.viewer;
+  const hasViewerRole = await db
+    .select()
+    .from(userRoles)
+    .where(
+      and(
+        eq(userRoles.userId, viewerUserId),
+        eq(userRoles.roleId, viewerRoleId),
+      ),
+    )
+    .limit(1);
+  if (hasViewerRole.length === 0) {
+    await db.insert(userRoles).values({
+      userId: viewerUserId,
+      roleId: viewerRoleId,
+    });
+  }
+
+  return { organizationId, catalogVersionId, ownerUserId, viewerUserId };
 }

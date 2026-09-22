@@ -17,6 +17,7 @@ Demo seed includes:
 - Catalog ruleset `2026-08-26`
 - RBAC roles/permissions matrix (doc 33)
 - Owner user `owner@demo.local` / `DemoOwner!2026` (dev only)
+- Viewer user `viewer@demo.local` / `DemoViewer!2026` (dev only)
 
 ## Scripts (root)
 

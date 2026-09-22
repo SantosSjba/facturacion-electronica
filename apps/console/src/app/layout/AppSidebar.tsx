@@ -80,6 +80,7 @@ export function AppSidebar() {
                 <li key={item.id}>
                   <NavLink
                     to={item.to}
+                    data-testid={`nav-${item.id}`}
                     title={showLabels ? undefined : item.label}
                     className={({ isActive }) =>
                       cn(

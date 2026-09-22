@@ -110,6 +110,7 @@ export function HeaderStep({
       <div className="space-y-1.5 sm:col-span-2">
         <Label>Empresa</Label>
         <Select
+          data-testid="wizard-company"
           value={value.company_id}
           onChange={(e) =>
             onChange({ ...value, company_id: e.target.value, serie: "" })
@@ -126,6 +127,7 @@ export function HeaderStep({
       <div className="space-y-1.5">
         <Label>Serie</Label>
         <Select
+          data-testid="wizard-serie"
           value={value.serie}
           onChange={(e) => onChange({ ...value, serie: e.target.value })}
           disabled={!value.company_id}
@@ -255,6 +257,7 @@ export function CustomerStep({
       <div className="space-y-1.5">
         <Label>Número</Label>
         <Input
+          data-testid="wizard-customer-number"
           value={value.identity_number}
           inputMode={value.identity_type === "1" || value.identity_type === "6" ? "numeric" : "text"}
           maxLength={value.identity_type === "6" ? 11 : value.identity_type === "1" ? 8 : 20}
@@ -286,6 +289,7 @@ export function CustomerStep({
       <div className="space-y-1.5 sm:col-span-2">
         <Label>Nombre / Razón social</Label>
         <Input
+          data-testid="wizard-customer-name"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
         />
@@ -323,6 +327,7 @@ export function LinesStep({
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Descripción</Label>
             <Input
+              data-testid={i === 0 ? "wizard-line-description" : undefined}
               value={line.description}
               onChange={(e) => update(i, { description: e.target.value })}
             />
@@ -333,6 +338,7 @@ export function LinesStep({
               type="number"
               min={0.0001}
               step="any"
+              data-testid={i === 0 ? "wizard-line-quantity" : undefined}
               value={line.quantity}
               aria-invalid={line.quantity <= 0}
               onKeyDown={preventInvalidNumberKey}
@@ -354,6 +360,7 @@ export function LinesStep({
               type="number"
               min={0}
               step="any"
+              data-testid={i === 0 ? "wizard-line-unit-value" : undefined}
               value={line.unit_value}
               aria-invalid={line.unit_value < 0}
               onKeyDown={preventInvalidNumberKey}

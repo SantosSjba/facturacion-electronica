@@ -18,7 +18,12 @@ export function EmitMenu() {
 
   return (
     <div className="relative">
-      <Button type="button" size="sm" onClick={() => setOpen((v) => !v)}>
+      <Button
+        type="button"
+        size="sm"
+        data-testid="emit-menu"
+        onClick={() => setOpen((v) => !v)}
+      >
         Emitir
         <ChevronDown className="h-4 w-4" />
       </Button>
@@ -28,6 +33,9 @@ export function EmitMenu() {
             <Link
               key={l.to}
               to={l.to}
+              data-testid={
+                l.to === "/documents/emit/invoice" ? "emit-invoice" : undefined
+              }
               className="block px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-white/5"
               onClick={() => setOpen(false)}
             >

@@ -1621,4 +1621,35 @@ describe("API e2e", () => {
     expect(created.body.document_type).toBe("09");
     expect(created.body.id).toBeTruthy();
   });
+
+  it("writes audit event on API key create and lists via GET audit-events", async () => {
+    const created = await request(server)
+      .post("/organizations/me/api-keys")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        name: `audit-key-${Date.now()}`,
+        scopes: ["documents:read"],
+      })
+      .expect(201);
+
+    expect(created.body.id).toBeTruthy();
+
+    const audit = await request(server)
+      .get("/organizations/me/audit-events")
+      .query({ action: "api_key.created", limit: 20 })
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(Array.isArray(audit.body.items)).toBe(true);
+    const hit = (audit.body.items as Array<Record<string, unknown>>).find(
+      (e) => e.resource_id === created.body.id,
+    );
+    expect(hit).toBeTruthy();
+    expect(hit?.action).toBe("api_key.created");
+    expect(hit?.data).toMatchObject({
+      name: created.body.name,
+      key_prefix: created.body.keyPrefix,
+    });
+    expect((hit?.data as { secret?: string }).secret).toBe("[REDACTED]");
+  });
 });
