@@ -22,7 +22,20 @@ import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
 const listQuerySchema = z.object({
   company_id: z.string().uuid().optional(),
-  document_type: z.string().min(2).max(2).optional(),
+  /** Single code (`01`) or CSV (`09,31`). */
+  document_type: z
+    .string()
+    .min(2)
+    .refine(
+      (v) =>
+        v
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .every((code) => code.length >= 2 && code.length <= 4),
+      { message: "document_type must be 2–4 char codes, optionally comma-separated" },
+    )
+    .optional(),
   status: z.string().min(1).optional(),
   date_from: z
     .string()
@@ -38,6 +51,19 @@ const listQuerySchema = z.object({
 });
 
 type ListQuery = z.infer<typeof listQuerySchema>;
+
+function parseDocumentTypes(
+  raw: string | undefined,
+): { documentType?: string; documentTypes?: string[] } {
+  if (!raw?.trim()) return {};
+  const types = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (types.length === 0) return {};
+  if (types.length === 1) return { documentType: types[0] };
+  return { documentTypes: types };
+}
 
 @ApiTags("Documents")
 @ApiBearerAuth()
@@ -57,9 +83,10 @@ export class DocumentsController {
     @Query(new ZodValidationPipe(listQuerySchema)) query: ListQuery,
   ) {
     const orgId = this.orgId(auth);
+    const typeFilter = parseDocumentTypes(query.document_type);
     return this.documents.list(orgId, {
       companyId: query.company_id,
-      documentType: query.document_type,
+      ...typeFilter,
       status: query.status,
       dateFrom: query.date_from,
       dateTo: query.date_to,

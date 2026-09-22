@@ -1539,4 +1539,86 @@ describe("API e2e", () => {
       "ticket_pending",
     ]).toContain(status);
   });
+
+  it("JWT owner can list GRE types and emit despatch advice (S11-GRE dual auth)", async () => {
+    if (!companyId) {
+      const list = await request(server)
+        .get("/companies")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      const first = (list.body as { id: string }[])[0];
+      if (!first) throw new Error("no company");
+      companyId = first.id;
+    }
+
+    await request(server)
+      .put(`/companies/${companyId}/gre-credentials`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ client_id: "gre-jwt-client", client_secret: "gre-jwt-secret" })
+      .expect(204);
+
+    const seriesList = await request(server)
+      .get(`/companies/${companyId}/series`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const series = seriesList.body as { serie: string; documentType: string }[];
+    if (!series.some((s) => s.serie === "T001" && s.documentType === "09")) {
+      await request(server)
+        .post(`/companies/${companyId}/series`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ document_type: "09", serie: "T001", next_number: 1 })
+        .expect(201);
+    }
+
+    const listed = await request(server)
+      .get("/v1/documents")
+      .query({ company_id: companyId, document_type: "09,31", limit: 10 })
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(Array.isArray(listed.body.items)).toBe(true);
+    for (const item of listed.body.items as { document_type: string }[]) {
+      expect(["09", "31"]).toContain(item.document_type);
+    }
+
+    const created = await request(server)
+      .post("/v1/despatch-advices")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Idempotency-Key", `jwt-gre-${Date.now()}`)
+      .send({
+        company_id: companyId,
+        document_type: "09",
+        serie: "T001",
+        issue_date: "2026-09-17",
+        delivery_customer: {
+          identity_type: "6",
+          identity_number: "20123456789",
+          name: "JWT GRE Co",
+        },
+        shipment: {
+          transfer_reason_code: "01",
+          transport_mode_code: "01",
+          gross_weight: 5,
+          gross_weight_unit: "KGM",
+          start_date: "2026-09-17",
+          carrier: {
+            identity_type: "6",
+            identity_number: "20600000000",
+            name: "TRANSPORTE JWT",
+          },
+          origin: { ubigeo: "150101", address: "Origen JWT" },
+          destination: { ubigeo: "150122", address: "Destino JWT" },
+        },
+        lines: [
+          {
+            id: 1,
+            quantity: 1,
+            unit_code: "NIU",
+            description: "JWT GRE line",
+          },
+        ],
+      })
+      .expect(201);
+    expect(created.body.document_type).toBe("09");
+    expect(created.body.id).toBeTruthy();
+  });
 });

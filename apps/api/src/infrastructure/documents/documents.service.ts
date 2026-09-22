@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable, Optional } from "@nestjs/common";
-import { and, asc, desc, eq, gte, ilike, lte, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, lt, or } from "drizzle-orm";
 import {
   documentArtifacts,
   documentEvents,
@@ -57,7 +57,9 @@ export interface DocumentPublicError {
 
 export interface DocumentListFilters {
   companyId?: string;
+  /** Single type or multiple (e.g. GRE list 09+31). */
   documentType?: string;
+  documentTypes?: string[];
   status?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -123,7 +125,9 @@ export class DocumentsService {
     if (filters.companyId) {
       conditions.push(eq(documents.companyId, filters.companyId));
     }
-    if (filters.documentType) {
+    if (filters.documentTypes && filters.documentTypes.length > 0) {
+      conditions.push(inArray(documents.documentType, filters.documentTypes));
+    } else if (filters.documentType) {
       conditions.push(eq(documents.documentType, filters.documentType));
     }
     if (filters.status) {

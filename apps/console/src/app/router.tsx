@@ -26,7 +26,10 @@ import {
 } from "@/modules/documents/pages/NoteWizardPages";
 import { ReceiptWizardPage } from "@/modules/documents/pages/ReceiptWizardPage";
 import { VoidedDocumentFormPage } from "@/modules/documents/pages/VoidedDocumentFormPage";
-import { GreStub } from "@/modules/gre/pages/GreStub";
+import { Gre09WizardPage } from "@/modules/gre/pages/Gre09WizardPage";
+import { Gre31WizardPage } from "@/modules/gre/pages/Gre31WizardPage";
+import { GreDetailPage } from "@/modules/gre/pages/GreDetailPage";
+import { GreListPage } from "@/modules/gre/pages/GreListPage";
 import { PermissionsMatrixPage } from "@/modules/users/pages/PermissionsMatrixPage";
 import { UserDetailPage } from "@/modules/users/pages/UserDetailPage";
 import { UsersListPage } from "@/modules/users/pages/UsersListPage";
@@ -101,7 +104,10 @@ export function AppRouter() {
                 element={<DailySummaryFormPage />}
               />
               <Route path="documents/:id" element={<DocumentDetailPage />} />
-              <Route path="gre" element={<GreStub />} />
+              <Route path="gre" element={<GreListPage />} />
+              <Route path="gre/emit/09" element={<Gre09WizardPage />} />
+              <Route path="gre/emit/31" element={<Gre31WizardPage />} />
+              <Route path="gre/:id" element={<GreDetailPage />} />
               <Route path="developers/api-keys" element={<ApiKeysStub />} />
               <Route path="developers/webhooks" element={<WebhooksStub />} />
               <Route path="developers/audit" element={<AuditStub />} />
