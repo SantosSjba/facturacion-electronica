@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+---
+
+<BaseLayout title="Privacidad — Factosys">
+  <Navbar />
+  <main class="mx-auto max-w-3xl px-4 pb-16 pt-28">
+    <p class="text-sm font-medium text-brand-600">Borrador es-PE</p>
+    <h1 class="mt-2 text-3xl font-extrabold text-gray-900">
+      Política de privacidad
+    </h1>
+    <p
+      class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      Este texto es un <strong>placeholder</strong> para desarrollo. No es el
+      texto legal final. Debe ser revisado y aprobado por un abogado antes de
+      publicarse.
+    </p>
+    <div class="mt-8 space-y-4 text-gray-700">
+      <p>
+        Factosys trata datos personales necesarios para prestar el servicio de
+        facturación electrónica en Perú (identidad, contacto, RUC, CPE/GRE y
+        registros técnicos).
+      </p>
+      <h2 class="text-lg font-semibold text-gray-900">Checklist abogado</h2>
+      <ul class="list-disc space-y-1 pl-5 text-sm">
+        <li>Identidad y contacto del responsable del tratamiento</li>
+        <li>Bases legales y finalidades</li>
+        <li>Derechos ARCO / Ley 29733</li>
+        <li>Cookies, seguridad y notificación de brechas</li>
+        <li>Jurisdicción Perú y canal de privacidad</li>
+      </ul>
+    </div>
+    <a
+      href="/#solicitud"
+      class="mt-10 inline-block text-sm font-medium text-brand-600 hover:underline"
+      >Volver a solicitud</a
+    >
+  </main>
+  <Footer />
+</BaseLayout>

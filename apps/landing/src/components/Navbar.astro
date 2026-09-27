@@ -1,0 +1,81 @@
+---
+import { saasLoginUrl } from "../lib/site";
+
+const links = [
+  { href: "/#valor", label: "Valor" },
+  { href: "/#confianza", label: "Confianza" },
+  { href: "/#solicitud", label: "Solicitud" },
+];
+---
+
+<header class="fixed z-50 w-full">
+  <nav class="border-b border-gray-200 bg-white/95 py-2.5 backdrop-blur">
+    <div
+      class="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between px-4"
+    >
+      <a href="/" class="flex items-center gap-2">
+        <span class="text-xl font-semibold text-gray-900">Factosys</span>
+      </a>
+      <div class="flex items-center gap-2 lg:order-2">
+        <a
+          href={saasLoginUrl}
+          class="hidden rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:inline-block"
+        >
+          Ingresar
+        </a>
+        <a
+          href="/#solicitud"
+          class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-300"
+        >
+          Solicitar acceso
+        </a>
+        <button
+          id="nav-toggle"
+          type="button"
+          class="inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 lg:hidden"
+          aria-controls="mobile-menu"
+          aria-expanded="false"
+        >
+          <span class="sr-only">Abrir menú</span>
+          <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+      <div
+        class="hidden w-full items-center justify-between lg:flex lg:w-auto lg:order-1"
+        id="mobile-menu"
+      >
+        <ul
+          class="mt-4 flex flex-col font-medium lg:mt-0 lg:flex-row lg:space-x-8"
+        >
+          {
+            links.map((l) => (
+              <li>
+                <a
+                  href={l.href}
+                  class="block border-b border-gray-100 py-2 pl-3 pr-4 text-gray-700 hover:bg-gray-50 lg:border-0 lg:p-0 lg:hover:bg-transparent lg:hover:text-brand-600"
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const btn = document.getElementById("nav-toggle");
+  const menu = document.getElementById("mobile-menu");
+  btn?.addEventListener("click", () => {
+    menu?.classList.toggle("hidden");
+    const open = !menu?.classList.contains("hidden");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+</script>

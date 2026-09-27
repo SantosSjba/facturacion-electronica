@@ -1,0 +1,218 @@
+---
+import { apiBaseUrl } from "../lib/site";
+
+const inputClass =
+  "block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500";
+---
+
+<section
+  id="solicitud"
+  class="bg-white"
+  aria-labelledby="solicitud-heading"
+  data-api-base={apiBaseUrl}
+>
+  <div class="mx-auto max-w-screen-xl px-4 py-8 lg:px-6 lg:py-16">
+    <div class="mx-auto max-w-screen-md text-center">
+      <h2
+        id="solicitud-heading"
+        class="mb-4 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl"
+      >
+        Solicitud de acceso
+      </h2>
+      <p class="mb-8 font-light text-gray-500 sm:text-xl">
+        Completa el formulario. Revisaremos tu solicitud y te contactaremos por
+        correo.
+      </p>
+    </div>
+
+    <form
+      id="signup-form"
+      class="mx-auto max-w-screen-sm space-y-4 rounded-lg border border-gray-100 bg-white p-6 shadow sm:p-8"
+      novalidate
+    >
+      <div>
+        <label for="contact_name" class="mb-2 block text-sm font-medium text-gray-900"
+          >Nombre de contacto</label
+        >
+        <input
+          id="contact_name"
+          name="contact_name"
+          type="text"
+          required
+          autocomplete="name"
+          class={inputClass}
+          placeholder="Nombre y apellido"
+        />
+      </div>
+      <div>
+        <label for="contact_email" class="mb-2 block text-sm font-medium text-gray-900"
+          >Email</label
+        >
+        <input
+          id="contact_email"
+          name="contact_email"
+          type="email"
+          required
+          autocomplete="email"
+          class={inputClass}
+          placeholder="tu@empresa.com"
+        />
+      </div>
+      <div>
+        <label for="company_name" class="mb-2 block text-sm font-medium text-gray-900"
+          >Razón social</label
+        >
+        <input
+          id="company_name"
+          name="company_name"
+          type="text"
+          required
+          class={inputClass}
+          placeholder="Empresa SAC"
+        />
+      </div>
+      <div>
+        <label for="ruc" class="mb-2 block text-sm font-medium text-gray-900">RUC</label>
+        <input
+          id="ruc"
+          name="ruc"
+          type="text"
+          inputmode="numeric"
+          pattern="\\d{11}"
+          maxlength="11"
+          required
+          class={inputClass}
+          placeholder="11 dígitos"
+        />
+      </div>
+      <div>
+        <label for="plan_code" class="mb-2 block text-sm font-medium text-gray-900"
+          >Plan de interés (opcional)</label
+        >
+        <input
+          id="plan_code"
+          name="plan_code"
+          type="text"
+          class={inputClass}
+          placeholder="ej. starter"
+        />
+      </div>
+      <div>
+        <label for="notes" class="mb-2 block text-sm font-medium text-gray-900"
+          >Notas (opcional)</label
+        >
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          class={inputClass}
+          placeholder="Volumen estimado, fechas, etc."></textarea>
+      </div>
+      <div class="flex items-start gap-3">
+        <input
+          id="accept_privacy"
+          name="accept_privacy"
+          type="checkbox"
+          required
+          class="mt-1 h-4 w-4 rounded border-gray-300 bg-gray-50 text-brand-500 focus:ring-brand-500"
+        />
+        <label for="accept_privacy" class="text-sm text-gray-600">
+          Acepto la
+          <a href="/legal/privacy" class="font-medium text-brand-600 hover:underline"
+            >política de privacidad</a
+          >
+          (borrador).
+        </label>
+      </div>
+
+      <p id="signup-status" class="hidden text-sm" role="status" aria-live="polite"
+      ></p>
+
+      <button
+        id="signup-submit"
+        type="submit"
+        class="w-full rounded-lg bg-brand-500 px-5 py-3 text-center text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-300 disabled:cursor-not-allowed disabled:bg-brand-300"
+      >
+        Enviar solicitud
+      </button>
+    </form>
+  </div>
+</section>
+
+<script>
+  const section = document.getElementById("solicitud");
+  const form = document.getElementById("signup-form") as HTMLFormElement | null;
+  const statusEl = document.getElementById("signup-status");
+  const submitBtn = document.getElementById(
+    "signup-submit",
+  ) as HTMLButtonElement | null;
+  const apiBase = section?.dataset.apiBase || "http://localhost:3000";
+
+  function showStatus(message: string, kind: "ok" | "err") {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.remove("hidden", "text-success-600", "text-error-600");
+    statusEl.classList.add(
+      kind === "ok" ? "text-success-600" : "text-error-600",
+    );
+  }
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form || !submitBtn) return;
+
+    const data = new FormData(form);
+    if (data.get("accept_privacy") !== "on") {
+      showStatus("Debes aceptar la política de privacidad.", "err");
+      return;
+    }
+
+    const payload = {
+      company_name: String(data.get("company_name") || "").trim(),
+      ruc: String(data.get("ruc") || "").trim(),
+      contact_name: String(data.get("contact_name") || "").trim(),
+      contact_email: String(data.get("contact_email") || "").trim(),
+      plan_code: String(data.get("plan_code") || "").trim() || undefined,
+      notes: String(data.get("notes") || "").trim() || undefined,
+      accept_privacy: true as const,
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Enviando…";
+    statusEl?.classList.add("hidden");
+
+    try {
+      const res = await fetch(`${apiBase}/saas/public/signup-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        message?: string;
+      };
+      if (!res.ok) {
+        showStatus(
+          body.message || `No se pudo enviar (${res.status}). Intenta de nuevo.`,
+          "err",
+        );
+        return;
+      }
+      form.reset();
+      showStatus(
+        "Solicitud recibida. Te contactaremos pronto por correo.",
+        "ok",
+      );
+    } catch {
+      showStatus(
+        "Error de red. Verifica que la API esté disponible y CORS permita este origen.",
+        "err",
+      );
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Enviar solicitud";
+    }
+  });
+</script>

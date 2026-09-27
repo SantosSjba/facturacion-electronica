@@ -1,0 +1,64 @@
+---
+const items = [
+  {
+    title: "Seguridad",
+    body: "Credenciales cifradas, roles por organización y auditoría de acciones sensibles.",
+  },
+  {
+    title: "Cumplimiento",
+    body: "Flujos alineados al régimen de facturación electrónica peruano (CPE / GRE).",
+  },
+  {
+    title: "Operación",
+    body: "Sandbox y producción, con controles pensados para equipos de back-office.",
+  },
+  {
+    title: "Soporte",
+    body: "Solicita acceso y te acompañamos en la activación del entorno de evaluación.",
+  },
+];
+---
+
+<section id="confianza" class="bg-white">
+  <div
+    class="mx-auto grid max-w-screen-xl items-center px-4 py-8 lg:grid-cols-4 lg:gap-16 lg:px-6 lg:py-24 xl:gap-24"
+  >
+    <div class="col-span-2 mb-8">
+      <p class="text-lg font-medium text-brand-600">Diseñado para Perú</p>
+      <h2
+        class="mb-4 mt-3 text-3xl font-extrabold tracking-tight text-gray-900 md:text-3xl"
+      >
+        Seguridad y cumplimiento en el centro
+      </h2>
+      <p class="font-light text-gray-500 sm:text-xl">
+        Estándares rigurosos de acceso, cifrado y trazabilidad para proteger tu
+        operación y la de tus clientes.
+      </p>
+      <div class="mt-6 space-y-4 border-t border-gray-200 pt-6">
+        <a
+          href="/legal/privacy"
+          class="inline-flex items-center text-base font-medium text-brand-600 hover:text-brand-700"
+        >
+          Política de privacidad
+          <svg class="ml-1 h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+    <div class="col-span-2 space-y-8 md:grid md:grid-cols-2 md:gap-12 md:space-y-0">
+      {
+        items.map((item) => (
+          <div>
+            <div class="mb-2 h-2 w-10 rounded bg-brand-500" aria-hidden="true" />
+            <h3 class="mb-2 text-2xl font-bold text-gray-900">{item.title}</h3>
+            <p class="font-light text-gray-500">{item.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

@@ -1662,6 +1662,45 @@ describe("API e2e", () => {
     await request(server).post("/saas/signup-requests").send({}).expect(501);
   });
 
+  it("public signup: POST /saas/public/signup-requests → 201", async () => {
+    const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(
+      11,
+      "2",
+    );
+    const res = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Landing SAC",
+        ruc,
+        contact_name: "Ana Demo",
+        contact_email: `signup-e2e-${Date.now()}@example.com`,
+        plan_code: "starter",
+        notes: "Desde e2e",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    expect(res.body).toMatchObject({
+      company_name: "E2E Landing SAC",
+      ruc,
+      contact_name: "Ana Demo",
+      status: "pending",
+    });
+    expect(res.body.id).toBeTruthy();
+    expect(res.body.created_at).toBeTruthy();
+
+    await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "X",
+        ruc: "20123456789",
+        contact_name: "X",
+        contact_email: "bad@example.com",
+        accept_privacy: false,
+      })
+      .expect(400);
+  });
+
   it("platform health: org JWT → 403; platform JWT → 200", async () => {
     const orgDenied = await request(server)
       .get("/saas/platform/health")

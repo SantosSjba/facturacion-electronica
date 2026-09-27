@@ -1,0 +1,50 @@
+---
+import { saasLoginUrl } from "../lib/site";
+---
+
+<section class="bg-white">
+  <div
+    class="mx-auto grid max-w-screen-xl px-4 pb-8 pt-24 lg:grid-cols-12 lg:gap-8 lg:py-16 lg:pt-28 xl:gap-0"
+  >
+    <div class="mr-auto place-self-center lg:col-span-7">
+      <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-600">
+        Facturación electrónica
+      </p>
+      <h1
+        class="mb-4 max-w-2xl text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl xl:text-6xl"
+      >
+        Emite CPE SUNAT<br />sin fricción
+      </h1>
+      <p
+        class="mb-6 max-w-2xl font-light text-gray-500 md:text-lg lg:mb-8 lg:text-xl"
+      >
+        Plataforma para empresas peruanas: facturas, boletas y GRE con firma,
+        envío a SUNAT y representación impresa listas para producción.
+      </p>
+      <div class="space-y-4 sm:flex sm:space-x-4 sm:space-y-0">
+        <a
+          href="#solicitud"
+          class="inline-flex w-full items-center justify-center rounded-lg bg-brand-500 px-5 py-3 text-center text-sm font-medium text-white hover:bg-brand-600 focus:ring-4 focus:ring-brand-300 sm:w-auto"
+        >
+          Solicitar acceso
+        </a>
+        <a
+          href={saasLoginUrl}
+          class="inline-flex w-full items-center justify-center rounded-lg border border-gray-200 px-5 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 sm:w-auto"
+        >
+          Ir al SaaS
+        </a>
+      </div>
+    </div>
+    <div class="hidden lg:col-span-5 lg:mt-0 lg:flex">
+      <img
+        src="/images/hero.png"
+        alt="Panel Factosys — ilustración de producto"
+        class="w-full"
+        width="640"
+        height="480"
+        loading="eager"
+      />
+    </div>
+  </div>
+</section>

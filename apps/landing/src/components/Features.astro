@@ -1,0 +1,91 @@
+---
+const rows = [
+  {
+    id: "emision",
+    title: "Emisión CPE confiable",
+    body: "Genera facturas, boletas, notas y documentos relacionados con validación previa, firma digital y seguimiento del CDR de SUNAT.",
+    points: [
+      "Validación antes de firmar",
+      "Firma y envío integrados",
+      "Seguimiento de estados SUNAT",
+    ],
+    image: "/images/feature-1.png",
+    imageFirst: false,
+  },
+  {
+    id: "gre",
+    title: "GRE y operación diaria",
+    body: "Gestiona guías de remisión electrónica, series y multi-empresa desde un panel pensado para el ritmo del back-office.",
+    points: [
+      "Series y correlativos",
+      "Multi-empresa",
+      "Flujos de despatch advice",
+    ],
+    image: "/images/feature-2.png",
+    imageFirst: true,
+  },
+];
+---
+
+<section id="valor" class="bg-gray-50">
+  <div
+    class="mx-auto max-w-screen-xl space-y-12 px-4 py-8 lg:space-y-20 lg:px-6 lg:py-24"
+  >
+    {
+      rows.map((row) => (
+        <div class="items-center gap-8 lg:grid lg:grid-cols-2 xl:gap-16">
+          {row.imageFirst && (
+            <img
+              class="mb-4 hidden w-full rounded-lg lg:mb-0 lg:flex"
+              src={row.image}
+              alt=""
+              width="640"
+              height="400"
+              loading="lazy"
+            />
+          )}
+          <div class="text-gray-500 sm:text-lg">
+            <h2 class="mb-4 text-3xl font-extrabold tracking-tight text-gray-900">
+              {row.title}
+            </h2>
+            <p class="mb-8 font-light lg:text-xl">{row.body}</p>
+            <ul
+              role="list"
+              class="my-7 space-y-5 border-t border-gray-200 pt-8"
+            >
+              {row.points.map((p) => (
+                <li class="flex space-x-3">
+                  <svg
+                    class="h-5 w-5 shrink-0 text-brand-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span class="text-base font-medium leading-tight text-gray-900">
+                    {p}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {!row.imageFirst && (
+            <img
+              class="mb-4 hidden w-full rounded-lg lg:mb-0 lg:flex"
+              src={row.image}
+              alt=""
+              width="640"
+              height="400"
+              loading="lazy"
+            />
+          )}
+        </div>
+      ))
+    }
+  </div>
+</section>

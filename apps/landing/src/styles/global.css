@@ -4,10 +4,17 @@
 
 html {
   font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  background: #f9fafb;
+  background: #ffffff;
   color: #101828;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

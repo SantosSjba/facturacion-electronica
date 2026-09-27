@@ -1,0 +1,73 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-white">
+  <div class="mx-auto max-w-screen-xl p-4 py-6 lg:py-8">
+    <div class="md:flex md:justify-between">
+      <div class="mb-6 md:mb-0">
+        <a href="/" class="flex items-center">
+          <span class="self-center text-2xl font-semibold text-gray-900"
+            >Factosys</span
+          >
+        </a>
+        <p class="mt-3 max-w-sm text-sm text-gray-500">
+          Facturación electrónica SUNAT para equipos que necesitan emitir con
+          confianza.
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-8 sm:gap-12">
+        <div>
+          <h2
+            class="mb-6 text-sm font-semibold uppercase text-gray-900"
+          >
+            Producto
+          </h2>
+          <ul class="text-gray-600">
+            <li class="mb-4">
+              <a href="/#valor" class="hover:underline">Valor</a>
+            </li>
+            <li>
+              <a href="/#solicitud" class="hover:underline">Solicitud</a>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h2
+            class="mb-6 text-sm font-semibold uppercase text-gray-900"
+          >
+            Legal
+          </h2>
+          <ul class="text-gray-600">
+            <li class="mb-4">
+              <a href="/legal/privacy" class="hover:underline">Privacidad</a>
+            </li>
+            <li>
+              <a href="/legal/terms" class="hover:underline">Términos</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <hr class="my-6 border-gray-200 sm:mx-auto lg:my-8" />
+    <div
+      class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span class="text-sm text-gray-500"
+        >© {year}
+        <a href="/" class="hover:underline">Factosys</a>. Todos los derechos
+        reservados.
+      </span>
+      <p class="text-xs text-gray-400">
+        UI basada en
+        <a
+          href="https://github.com/themesberg/landwind"
+          class="hover:underline"
+          rel="noopener noreferrer"
+          target="_blank">Landwind</a
+        >
+        (MIT). Textos legales en borrador.
+      </p>
+    </div>
+  </div>
+</footer>

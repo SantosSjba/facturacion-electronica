@@ -45,12 +45,12 @@ pnpm dev:saas-web
 # http://localhost:5174 — SaaS web skeleton (S12-APP; /platform /app /auth)
 
 pnpm dev:landing
-# http://localhost:4321 — marketing landing (S12-APP; Astro)
+# http://localhost:4321 — marketing landing (S13; Astro + signup form)
 ```
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
-`DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (default `http://localhost:5173`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
+`DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (console `:5173`, landing `:4321`, saas-web `:5174`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
-**S12 SaaS** (prefijo `/saas`): `GET /saas/plans` (stub), `GET /saas/notifications` (stub), `POST /saas/signup-requests` (501), `GET /saas/platform/health` (JWT `ctx=platform`). **Legal drafts** (platform): `GET|POST /saas/legal/documents`, `GET|PATCH /saas/legal/documents/:id` (`code`, `version`, `body_md`, `hash`; publish en S16). Seed demo: `privacy.es-PE` / `terms.es-PE` v1 draft.
+**SaaS** (prefijo `/saas`): `POST /saas/public/signup-requests` (landing, 201 + persistencia), stubs `GET /saas/plans` / notifications, `POST /saas/signup-requests` (501 legacy), `GET /saas/platform/health` (JWT `ctx=platform`). **Legal drafts** (platform): `/saas/legal/documents`. Landing: plantilla [Landwind](https://github.com/themesberg/landwind) (MIT) + tokens `@factosys/ui` + formulario cableado (`PUBLIC_API_URL`).
 
 ### Contrato del monorepo
 
@@ -64,7 +64,7 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
 | `pnpm dev:console`                  | Vite — `@factosys/console` ops UI (S10)    |
 | `pnpm dev:saas-web`                 | Vite — `saas-web` SaaS UI skeleton (S12)   |
-| `pnpm dev:landing`                  | Astro — `landing` marketing (S12)          |
+| `pnpm dev:landing`                  | Astro — `landing` marketing + signup (S13) |
 | `pnpm demo:api-mvp`                 | Demo Fake: ruleset → invoice → PDF (`scripts/demo-api-mvp.mjs`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
@@ -115,7 +115,7 @@ docker-compose.yml      # Postgres 16 (:5433), Redis 7, MinIO (S0-DEV)
 | `apps/api`                  | `@factosys/api`              | HTTP API NestJS                      |
 | `apps/console`              | `@factosys/console`          | Ops console Vite React (S10)         |
 | `apps/saas-web`             | `saas-web`                   | SaaS web skeleton (S12)              |
-| `apps/landing`              | `landing`                    | Marketing Astro (S12)                |
+| `apps/landing`              | `landing`                    | Marketing Astro (Landwind + signup)  |
 | `packages/shared`           | `@factosys/shared`           | `AppError`, `AppErrorCode`, `Result` |
 | `packages/ui`               | `@factosys/ui`               | Tokens TailAdmin + Button/Input/Shell |
 | `packages/domain`           | `@factosys/domain`           | `DocumentStatus`, VOs (sin Nest)     |

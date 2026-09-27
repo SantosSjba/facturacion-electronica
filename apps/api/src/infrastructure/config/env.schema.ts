@@ -52,11 +52,20 @@ export const envSchema = z.object({
     .default("https://api-cpe.sunat.gob.pe"),
   OTEL_ENABLED: z.enum(["0", "1"]).default("0"),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
-  /** Comma-separated browser origins allowed for console CORS (e.g. Vite). */
+  /** Comma-separated browser origins (console, landing, saas-web). */
   CORS_ORIGINS: z
     .string()
     .default(
-      "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173",
+      [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+      ].join(","),
     )
     .transform((v) =>
       v
@@ -64,6 +73,8 @@ export const envSchema = z.object({
         .map((s) => s.trim())
         .filter(Boolean),
     ),
+  /** When set, public signup requires captcha_token (FE-388 hook). */
+  CAPTCHA_SECRET: z.string().min(1).optional(),
   CREDENTIALS_MASTER_KEY: z
     .string()
     .min(1)
