@@ -73,7 +73,7 @@ export class EmitDocumentOrchestrator {
         "factosys.organization_id": input.organizationId,
       },
       async (rootSpan) => {
-        const company = await this.companies.requireCompany(
+        const company = await this.companies.requireActiveCompany(
           input.organizationId,
           input.companyId,
         );

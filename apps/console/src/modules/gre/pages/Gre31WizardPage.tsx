@@ -22,6 +22,7 @@ import {
   type GreHeaderState,
 } from "../components/wizard/steps";
 import type { GreLineInput, GrePartyInput, GreShipmentInput } from "../types";
+import { gre31StepError } from "../validation";
 
 const STEPS = [
   "Cabecera",
@@ -98,6 +99,14 @@ export function Gre31WizardPage() {
     );
   }
 
+  const nextError = gre31StepError(step, {
+    header,
+    shipper,
+    delivery,
+    shipment,
+    lines,
+  });
+
   return (
     <WizardShell
       title="Emitir GRE transportista (31)"
@@ -108,31 +117,7 @@ export function Gre31WizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextError={
-        step === 0 && (!header.company_id || !header.serie)
-          ? "Selecciona la empresa y una serie V### activa."
-          : step === 1 && (!shipper.identity_number || !shipper.name)
-            ? "Completa el remitente (shipper)."
-            : step === 2 && (!delivery.identity_number || !delivery.name)
-              ? "Completa el destinatario."
-              : step === 3 &&
-                  (!shipment.origin.ubigeo ||
-                    !shipment.origin.address ||
-                    !shipment.destination.ubigeo ||
-                    !shipment.destination.address ||
-                    shipment.gross_weight <= 0 ||
-                    !(shipment.vehicles?.[0]?.plate) ||
-                    !(shipment.drivers?.[0]?.identity_number) ||
-                    !(shipment.drivers?.[0]?.name) ||
-                    !(shipment.drivers?.[0]?.license))
-                ? "Completa peso, origen/destino, vehículo y conductor principal con licencia."
-                : step === 4 &&
-                    lines.some(
-                      (l) => !l.description || l.quantity <= 0 || !l.unit_code,
-                    )
-                  ? "Cada línea requiere descripción, cantidad > 0 y unidad."
-                  : null
-      }
+      nextError={nextError}
     >
       {step === 0 ? (
         <GreHeaderStep

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 import { Badge } from "@/shared/ui/components/badge";
+import { Card, CardTitle } from "@/shared/ui/components/card";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
@@ -26,44 +28,43 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
 
   if (query.isLoading) {
     return (
-      <div className="mt-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+      <Card>
         <LoadingState label="Cargando deliveries…" />
-      </div>
+      </Card>
     );
   }
 
   if (query.error) {
     return (
-      <div className="mt-3">
-        <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar deliveries"
-          }
-          onRetry={() => void query.refetch()}
-        />
-      </div>
+      <ErrorState
+        message={
+          query.error instanceof Error
+            ? query.error.message
+            : "Error al cargar deliveries"
+        }
+        onRetry={() => void query.refetch()}
+      />
     );
   }
 
   const rows = query.data ?? [];
   if (rows.length === 0) {
     return (
-      <div className="mt-3">
-        <EmptyState
-          title="Sin deliveries"
-          description="Aún no hay intentos de entrega para este endpoint."
-        />
-      </div>
+      <EmptyState
+        title="Sin deliveries"
+        description="Aún no hay intentos de entrega para este endpoint."
+      />
     );
   }
 
   return (
-    <div className="mt-3 space-y-2">
-      <MutedText as="p" className="text-theme-sm">
-        Entregas recientes
-      </MutedText>
+    <Card className="overflow-hidden p-0 sm:p-0 max-md:border-0 max-md:bg-transparent">
+      <div className="border-b border-gray-200 px-5 py-4 sm:px-6 dark:border-gray-800 max-md:border-0 max-md:px-0">
+        <CardTitle className="mb-0">Entregas recientes</CardTitle>
+        <MutedText className="mt-1 text-theme-xs">
+          {rows.length} registro{rows.length === 1 ? "" : "s"}
+        </MutedText>
+      </div>
       <Table>
         <THead>
           <TR>
@@ -71,37 +72,57 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
             <TH>Estado</TH>
             <TH>Intentos</TH>
             <TH>HTTP</TH>
+            <TH>Error</TH>
             <TH>Creado</TH>
           </TR>
         </THead>
         <TBody>
-          {rows.map((d) => (
-            <TR key={d.id}>
-              <TD label="Evento">
-                <code className="text-theme-xs">{d.event_type}</code>
-              </TD>
-              <TD label="Estado">
-                <Badge
-                  variant={
-                    d.status === "delivered"
-                      ? "success"
-                      : d.status === "failed"
-                        ? "error"
-                        : "muted"
-                  }
-                >
-                  {d.status}
-                </Badge>
-              </TD>
-              <TD label="Intentos">{d.attempt_count}</TD>
-              <TD label="HTTP">{d.http_status ?? "—"}</TD>
-              <TD label="Creado">
-                <MutedText as="span">{formatDate(d.created_at)}</MutedText>
-              </TD>
-            </TR>
-          ))}
+          {rows.map((d) => {
+            const ok = d.status === "delivered";
+            const failed = d.status === "failed";
+            return (
+              <TR key={d.id}>
+                <TD label="Evento">
+                  <code className="text-theme-xs">{d.event_type}</code>
+                </TD>
+                <TD label="Estado">
+                  <Badge
+                    variant={ok ? "success" : failed ? "error" : "muted"}
+                    className="gap-1"
+                  >
+                    {ok ? (
+                      <CheckCircle2 className="size-3" aria-hidden />
+                    ) : failed ? (
+                      <XCircle className="size-3" aria-hidden />
+                    ) : (
+                      <AlertTriangle className="size-3" aria-hidden />
+                    )}
+                    {d.status}
+                  </Badge>
+                </TD>
+                <TD label="Intentos">{d.attempt_count}</TD>
+                <TD label="HTTP">
+                  <span className="font-mono text-theme-xs">
+                    {d.http_status ?? "—"}
+                  </span>
+                </TD>
+                <TD label="Error">
+                  <MutedText
+                    as="span"
+                    className="line-clamp-2 max-w-xs text-theme-xs"
+                    title={d.last_error ?? undefined}
+                  >
+                    {d.last_error ?? "—"}
+                  </MutedText>
+                </TD>
+                <TD label="Creado">
+                  <MutedText as="span">{formatDate(d.created_at)}</MutedText>
+                </TD>
+              </TR>
+            );
+          })}
         </TBody>
       </Table>
-    </div>
+    </Card>
   );
 }

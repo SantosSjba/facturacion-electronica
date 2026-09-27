@@ -19,9 +19,11 @@ import { cn } from "@/shared/ui/utils";
 
 import { fetchOrgRoles, fetchOrgUsers } from "../api";
 import { CreateUserDialog } from "../components/CreateUserDialog";
+import { EditUserDialog } from "../components/EditUserDialog";
 import { UserFilters } from "../components/UserFilters";
 import { UsersTable } from "../components/UsersTable";
 import { filterUsers, type UserFiltersState } from "../filters";
+import type { OrgUser } from "../types";
 
 export function UsersListPage() {
   const { hasPermission } = useSession();
@@ -32,6 +34,7 @@ export function UsersListPage() {
     status: "",
   });
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<OrgUser | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
@@ -52,7 +55,10 @@ export function UsersListPage() {
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   useEffect(() => setPage(1), [filters, pageSize]);
-  useEffect(() => setPage((current) => Math.min(current, pageCount)), [pageCount]);
+  useEffect(
+    () => setPage((current) => Math.min(current, pageCount)),
+    [pageCount],
+  );
 
   const loading = usersQuery.isLoading || rolesQuery.isLoading;
   const error = usersQuery.error || rolesQuery.error;
@@ -117,7 +123,7 @@ export function UsersListPage() {
             />
           ) : (
             <>
-              <UsersTable users={visible} />
+              <UsersTable users={visible} onEdit={setEditingUser} />
               <Pagination
                 page={page}
                 pageCount={pageCount}
@@ -138,6 +144,14 @@ export function UsersListPage() {
           roles={rolesQuery.data ?? []}
         />
       ) : null}
+
+      <EditUserDialog
+        open={Boolean(editingUser)}
+        onClose={() => setEditingUser(null)}
+        user={editingUser}
+        roles={rolesQuery.data ?? []}
+        canWrite={canWrite}
+      />
     </div>
   );
 }

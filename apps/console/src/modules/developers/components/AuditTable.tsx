@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Eye, ScrollText, UserRound } from "lucide-react";
 
 import { Badge } from "@/shared/ui/components/badge";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import { cn } from "@/shared/ui/utils";
 
 import type { AuditEvent } from "../types";
 
@@ -44,15 +45,29 @@ export function AuditTable({
               <MutedText as="span">{formatDate(e.created_at)}</MutedText>
             </TD>
             <TD label="Actor">
-              <div className="flex flex-col gap-0.5 max-md:items-end">
-                <Badge variant="outline">{e.actor_type}</Badge>
-                <MutedText as="span" className="font-mono text-theme-xs">
-                  {e.actor_id ?? "—"}
-                </MutedText>
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-full",
+                    "bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300",
+                  )}
+                  aria-hidden
+                >
+                  <UserRound className="size-4" />
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5 max-md:items-end">
+                  <Badge variant="outline">{e.actor_type}</Badge>
+                  <MutedText as="span" className="font-mono text-theme-xs">
+                    {e.actor_id ?? "—"}
+                  </MutedText>
+                </div>
               </div>
             </TD>
             <TD label="Action">
-              <code className="text-theme-xs">{e.action}</code>
+              <span className="inline-flex items-center gap-1.5 font-mono text-theme-xs text-gray-800 dark:text-white/90">
+                <ScrollText className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                {e.action}
+              </span>
             </TD>
             <TD label="Resource">
               <MutedText as="span" className="font-mono text-theme-xs">

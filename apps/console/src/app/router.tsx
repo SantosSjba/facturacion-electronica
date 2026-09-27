@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { AccountPage } from "@/modules/auth/pages/AccountPage";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import { CertificateTab } from "@/modules/companies/components/tabs/CertificateTab";
 import { GreTab } from "@/modules/companies/components/tabs/GreTab";
@@ -12,6 +13,7 @@ import { CompanyDetailPage } from "@/modules/companies/pages/CompanyDetailPage";
 import { ApiKeysListPage } from "@/modules/developers/pages/ApiKeysListPage";
 import { AuditListPage } from "@/modules/developers/pages/AuditListPage";
 import { ValidationsPage } from "@/modules/developers/pages/ValidationsPage";
+import { WebhookDeliveriesPage } from "@/modules/developers/pages/WebhookDeliveriesPage";
 import { WebhooksListPage } from "@/modules/developers/pages/WebhooksListPage";
 import { DailySummaryFormPage } from "@/modules/documents/pages/DailySummaryFormPage";
 import { DocumentDetailPage } from "@/modules/documents/pages/DocumentDetailPage";
@@ -28,7 +30,6 @@ import { Gre31WizardPage } from "@/modules/gre/pages/Gre31WizardPage";
 import { GreDetailPage } from "@/modules/gre/pages/GreDetailPage";
 import { GreListPage } from "@/modules/gre/pages/GreListPage";
 import { PermissionsMatrixPage } from "@/modules/users/pages/PermissionsMatrixPage";
-import { UserDetailPage } from "@/modules/users/pages/UserDetailPage";
 import { UsersListPage } from "@/modules/users/pages/UsersListPage";
 
 import { AppShell } from "./AppShell";
@@ -51,6 +52,7 @@ export function AppRouter() {
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route index element={<HomeRedirect />} />
+              <Route path="account" element={<AccountPage />} />
               <Route path="companies" element={<CompaniesListPage />} />
               <Route path="companies/:id" element={<CompanyDetailPage />}>
                 <Route index element={<Navigate to="overview" replace />} />
@@ -66,7 +68,10 @@ export function AppRouter() {
                 path="users/permissions"
                 element={<PermissionsMatrixPage />}
               />
-              <Route path="users/:id" element={<UserDetailPage />} />
+              <Route
+                path="users/:id"
+                element={<Navigate to="/users" replace />}
+              />
               <Route path="documents" element={<DocumentsListPage />} />
               <Route
                 path="documents/emit/invoice"
@@ -99,6 +104,10 @@ export function AppRouter() {
               <Route path="gre/:id" element={<GreDetailPage />} />
               <Route path="developers/api-keys" element={<ApiKeysListPage />} />
               <Route path="developers/webhooks" element={<WebhooksListPage />} />
+              <Route
+                path="developers/webhooks/:id/deliveries"
+                element={<WebhookDeliveriesPage />}
+              />
               <Route path="developers/audit" element={<AuditListPage />} />
               <Route
                 path="developers/validations"

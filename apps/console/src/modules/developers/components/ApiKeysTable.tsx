@@ -1,4 +1,4 @@
-import { Ban, Loader2 } from "lucide-react";
+import { Ban, KeyRound, Loader2 } from "lucide-react";
 
 import {
   Button,
@@ -48,14 +48,29 @@ export function ApiKeysTable({
         {keys.map((k) => (
           <TR key={k.id}>
             <TD label="Nombre">
-              <div className="font-medium text-gray-800 dark:text-white/90">
-                {k.name}
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-full",
+                    k.status === "active"
+                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
+                      : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
+                  )}
+                  aria-hidden
+                >
+                  <KeyRound className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-800 dark:text-white/90">
+                    {k.name}
+                  </div>
+                  {k.environmentConstraint ? (
+                    <MutedText as="span" className="text-theme-xs">
+                      {k.environmentConstraint}
+                    </MutedText>
+                  ) : null}
+                </div>
               </div>
-              {k.environmentConstraint ? (
-                <MutedText as="span" className="text-theme-xs">
-                  {k.environmentConstraint}
-                </MutedText>
-              ) : null}
             </TD>
             <TD label="Prefix">
               <code className="text-theme-xs">{k.keyPrefix}…</code>

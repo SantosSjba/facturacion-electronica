@@ -22,8 +22,9 @@ import { FieldError } from "@/shared/ui/FieldError";
 import { cn } from "@/shared/ui/utils";
 
 import { createWebhook } from "../api";
+import { webhookFormSchema, zodFieldErrors } from "../validation";
 
-const WEBHOOK_EVENTS = ["document.status_changed"] as const;
+export const WEBHOOK_EVENTS = ["document.status_changed"] as const;
 
 export function CreateWebhookDialog({
   open,
@@ -36,11 +37,12 @@ export function CreateWebhookDialog({
   const [url, setUrl] = useState("");
   const [events, setEvents] = useState<string[]>(["document.status_changed"]);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ url?: string; events?: string }>(
-    {},
-  );
+  const [touched, setTouched] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const fieldErrors = zodFieldErrors(
+    webhookFormSchema.safeParse({ url, events }),
+  );
 
   const mutation = useMutation({
     mutationFn: createWebhook,
@@ -60,7 +62,7 @@ export function CreateWebhookDialog({
     setUrl("");
     setEvents(["document.status_changed"]);
     setError(null);
-    setFieldErrors({});
+    setTouched(false);
     setSecret(null);
     setCopied(false);
     onClose();
@@ -69,11 +71,8 @@ export function CreateWebhookDialog({
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const next: typeof fieldErrors = {};
-    if (!url.startsWith("https://")) next.url = "La URL debe ser https://";
-    if (events.length < 1) next.events = "Selecciona al menos un evento";
-    setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
+    setTouched(true);
+    if (Object.keys(fieldErrors).length > 0) return;
     mutation.mutate({ url: url.trim(), events });
   }
 
@@ -140,10 +139,13 @@ export function CreateWebhookDialog({
                 type="url"
                 placeholder="https://example.com/hooks"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                aria-invalid={Boolean(fieldErrors.url)}
+                onChange={(e) => {
+                  setTouched(true);
+                  setUrl(e.target.value);
+                }}
+                aria-invalid={touched && Boolean(fieldErrors.url)}
               />
-              <FieldError message={fieldErrors.url} />
+              <FieldError message={touched ? fieldErrors.url : undefined} />
             </div>
             <fieldset className="space-y-2">
               <Label>Eventos</Label>
@@ -152,19 +154,20 @@ export function CreateWebhookDialog({
                   <label key={ev} className="flex cursor-pointer items-center gap-2 text-sm">
                     <Checkbox
                       checked={events.includes(ev)}
-                      onChange={() =>
+                      onChange={() => {
+                        setTouched(true);
                         setEvents((prev) =>
                           prev.includes(ev)
                             ? prev.filter((x) => x !== ev)
                             : [...prev, ev],
-                        )
-                      }
+                        );
+                      }}
                     />
                     <span className="font-mono text-theme-xs">{ev}</span>
                   </label>
                 ))}
               </div>
-              <FieldError message={fieldErrors.events} />
+              <FieldError message={touched ? fieldErrors.events : undefined} />
             </fieldset>
           </DialogBody>
           <DialogFooter>

@@ -1,19 +1,28 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, ShieldCheck, Upload, X } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
+import { Badge } from "@/shared/ui/components/badge";
 import {
   Button,
   ButtonLabel,
   buttonIconClassName,
 } from "@/shared/ui/components/button";
+import { Card, CardTitle } from "@/shared/ui/components/card";
+import {
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+} from "@/shared/ui/components/dialog";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { toast } from "@/shared/ui/toaster";
 import { cn } from "@/shared/ui/utils";
 
 import { putCertificate } from "../../api";
@@ -26,12 +35,13 @@ export function CertificateTab() {
   const canManage = hasPermission("credentials:manage");
   const qc = useQueryClient();
 
+  const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
 
   const summary = company.credentials_summary?.certificate;
+  const certOk = company.certificate_status === "active";
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -43,21 +53,60 @@ export function CertificateTab() {
       await qc.invalidateQueries({ queryKey: ["companies"] });
       setPassword("");
       setFile(null);
-      setOk("Certificado actualizado");
       setError(null);
+      setOpen(false);
+      toast.success("Certificado actualizado");
     },
     onError: (err) => {
-      setOk(null);
       setError(err instanceof ApiError ? err.message : "Error al subir PFX");
     },
   });
 
+  function handleClose() {
+    if (mutation.isPending) return;
+    setOpen(false);
+    setError(null);
+    setFile(null);
+    setPassword("");
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <h3 className="mb-3 text-sm font-semibold">Estado actual</h3>
+    <div className="space-y-4">
+      <Card>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-xl",
+                certOk
+                  ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
+                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
+              )}
+            >
+              <ShieldCheck className="size-5" />
+            </span>
+            <div>
+              <CardTitle className="mb-1">Estado del certificado</CardTitle>
+              <Badge variant={certOk ? "success" : "muted"}>
+                {company.certificate_status}
+              </Badge>
+            </div>
+          </div>
+          {canManage ? (
+            <Button
+              type="button"
+              size="icon-label-sm"
+              aria-label="Subir PFX"
+              onClick={() => setOpen(true)}
+            >
+              <Upload className={buttonIconClassName} />
+              <ButtonLabel>Subir PFX</ButtonLabel>
+            </Button>
+          ) : null}
+        </div>
+
         {summary ? (
-          <dl className="grid gap-2 sm:grid-cols-2 text-sm">
+          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Row label="Status" value={summary.status} />
             <Row label="CN" value={summary.subject_cn ?? "—"} />
             <Row label="Not before" value={summary.not_before ?? "—"} />
@@ -66,14 +115,26 @@ export function CertificateTab() {
           </dl>
         ) : (
           <MutedText>
-            Sin certificado ({company.certificate_status})
+            Sin certificado cargado. Sube un archivo .pfx / .p12 para firmar
+            comprobantes.
           </MutedText>
         )}
-      </div>
 
-      {canManage ? (
+        {!canManage ? (
+          <MutedText className="mt-4">
+            Requiere permiso credentials:manage para subir.
+          </MutedText>
+        ) : null}
+      </Card>
+
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        ariaLabel="Subir certificado PFX"
+        size="sm"
+        closeOnBackdrop={!mutation.isPending}
+      >
         <form
-          className="max-w-md space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]"
           onSubmit={(e) => {
             e.preventDefault();
             setError(null);
@@ -84,49 +145,67 @@ export function CertificateTab() {
             mutation.mutate();
           }}
         >
-          <h3 className="text-sm font-semibold">Subir PFX</h3>
-          <div className="space-y-1.5">
-            <Label htmlFor="pfx">Archivo</Label>
-            <Input
-              id="pfx"
-              type="file"
-              accept=".pfx,.p12"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pfx-pass">Contraseña (write-only)</Label>
-            <Input
-              id="pfx-pass"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          {error ? <ErrorState title="Error" message={error} /> : null}
-          {ok ? <p className="text-sm text-success-600 dark:text-success-500">{ok}</p> : null}
-          <Button
-            type="submit"
-            size="icon-label"
-            aria-label="Subir certificado"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
-            ) : (
-              <Upload className={buttonIconClassName} />
-            )}
-            <ButtonLabel>
-              {mutation.isPending ? "Subiendo…" : "Subir certificado"}
-            </ButtonLabel>
-          </Button>
+          <DialogHeader
+            title="Subir certificado PFX"
+            description="El archivo y la contraseña se almacenan de forma cifrada (write-only)."
+            onClose={handleClose}
+          />
+          <DialogBody className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pfx">Archivo</Label>
+              <Input
+                id="pfx"
+                type="file"
+                accept=".pfx,.p12"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              {file ? (
+                <MutedText className="text-xs">{file.name}</MutedText>
+              ) : null}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pfx-pass">Contraseña (write-only)</Label>
+              <Input
+                id="pfx-pass"
+                type="password"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {error ? <ErrorState title="Error" message={error} /> : null}
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-label-sm"
+              aria-label="Cancelar"
+              disabled={mutation.isPending}
+              onClick={handleClose}
+            >
+              <X className={buttonIconClassName} />
+              <ButtonLabel>Cancelar</ButtonLabel>
+            </Button>
+            <Button
+              type="submit"
+              size="icon-label-sm"
+              aria-label="Subir certificado"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+              ) : (
+                <Upload className={buttonIconClassName} />
+              )}
+              <ButtonLabel>
+                {mutation.isPending ? "Subiendo…" : "Subir"}
+              </ButtonLabel>
+            </Button>
+          </DialogFooter>
         </form>
-      ) : (
-        <MutedText>
-          Requiere permiso credentials:manage para subir.
-        </MutedText>
-      )}
+      </Dialog>
     </div>
   );
 }
@@ -134,10 +213,12 @@ export function CertificateTab() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <MutedText as="dt" className="text-xs">
+      <MutedText as="dt" className="text-xs uppercase tracking-wide">
         {label}
       </MutedText>
-      <dd className="font-mono text-xs">{value}</dd>
+      <dd className="mt-0.5 font-mono text-xs text-gray-800 dark:text-white/90">
+        {value}
+      </dd>
     </div>
   );
 }

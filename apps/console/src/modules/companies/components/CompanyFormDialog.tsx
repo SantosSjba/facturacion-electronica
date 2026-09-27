@@ -16,8 +16,10 @@ import {
   DialogFooter,
   DialogHeader,
 } from "@/shared/ui/components/dialog";
+import { Checkbox } from "@/shared/ui/components/checkbox";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
+import { MutedText } from "@/shared/ui/components/muted-text";
 import { Select } from "@/shared/ui/components/select";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
@@ -26,6 +28,7 @@ import { toast } from "@/shared/ui/toaster";
 import { cn } from "@/shared/ui/utils";
 
 import { createCompany, fetchCompany, patchCompany } from "../api";
+import { DEFAULT_COMPANY_SERIES } from "../default-series";
 import type { CompanyEnvironment } from "../types";
 
 const companySchema = z.object({
@@ -98,6 +101,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
   const [addressLine, setAddressLine] = useState("");
   const [ubigeo, setUbigeo] = useState("");
   const [timezone, setTimezone] = useState("America/Lima");
+  const [seedDefaultSeries, setSeedDefaultSeries] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<CompanyField, string>>
@@ -111,6 +115,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
     setAddressLine("");
     setUbigeo("");
     setTimezone("America/Lima");
+    setSeedDefaultSeries(true);
     setError(null);
     setFieldErrors({});
   }
@@ -159,6 +164,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
           environment,
           address,
           timezone,
+          seed_default_series: seedDefaultSeries,
         });
       }
       return patchCompany(companyId ?? "", {
@@ -174,12 +180,19 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
       toast.success(
         mode === "create" ? "Empresa creada" : "Empresa actualizada",
         {
-          description: company.legal_name,
+          description:
+            mode === "create" && seedDefaultSeries
+              ? `${company.legal_name} · series iniciales listas`
+              : company.legal_name,
         },
       );
       onClose();
       if (mode === "create") {
-        navigate(`/companies/${company.id}/overview`);
+        navigate(
+          seedDefaultSeries
+            ? `/companies/${company.id}/series`
+            : `/companies/${company.id}/overview`,
+        );
       }
     },
     onError: (err) => {
@@ -229,7 +242,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
       open={open}
       onClose={handleClose}
       ariaLabel={mode === "create" ? "Crear empresa" : "Editar empresa"}
-      className="max-w-xl"
+      size="lg"
       closeOnBackdrop={!mutation.isPending}
     >
       <form onSubmit={(e) => void onSubmit(e)} noValidate>
@@ -255,118 +268,158 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
           ) : null}
           {!loadingEdit && !editError ? (
             <>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-ruc">RUC</Label>
-                <Input
-                  id="company-ruc"
-                  required={mode === "create"}
-                  maxLength={11}
-                  value={ruc}
-                  disabled={mode === "edit"}
-                  inputMode="numeric"
-                  autoComplete="off"
-                  aria-invalid={Boolean(fieldErrors.ruc)}
-                  aria-describedby={
-                    fieldErrors.ruc ? "company-ruc-error" : undefined
-                  }
-                  onChange={(e) =>
-                    setRuc(
-                      digitsOnly(
-                        e.target.value,
-                        11,
-                        "ruc-digits",
-                        "El RUC solo acepta dígitos (11 números).",
-                      ),
-                    )
-                  }
-                />
-                <FieldError id="company-ruc-error" message={fieldErrors.ruc} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-legal-name">Razón social</Label>
-                <Input
-                  id="company-legal-name"
-                  required
-                  value={legalName}
-                  aria-invalid={Boolean(fieldErrors.legalName)}
-                  onChange={(e) => {
-                    setLegalName(e.target.value);
-                    if (fieldErrors.legalName) {
-                      setFieldErrors((prev) => ({
-                        ...prev,
-                        legalName: undefined,
-                      }));
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="company-ruc">RUC</Label>
+                  <Input
+                    id="company-ruc"
+                    required={mode === "create"}
+                    maxLength={11}
+                    value={ruc}
+                    disabled={mode === "edit"}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    aria-invalid={Boolean(fieldErrors.ruc)}
+                    aria-describedby={
+                      fieldErrors.ruc ? "company-ruc-error" : undefined
                     }
-                  }}
-                />
-                <FieldError message={fieldErrors.legalName} />
+                    onChange={(e) =>
+                      setRuc(
+                        digitsOnly(
+                          e.target.value,
+                          11,
+                          "ruc-digits",
+                          "El RUC solo acepta dígitos (11 números).",
+                        ),
+                      )
+                    }
+                  />
+                  <FieldError id="company-ruc-error" message={fieldErrors.ruc} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="company-legal-name">Razón social</Label>
+                  <Input
+                    id="company-legal-name"
+                    required
+                    value={legalName}
+                    aria-invalid={Boolean(fieldErrors.legalName)}
+                    onChange={(e) => {
+                      setLegalName(e.target.value);
+                      if (fieldErrors.legalName) {
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          legalName: undefined,
+                        }));
+                      }
+                    }}
+                  />
+                  <FieldError message={fieldErrors.legalName} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="company-trade-name">Nombre comercial</Label>
+                  <Input
+                    id="company-trade-name"
+                    value={tradeName}
+                    aria-invalid={Boolean(fieldErrors.tradeName)}
+                    onChange={(e) => setTradeName(e.target.value)}
+                  />
+                  <FieldError message={fieldErrors.tradeName} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="company-environment">Ambiente</Label>
+                  <Select
+                    id="company-environment"
+                    value={environment}
+                    disabled={mode === "edit"}
+                    onChange={(e) =>
+                      setEnvironment(e.target.value as CompanyEnvironment)
+                    }
+                  >
+                    <option value="sandbox">sandbox</option>
+                    <option value="production">production</option>
+                  </Select>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="company-address">Dirección</Label>
+                  <Input
+                    id="company-address"
+                    value={addressLine}
+                    aria-invalid={Boolean(fieldErrors.addressLine)}
+                    onChange={(e) => setAddressLine(e.target.value)}
+                  />
+                  <FieldError message={fieldErrors.addressLine} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="company-ubigeo">Ubigeo</Label>
+                  <Input
+                    id="company-ubigeo"
+                    value={ubigeo}
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="150101"
+                    aria-invalid={Boolean(fieldErrors.ubigeo)}
+                    onChange={(e) =>
+                      setUbigeo(
+                        digitsOnly(
+                          e.target.value,
+                          6,
+                          "ubigeo-digits",
+                          "El ubigeo solo acepta dígitos (6 números).",
+                        ),
+                      )
+                    }
+                  />
+                  <FieldError message={fieldErrors.ubigeo} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="company-timezone">Timezone</Label>
+                  <Input
+                    id="company-timezone"
+                    value={timezone}
+                    aria-invalid={Boolean(fieldErrors.timezone)}
+                    onChange={(e) => setTimezone(e.target.value)}
+                  />
+                  <FieldError message={fieldErrors.timezone} />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-trade-name">Nombre comercial</Label>
-                <Input
-                  id="company-trade-name"
-                  value={tradeName}
-                  aria-invalid={Boolean(fieldErrors.tradeName)}
-                  onChange={(e) => setTradeName(e.target.value)}
-                />
-                <FieldError message={fieldErrors.tradeName} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-environment">Ambiente</Label>
-                <Select
-                  id="company-environment"
-                  value={environment}
-                  disabled={mode === "edit"}
-                  onChange={(e) =>
-                    setEnvironment(e.target.value as CompanyEnvironment)
-                  }
-                >
-                  <option value="sandbox">sandbox</option>
-                  <option value="production">production</option>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-address">Dirección</Label>
-                <Input
-                  id="company-address"
-                  value={addressLine}
-                  aria-invalid={Boolean(fieldErrors.addressLine)}
-                  onChange={(e) => setAddressLine(e.target.value)}
-                />
-                <FieldError message={fieldErrors.addressLine} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-ubigeo">Ubigeo</Label>
-                <Input
-                  id="company-ubigeo"
-                  value={ubigeo}
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="150101"
-                  aria-invalid={Boolean(fieldErrors.ubigeo)}
-                  onChange={(e) =>
-                    setUbigeo(
-                      digitsOnly(
-                        e.target.value,
-                        6,
-                        "ubigeo-digits",
-                        "El ubigeo solo acepta dígitos (6 números).",
-                      ),
-                    )
-                  }
-                />
-                <FieldError message={fieldErrors.ubigeo} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="company-timezone">Timezone</Label>
-                <Input
-                  id="company-timezone"
-                  value={timezone}
-                  aria-invalid={Boolean(fieldErrors.timezone)}
-                  onChange={(e) => setTimezone(e.target.value)}
-                />
-                <FieldError message={fieldErrors.timezone} />
-              </div>
+
+              {mode === "create" ? (
+                <div className="rounded-2xl border border-gray-200 p-4 dark:border-gray-800">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={seedDefaultSeries}
+                      onChange={(e) =>
+                        setSeedDefaultSeries(e.target.checked)
+                      }
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-800 dark:text-white/90">
+                        Crear series iniciales
+                      </span>
+                      <MutedText className="mt-0.5 block text-theme-xs">
+                        F001, B001, FC01, FD01, T001 y V001 (correlativo 1).
+                        RA/RC se crean al emitir.
+                      </MutedText>
+                    </span>
+                  </label>
+                  {seedDefaultSeries ? (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {DEFAULT_COMPANY_SERIES.map((s) => (
+                        <span
+                          key={`${s.document_type}-${s.serie}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-theme-xs font-medium text-gray-700 dark:bg-white/5 dark:text-gray-300"
+                        >
+                          <span className="font-mono">{s.serie}</span>
+                          <span className="text-gray-400">·</span>
+                          {s.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {error ? <ErrorState title="Error" message={error} /> : null}
             </>
           ) : null}

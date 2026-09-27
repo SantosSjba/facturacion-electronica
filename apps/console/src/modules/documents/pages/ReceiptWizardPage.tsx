@@ -24,8 +24,10 @@ import type {
   InvoiceLineInput,
   ReceiptCreateInput,
 } from "../types";
+import { wizardCommonStepError } from "../validation";
 
 const STEPS = ["Cabecera", "Cliente", "Líneas", "Extras", "Revisión"];
+const SERIE_PREFIX = /^[Bb]/;
 
 export function ReceiptWizardPage() {
   const navigate = useNavigate();
@@ -113,15 +115,13 @@ export function ReceiptWizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextError={
-        step === 0 && (!header.company_id || !header.serie)
-          ? "Selecciona la empresa y una serie activa para continuar."
-          : step === 1 && (!customer.identity_number || !customer.name)
-            ? "Completa el documento de identidad y el nombre del cliente."
-            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
-              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
-              : null
-      }
+      nextError={wizardCommonStepError(step, {
+        header,
+        customer,
+        lines,
+        seriePrefix: SERIE_PREFIX,
+        serieHint: "La serie de boleta debe empezar con B (ej. B001)",
+      })}
     >
       {step === 0 ? (
         <HeaderStep

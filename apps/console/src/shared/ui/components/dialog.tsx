@@ -10,12 +10,23 @@ import {
 import { Button } from "./button";
 import { cn } from "../utils";
 
+export type DialogSize = "sm" | "md" | "lg" | "xl";
+
+const dialogSizeClass: Record<DialogSize, string> = {
+  sm: "max-w-md",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-4xl",
+};
+
 export interface DialogProps {
   open: boolean;
   onClose: () => void;
   ariaLabel: string;
   children: ReactNode;
   className?: string;
+  /** Width preset. Prefer this over ad-hoc max-w-* in className. */
+  size?: DialogSize;
   closeOnBackdrop?: boolean;
 }
 
@@ -25,6 +36,7 @@ export function Dialog({
   ariaLabel,
   children,
   className,
+  size = "md",
   closeOnBackdrop = true,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -94,7 +106,8 @@ export function Dialog({
         aria-label={ariaLabel}
         tabIndex={-1}
         className={cn(
-          "relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-theme-xl outline-none dark:bg-gray-900",
+          "relative z-10 flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-3xl bg-white shadow-theme-xl outline-none dark:bg-gray-900",
+          dialogSizeClass[size],
           /* When callers wrap Header/Body/Footer in a <form>, keep the same sticky layout */
           "[&>form]:flex [&>form]:min-h-0 [&>form]:flex-1 [&>form]:flex-col [&>form]:overflow-hidden",
           className,

@@ -1,4 +1,5 @@
 export type CompanyEnvironment = "sandbox" | "production";
+export type CompanyStatus = "active" | "disabled";
 export type CertificateStatus = "missing" | "active" | "expired" | "revoked";
 
 export interface CredentialsSummary {
@@ -28,6 +29,7 @@ export interface Company {
   legal_name: string;
   trade_name: string | null;
   environment: CompanyEnvironment | string;
+  status: CompanyStatus | string;
   address: Record<string, unknown> | null;
   catalog_pin: Record<string, string>;
   timezone: string;
@@ -46,6 +48,8 @@ export interface CreateCompanyInput {
   environment: CompanyEnvironment;
   address?: Record<string, unknown> | null;
   timezone?: string;
+  /** Defaults to true on the API — seeds F001/B001/FC01/FD01/T001/V001. */
+  seed_default_series?: boolean;
 }
 
 export interface PatchCompanyInput {
@@ -53,6 +57,7 @@ export interface PatchCompanyInput {
   trade_name?: string | null;
   address?: Record<string, unknown> | null;
   timezone?: string;
+  status?: CompanyStatus;
 }
 
 export interface DocumentSeries {

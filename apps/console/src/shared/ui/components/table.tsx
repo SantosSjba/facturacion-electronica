@@ -46,7 +46,7 @@ export function TBody({
     <tbody
       className={cn(
         "divide-y divide-gray-100 dark:divide-gray-800 [&_tr:last-child]:border-0",
-        "max-md:block max-md:space-y-3 max-md:divide-y-0",
+        "max-md:block max-md:space-y-4 max-md:divide-y-0",
         className,
       )}
       {...props}
@@ -61,10 +61,12 @@ export function TR({
   return (
     <tr
       className={cn(
-        "border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]",
-        /* Mobile card: stacked fields + optional actions footer */
+        "transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.02]",
+        /* Desktop row separators */
+        "md:border-b md:border-gray-100 dark:md:border-gray-800",
+        /* Mobile card: independent bordered tiles with gap from TBody space-y */
         "max-md:grid max-md:grid-cols-1 max-md:gap-y-2",
-        "max-md:rounded-xl max-md:border max-md:border-gray-200 max-md:bg-white max-md:p-4 max-md:hover:bg-white",
+        "max-md:rounded-xl max-md:border max-md:border-gray-200 max-md:bg-white max-md:p-4 max-md:shadow-theme-xs max-md:hover:bg-white",
         "dark:max-md:border-gray-800 dark:max-md:bg-white/[0.03] dark:max-md:hover:bg-white/[0.03]",
         className,
       )}

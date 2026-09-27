@@ -22,8 +22,10 @@ import {
 } from "../components/wizard/steps";
 import { newIdempotencyKey, pollDocumentStatus } from "../poll";
 import type { CustomerInput, InvoiceCreateInput, InvoiceLineInput } from "../types";
+import { wizardCommonStepError } from "../validation";
 
 const STEPS = ["Cabecera", "Cliente", "Líneas", "Extras", "Revisión"];
+const SERIE_PREFIX = /^[Ff]/;
 
 export function InvoiceWizardPage() {
   const { hasPermission } = useSession();
@@ -31,7 +33,9 @@ export function InvoiceWizardPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [idem] = useState(() => newIdempotencyKey());
-  const [header, setHeader] = useState<CommonHeaderState>(() => emptyHeader(idem));
+  const [header, setHeader] = useState<CommonHeaderState>(() =>
+    emptyHeader(idem),
+  );
   const [customer, setCustomer] = useState<CustomerInput>(emptyCustomer);
   const [lines, setLines] = useState<InvoiceLineInput[]>([emptyLine()]);
   const [purchaseOrder, setPurchaseOrder] = useState("");
@@ -72,11 +76,17 @@ export function InvoiceWizardPage() {
     return body;
   }, [header, customer, lines, purchaseOrder]);
 
+  const nextError = wizardCommonStepError(step, {
+    header,
+    customer,
+    lines,
+    seriePrefix: SERIE_PREFIX,
+    serieHint: "La serie de factura debe empezar con F (ej. F001)",
+  });
+
   if (!canWrite) {
     return (
-      <ErrorState
-        message="No tienes permiso documents:write para emitir facturas."
-      />
+      <ErrorState message="No tienes permiso documents:write para emitir facturas." />
     );
   }
 
@@ -118,15 +128,7 @@ export function InvoiceWizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextError={
-        step === 0 && (!header.company_id || !header.serie)
-          ? "Selecciona la empresa y una serie activa para continuar."
-          : step === 1 && (!customer.identity_number || !customer.name)
-            ? "Completa el documento de identidad y la razón social del cliente."
-            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
-              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
-              : null
-      }
+      nextError={nextError}
     >
       {step === 0 ? (
         <HeaderStep
@@ -134,7 +136,7 @@ export function InvoiceWizardPage() {
           onChange={setHeader}
           companies={companiesQuery.data ?? []}
           documentType="01"
-          seriePrefix={/^[Ff]/}
+          seriePrefix={SERIE_PREFIX}
         />
       ) : null}
       {step === 1 ? (

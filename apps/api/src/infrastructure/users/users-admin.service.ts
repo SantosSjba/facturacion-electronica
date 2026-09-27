@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   newId,
   permissions,
@@ -60,7 +60,8 @@ export class UsersAdminService {
         createdAt: users.createdAt,
       })
       .from(users)
-      .where(eq(users.organizationId, organizationId));
+      .where(eq(users.organizationId, organizationId))
+      .orderBy(desc(users.createdAt), desc(users.id));
 
     const result = [];
     for (const u of rows) {

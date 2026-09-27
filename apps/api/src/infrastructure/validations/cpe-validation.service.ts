@@ -33,7 +33,7 @@ export class CpeValidationService {
       total_amount: number;
     },
   ) {
-    await this.companies.requireCompany(organizationId, body.company_id);
+    await this.companies.requireActiveCompany(organizationId, body.company_id);
 
     if (!/^\d{11}$/.test(body.ruc)) {
       throw AppError.validation("ruc must be 11 digits", [

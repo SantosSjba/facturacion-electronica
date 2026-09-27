@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { FieldError } from "@/shared/ui/FieldError";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
@@ -25,8 +26,14 @@ import type {
   InvoiceLineInput,
   NoteCreateInput,
 } from "../types";
+import {
+  noteAffectedSchema,
+  wizardCommonStepError,
+  zodFieldErrors,
+} from "../validation";
 
 const STEPS = ["Cabecera", "Cliente", "Líneas", "Afectado", "Revisión"];
+const SERIE_PREFIX = /^[FfBb]/;
 
 function NoteWizardPage({ kind }: { kind: "credit" | "debit" }) {
   const navigate = useNavigate();
@@ -82,6 +89,13 @@ function NoteWizardPage({ kind }: { kind: "credit" | "debit" }) {
     ],
   );
 
+  const affectedErrors = zodFieldErrors<"reason" | "affected_serie_number">(
+    noteAffectedSchema.safeParse({
+      reason,
+      affected_serie_number: affectedSerie,
+    }),
+  );
+
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
@@ -126,17 +140,18 @@ function NoteWizardPage({ kind }: { kind: "credit" | "debit" }) {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextError={
-        step === 0 && (!header.company_id || !header.serie)
-          ? "Selecciona la empresa y una serie activa para continuar."
-          : step === 1 && (!customer.identity_number || !customer.name)
-            ? "Completa el documento y el nombre del cliente."
-            : step === 2 && lines.some((line) => !line.description || line.quantity <= 0 || line.unit_value < 0)
-              ? "Cada línea debe tener descripción, cantidad mayor a cero y un valor unitario válido."
-              : step === 3 && (!reason.trim() || !/^[A-Za-z0-9]{1,4}-\d+$/.test(affectedSerie.trim()))
-                ? "Ingresa el motivo y un comprobante afectado con formato F001-1."
-                : null
-      }
+      nextError={wizardCommonStepError(step, {
+        header,
+        customer,
+        lines,
+        seriePrefix: SERIE_PREFIX,
+        serieHint: "La serie debe empezar con F o B (ej. FC01)",
+        affectedStep: 3,
+        affected: {
+          reason,
+          affected_serie_number: affectedSerie,
+        },
+      })}
     >
       {step === 0 ? (
         <HeaderStep
@@ -180,14 +195,28 @@ function NoteWizardPage({ kind }: { kind: "credit" | "debit" }) {
             <Input
               placeholder="F001-1"
               value={affectedSerie}
+              aria-invalid={Boolean(
+                affectedSerie && affectedErrors.affected_serie_number,
+              )}
               onChange={(e) => setAffectedSerie(e.target.value)}
+            />
+            <FieldError
+              message={
+                affectedSerie
+                  ? affectedErrors.affected_serie_number
+                  : undefined
+              }
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Motivo</Label>
             <Input
               value={reason}
+              aria-invalid={Boolean(reason.length > 0 && affectedErrors.reason)}
               onChange={(e) => setReason(e.target.value)}
+            />
+            <FieldError
+              message={reason.length > 0 ? affectedErrors.reason : undefined}
             />
           </div>
         </div>

@@ -13,6 +13,7 @@ import { Label } from "@/shared/ui/components/label";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { Select } from "@/shared/ui/components/select";
 import { Textarea } from "@/shared/ui/components/textarea";
+import { FieldError } from "@/shared/ui/FieldError";
 
 import { fetchSeries } from "../../api";
 import type {
@@ -24,6 +25,7 @@ import type {
   GreShipmentInput,
   GreVehicleInput,
 } from "../../types";
+import { grePartySchema } from "../../validation";
 
 export interface GreHeaderState {
   company_id: string;
@@ -133,6 +135,17 @@ function PartyFields({
   onChange: (next: GrePartyInput) => void;
   title?: string;
 }) {
+  const partyErrors = (() => {
+    const result = grePartySchema.safeParse(value);
+    if (result.success) return {} as Record<string, string>;
+    const out: Record<string, string> = {};
+    for (const issue of result.error.issues) {
+      const key = String(issue.path[0] ?? "");
+      if (key && !out[key]) out[key] = issue.message;
+    }
+    return out;
+  })();
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {title ? (
@@ -170,6 +183,10 @@ function PartyFields({
                 ? 8
                 : 20
           }
+          aria-invalid={
+            value.identity_number.length > 0 &&
+            Boolean(partyErrors.identity_number)
+          }
           onChange={(e) =>
             onChange({
               ...value,
@@ -180,12 +197,27 @@ function PartyFields({
             })
           }
         />
+        <FieldError
+          message={
+            value.identity_number.length > 0
+              ? partyErrors.identity_number
+              : undefined
+          }
+        />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <Label>Nombre / Razón social</Label>
         <Input
           value={value.name}
+          aria-invalid={
+            value.name.trim().length > 0 && Boolean(partyErrors.name)
+          }
           onChange={(e) => onChange({ ...value, name: e.target.value })}
+        />
+        <FieldError
+          message={
+            value.name.trim().length > 0 ? partyErrors.name : undefined
+          }
         />
       </div>
     </div>
@@ -285,11 +317,13 @@ export function GreHeaderStep({
           }
         >
           <option value="">Seleccionar…</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.ruc} — {c.legal_name} ({c.environment})
-            </option>
-          ))}
+          {companies
+            .filter((c) => (c.status ?? "active") === "active")
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.ruc} — {c.legal_name} ({c.environment})
+              </option>
+            ))}
         </Select>
       </div>
       <div className="space-y-1.5">

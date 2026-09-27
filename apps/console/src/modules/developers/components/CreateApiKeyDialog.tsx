@@ -24,6 +24,7 @@ import { cn } from "@/shared/ui/utils";
 
 import { createApiKey } from "../api";
 import { MACHINE_SCOPES, type CreateApiKeyResult } from "../types";
+import { apiKeyFormSchema, zodFieldErrors } from "../validation";
 
 export function CreateApiKeyDialog({
   open,
@@ -37,12 +38,13 @@ export function CreateApiKeyDialog({
   const [scopes, setScopes] = useState<string[]>(["documents:read"]);
   const [env, setEnv] = useState<"" | "sandbox" | "production">("");
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{
-    name?: string;
-    scopes?: string;
-  }>({});
+  const [touched, setTouched] = useState(false);
   const [created, setCreated] = useState<CreateApiKeyResult | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const fieldErrors = zodFieldErrors(
+    apiKeyFormSchema.safeParse({ name, scopes }),
+  );
 
   const mutation = useMutation({
     mutationFn: createApiKey,
@@ -63,7 +65,7 @@ export function CreateApiKeyDialog({
     setScopes(["documents:read"]);
     setEnv("");
     setError(null);
-    setFieldErrors({});
+    setTouched(false);
     setCreated(null);
     setCopied(false);
     onClose();
@@ -78,11 +80,8 @@ export function CreateApiKeyDialog({
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const next: typeof fieldErrors = {};
-    if (name.trim().length < 1) next.name = "Nombre requerido";
-    if (scopes.length < 1) next.scopes = "Selecciona al menos un scope";
-    setFieldErrors(next);
-    if (Object.keys(next).length > 0) return;
+    setTouched(true);
+    if (Object.keys(fieldErrors).length > 0) return;
     mutation.mutate({
       name: name.trim(),
       scopes,
@@ -105,6 +104,7 @@ export function CreateApiKeyDialog({
       open={open}
       onClose={resetAndClose}
       ariaLabel="Crear API key"
+      size="md"
       closeOnBackdrop={!created}
     >
       {created ? (
@@ -154,10 +154,13 @@ export function CreateApiKeyDialog({
               <Input
                 id="apikey-name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                aria-invalid={Boolean(fieldErrors.name)}
+                onChange={(e) => {
+                  setTouched(true);
+                  setName(e.target.value);
+                }}
+                aria-invalid={touched && Boolean(fieldErrors.name)}
               />
-              <FieldError message={fieldErrors.name} />
+              <FieldError message={touched ? fieldErrors.name : undefined} />
             </div>
             <fieldset className="space-y-2">
               <Label>Scopes</Label>
@@ -169,13 +172,16 @@ export function CreateApiKeyDialog({
                   >
                     <Checkbox
                       checked={scopes.includes(scope)}
-                      onChange={() => toggleScope(scope)}
+                      onChange={() => {
+                        setTouched(true);
+                        toggleScope(scope);
+                      }}
                     />
                     <span className="font-mono text-theme-xs">{scope}</span>
                   </label>
                 ))}
               </div>
-              <FieldError message={fieldErrors.scopes} />
+              <FieldError message={touched ? fieldErrors.scopes : undefined} />
             </fieldset>
             <div className="space-y-1.5">
               <Label htmlFor="apikey-env">Entorno (opcional)</Label>

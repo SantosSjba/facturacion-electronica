@@ -23,6 +23,8 @@ const createSchema = z.object({
   environment: z.enum(["sandbox", "production"]),
   address: z.record(z.string(), z.unknown()).nullable().optional(),
   timezone: z.string().min(1).optional(),
+  /** When true (default), creates F001/B001/FC01/FD01/T001/V001. */
+  seed_default_series: z.boolean().optional().default(true),
 });
 
 const patchSchema = z.object({
@@ -30,6 +32,7 @@ const patchSchema = z.object({
   trade_name: z.string().nullable().optional(),
   address: z.record(z.string(), z.unknown()).nullable().optional(),
   timezone: z.string().min(1).optional(),
+  status: z.enum(["active", "disabled"]).optional(),
 });
 
 type CreateBody = z.infer<typeof createSchema>;
@@ -64,6 +67,7 @@ export class CompaniesController {
       environment: body.environment,
       address: body.address,
       timezone: body.timezone,
+      seedDefaultSeries: body.seed_default_series,
     });
   }
 
@@ -89,6 +93,7 @@ export class CompaniesController {
       tradeName: body.trade_name,
       address: body.address,
       timezone: body.timezone,
+      status: body.status,
     });
   }
 

@@ -8,6 +8,7 @@ const EMPTY: CompanyFiltersState = {
   ruc: "",
   environment: "",
   certificate_status: "",
+  status: "",
 };
 
 export function CompanyFilters({
@@ -21,6 +22,7 @@ export function CompanyFilters({
     ruc: value.ruc,
     environment: value.environment,
     certificate_status: value.certificate_status,
+    status: value.status,
   });
 
   return (
@@ -28,7 +30,7 @@ export function CompanyFilters({
       activeCount={activeCount}
       onClear={() => onChange({ ...EMPTY })}
     >
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label htmlFor="co-filter-ruc">RUC</Label>
           <Input
@@ -46,13 +48,31 @@ export function CompanyFilters({
             onChange={(e) =>
               onChange({
                 ...value,
-                environment: e.target.value as CompanyFiltersState["environment"],
+                environment: e.target
+                  .value as CompanyFiltersState["environment"],
               })
             }
           >
             <option value="">Todos</option>
             <option value="sandbox">sandbox</option>
             <option value="production">production</option>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="co-filter-status">Estado</Label>
+          <Select
+            id="co-filter-status"
+            value={value.status}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                status: e.target.value as CompanyFiltersState["status"],
+              })
+            }
+          >
+            <option value="">Todos</option>
+            <option value="active">Activa</option>
+            <option value="disabled">Deshabilitada</option>
           </Select>
         </div>
         <div className="space-y-1.5">

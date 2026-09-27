@@ -32,6 +32,24 @@ export interface AccessTokenPayload {
   typ: "access";
 }
 
+export interface LoginOrganizationOption {
+  id: string;
+  slug: string | null;
+  name: string;
+}
+
+export type LoginResult =
+  | {
+      kind: "tokens";
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    }
+  | {
+      kind: "org_selection";
+      organizations: LoginOrganizationOption[];
+    };
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -46,22 +64,80 @@ export class AuthService {
     password: string;
     organizationSlug?: string;
     organizationId?: string;
-  }): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-    const org = await this.resolveOrg(input.organizationSlug, input.organizationId);
-    const userRows = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.organizationId, org.id), eq(users.email, input.email)))
-      .limit(1);
-    const user = userRows[0];
-    if (!user || user.status !== "active") {
-      throw AppError.unauthorized("Invalid credentials");
-    }
-    const ok = await this.hasher.verify(user.passwordHash, input.password);
-    if (!ok) {
-      throw AppError.unauthorized("Invalid credentials");
+  }): Promise<LoginResult> {
+    const email = input.email.trim().toLowerCase();
+    const hasOrgHint = Boolean(input.organizationSlug || input.organizationId);
+
+    if (hasOrgHint) {
+      const org = await this.resolveOrg(
+        input.organizationSlug,
+        input.organizationId,
+      );
+      const userRows = await this.db
+        .select()
+        .from(users)
+        .where(and(eq(users.organizationId, org.id), eq(users.email, email)))
+        .limit(1);
+      const user = userRows[0];
+      if (!user || user.status !== "active") {
+        throw AppError.unauthorized("Invalid credentials");
+      }
+      const ok = await this.hasher.verify(user.passwordHash, input.password);
+      if (!ok) {
+        throw AppError.unauthorized("Invalid credentials");
+      }
+      return this.completeLogin(user);
     }
 
+    // Email + password only: discover orgs where credentials match.
+    const candidates = await this.db
+      .select({
+        user: users,
+        orgId: organizations.id,
+        orgSlug: organizations.slug,
+        orgName: organizations.name,
+        orgStatus: organizations.status,
+      })
+      .from(users)
+      .innerJoin(organizations, eq(organizations.id, users.organizationId))
+      .where(and(eq(users.email, email), eq(users.status, "active")));
+
+    const matched: {
+      user: typeof users.$inferSelect;
+      org: LoginOrganizationOption;
+    }[] = [];
+
+    for (const row of candidates) {
+      if (row.orgStatus !== "active") continue;
+      const ok = await this.hasher.verify(row.user.passwordHash, input.password);
+      if (!ok) continue;
+      matched.push({
+        user: row.user,
+        org: {
+          id: row.orgId,
+          slug: row.orgSlug,
+          name: row.orgName,
+        },
+      });
+    }
+
+    if (matched.length === 0) {
+      throw AppError.unauthorized("Invalid credentials");
+    }
+    const only = matched[0];
+    if (matched.length === 1 && only) {
+      return this.completeLogin(only.user);
+    }
+
+    return {
+      kind: "org_selection",
+      organizations: matched.map((m) => m.org),
+    };
+  }
+
+  private async completeLogin(
+    user: typeof users.$inferSelect,
+  ): Promise<Extract<LoginResult, { kind: "tokens" }>> {
     const { permissions: perms, roles: roleCodes } = await this.loadUserAuth(
       user.id,
     );
@@ -71,13 +147,14 @@ export class AuthService {
       .set({ lastLoginAt: new Date(), updatedAt: new Date() })
       .where(eq(users.id, user.id));
 
-    return this.issueTokens({
+    const tokens = await this.issueTokens({
       userId: user.id,
-      organizationId: org.id,
+      organizationId: user.organizationId,
       email: user.email,
       permissions: perms,
       roles: roleCodes,
     });
+    return { kind: "tokens", ...tokens };
   }
 
   async refresh(
@@ -157,6 +234,75 @@ export class AuthService {
       permissions: perms,
       roles: roleCodes,
     };
+  }
+
+  async getMe(userId: string) {
+    const userRows = await this.db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        status: users.status,
+        organizationId: users.organizationId,
+        orgSlug: organizations.slug,
+        orgName: organizations.name,
+      })
+      .from(users)
+      .innerJoin(organizations, eq(organizations.id, users.organizationId))
+      .where(eq(users.id, userId))
+      .limit(1);
+    const row = userRows[0];
+    if (!row || row.status !== "active") {
+      throw AppError.unauthorized("User inactive");
+    }
+    const { permissions: perms, roles: roleCodes } = await this.loadUserAuth(
+      row.id,
+    );
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      organization_id: row.organizationId,
+      organization_slug: row.orgSlug,
+      organization_name: row.orgName,
+      roles: roleCodes,
+      permissions: perms,
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    input: { currentPassword: string; newPassword: string },
+  ): Promise<void> {
+    const userRows = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    const user = userRows[0];
+    if (!user || user.status !== "active") {
+      throw AppError.unauthorized("User inactive");
+    }
+    const ok = await this.hasher.verify(
+      user.passwordHash,
+      input.currentPassword,
+    );
+    if (!ok) {
+      throw AppError.validation("Contraseña actual incorrecta", [
+        { path: "current_password", issue: "mismatch" },
+      ]);
+    }
+    if (input.currentPassword === input.newPassword) {
+      throw AppError.validation(
+        "La nueva contraseña debe ser distinta a la actual",
+        [{ path: "new_password", issue: "same_as_current" }],
+      );
+    }
+    const passwordHash = await this.hasher.hash(input.newPassword);
+    await this.db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   private async issueTokens(input: {

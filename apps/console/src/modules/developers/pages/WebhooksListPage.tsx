@@ -28,7 +28,7 @@ import {
   rotateWebhookSecret,
 } from "../api";
 import { CreateWebhookDialog } from "../components/CreateWebhookDialog";
-import { DeliveriesPanel } from "../components/DeliveriesPanel";
+import { EditWebhookDialog } from "../components/EditWebhookDialog";
 import { WebhooksTable } from "../components/WebhooksTable";
 import type { WebhookEndpoint } from "../types";
 
@@ -36,7 +36,9 @@ export function WebhooksListPage() {
   const { hasPermission } = useSession();
   const canManage = hasPermission("webhooks:manage");
   const [createOpen, setCreateOpen] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editEndpoint, setEditEndpoint] = useState<WebhookEndpoint | null>(
+    null,
+  );
   const [rotatedSecret, setRotatedSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -164,19 +166,15 @@ export function WebhooksListPage() {
             <WebhooksTable
               endpoints={query.data ?? []}
               canManage={canManage}
-              expandedId={expandedId}
-              onToggleExpand={(id) =>
-                setExpandedId((cur) => (cur === id ? null : id))
-              }
               onRotate={(id) => {
                 if (window.confirm("¿Rotar el secret de este webhook?")) {
                   rotateMutation.mutate(id);
                 }
               }}
               onToggleStatus={onToggleStatus}
+              onEdit={setEditEndpoint}
               pendingId={pendingId}
             />
-            {expandedId ? <DeliveriesPanel endpointId={expandedId} /> : null}
           </div>
         )
       ) : null}
@@ -184,6 +182,10 @@ export function WebhooksListPage() {
       <CreateWebhookDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+      />
+      <EditWebhookDialog
+        endpoint={editEndpoint}
+        onClose={() => setEditEndpoint(null)}
       />
 
       <Dialog

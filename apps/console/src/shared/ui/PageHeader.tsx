@@ -20,7 +20,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="space-y-1">
+      <div className="min-w-0 flex-1 space-y-1">
         <h1 className="text-xl font-semibold text-gray-800 dark:text-white/90">
           {title}
         </h1>
@@ -28,7 +28,11 @@ export function PageHeader({
           <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
         ) : null}
       </div>
-      {actions}
+      {actions ? (
+        <div className="ms-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

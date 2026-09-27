@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { isValidRuc } from "@factosys/domain";
 import {
   companies,
   credentials,
+  documentSeries,
   newId,
   type Db,
 } from "@factosys/db";
@@ -12,6 +13,17 @@ import { AppError } from "@factosys/shared";
 import { DB } from "../persistence/db.tokens";
 
 export type CompanyEnvironment = "sandbox" | "production";
+export type CompanyStatus = "active" | "disabled";
+
+/** Starter series for onboarding (RA/RC use YYYYMMDD and are created on demand). */
+export const DEFAULT_COMPANY_SERIES = [
+  { documentType: "01", serie: "F001" },
+  { documentType: "03", serie: "B001" },
+  { documentType: "07", serie: "FC01" },
+  { documentType: "08", serie: "FD01" },
+  { documentType: "09", serie: "T001" },
+  { documentType: "31", serie: "V001" },
+] as const;
 
 export interface CompanyPublic {
   id: string;
@@ -20,6 +32,7 @@ export interface CompanyPublic {
   legal_name: string;
   trade_name: string | null;
   environment: string;
+  status: CompanyStatus;
   address: unknown;
   catalog_pin: Record<string, string>;
   timezone: string;
@@ -62,6 +75,7 @@ export class CompaniesService {
       environment: CompanyEnvironment;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      seedDefaultSeries?: boolean;
     },
   ): Promise<CompanyPublic> {
     if (!isValidRuc(input.ruc)) {
@@ -97,7 +111,23 @@ export class CompaniesService {
       environment: input.environment,
       address: input.address ?? null,
       timezone: input.timezone ?? "America/Lima",
+      status: "active",
     });
+
+    if (input.seedDefaultSeries !== false) {
+      await this.db.insert(documentSeries).values(
+        DEFAULT_COMPANY_SERIES.map((s) => ({
+          id: newId(),
+          organizationId,
+          companyId: id,
+          documentType: s.documentType,
+          serie: s.serie,
+          nextNumber: 1,
+          padding: 8,
+          isActive: true,
+        })),
+      );
+    }
 
     return this.get(organizationId, id);
   }
@@ -106,7 +136,8 @@ export class CompaniesService {
     const rows = await this.db
       .select()
       .from(companies)
-      .where(eq(companies.organizationId, organizationId));
+      .where(eq(companies.organizationId, organizationId))
+      .orderBy(desc(companies.createdAt), desc(companies.id));
     const result: CompanyPublic[] = [];
     for (const row of rows) {
       result.push(await this.toPublic(row));
@@ -127,6 +158,7 @@ export class CompaniesService {
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      status?: CompanyStatus;
     },
   ): Promise<CompanyPublic> {
     await this.requireCompany(organizationId, companyId);
@@ -135,12 +167,14 @@ export class CompaniesService {
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      status?: CompanyStatus;
       updatedAt: Date;
     } = { updatedAt: new Date() };
     if (input.legalName !== undefined) patch.legalName = input.legalName;
     if (input.tradeName !== undefined) patch.tradeName = input.tradeName;
     if (input.address !== undefined) patch.address = input.address;
     if (input.timezone !== undefined) patch.timezone = input.timezone;
+    if (input.status !== undefined) patch.status = input.status;
 
     await this.db.update(companies).set(patch).where(eq(companies.id, companyId));
     return this.get(organizationId, companyId);
@@ -160,6 +194,17 @@ export class CompaniesService {
     const row = rows[0];
     if (!row) {
       throw AppError.notFound("Company not found");
+    }
+    return row;
+  }
+
+  /** Like requireCompany but blocks emission when the company is disabled. */
+  async requireActiveCompany(organizationId: string, companyId: string) {
+    const row = await this.requireCompany(organizationId, companyId);
+    if (row.status === "disabled") {
+      throw AppError.validation("Empresa deshabilitada", [
+        { path: "company_id", issue: "company is disabled" },
+      ]);
     }
     return row;
   }
@@ -208,6 +253,7 @@ export class CompaniesService {
       legal_name: row.legalName,
       trade_name: row.tradeName,
       environment: row.environment,
+      status: (row.status === "disabled" ? "disabled" : "active") as CompanyStatus,
       address: row.address,
       catalog_pin: (row.catalogPin ?? {}) as Record<string, string>,
       timezone: row.timezone,

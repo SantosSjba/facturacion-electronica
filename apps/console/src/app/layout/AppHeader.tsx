@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useSession } from "@/shared/auth/session-context";
 import {
@@ -95,9 +96,13 @@ export function AppHeader() {
                   </span>
                 </div>
                 <div className="border-t border-gray-200 py-2 dark:border-gray-800">
-                  <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-theme-sm text-gray-700 dark:text-gray-400">
+                  <Link
+                    to="/account"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-theme-sm text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                    onClick={() => setMenuOpen(false)}
+                  >
                     <UserRound className="size-5" /> Mi cuenta
-                  </div>
+                  </Link>
                 </div>
                 <Button
                   type="button"

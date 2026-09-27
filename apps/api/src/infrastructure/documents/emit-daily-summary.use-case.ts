@@ -49,7 +49,7 @@ export class EmitDailySummaryUseCase {
     body: DailySummaryCreate;
     idempotencyKey: string;
   }): Promise<DocumentPublic> {
-    const company = await this.companies.requireCompany(
+    const company = await this.companies.requireActiveCompany(
       input.organizationId,
       input.body.company_id,
     );

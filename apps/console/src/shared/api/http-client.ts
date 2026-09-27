@@ -169,24 +169,61 @@ export async function apiRequest<T>(
   return json as T;
 }
 
+export interface LoginOrganizationOption {
+  id: string;
+  slug: string | null;
+  name: string;
+}
+
 export async function loginRequest(input: {
   email: string;
   password: string;
-  organization_slug: string;
-}): Promise<TokenPair> {
-  const data = await apiRequest<{
-    access_token: string;
-    refresh_token: string;
-    expires_in: number;
-  }>("/auth/login", {
+  organization_slug?: string;
+  organization_id?: string;
+}): Promise<
+  | TokenPair
+  | {
+      status: "org_selection_required";
+      organizations: LoginOrganizationOption[];
+    }
+> {
+  const data = await apiRequest<
+    | {
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+      }
+    | {
+        status: "org_selection_required";
+        organizations: LoginOrganizationOption[];
+      }
+  >("/auth/login", {
     method: "POST",
     auth: false,
     body: input,
   });
+
+  if (
+    data &&
+    typeof data === "object" &&
+    "status" in data &&
+    data.status === "org_selection_required"
+  ) {
+    return {
+      status: "org_selection_required",
+      organizations: data.organizations ?? [],
+    };
+  }
+
+  const tokens = data as {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  };
   return {
-    accessToken: data.access_token,
-    refreshToken: data.refresh_token,
-    expiresIn: data.expires_in,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresIn: tokens.expires_in,
   };
 }
 

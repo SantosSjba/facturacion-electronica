@@ -12,5 +12,12 @@
     "tag": "rbac",
     "up": "0002_rbac.sql",
     "down": "0002_rbac.down.sql"
+  },
+  {
+    "id": "0003_companies_status",
+    "when": 3,
+    "tag": "companies_status",
+    "up": "0003_companies_status.sql",
+    "down": "0003_companies_status.down.sql"
   }
 ]

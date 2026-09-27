@@ -28,6 +28,7 @@ export function CompaniesListPage() {
     ruc: "",
     environment: "",
     certificate_status: "",
+    status: "",
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);

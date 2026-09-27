@@ -1,9 +1,15 @@
-import type { CertificateStatus, Company, CompanyEnvironment } from "./types";
+import type {
+  CertificateStatus,
+  Company,
+  CompanyEnvironment,
+  CompanyStatus,
+} from "./types";
 
 export interface CompanyFiltersState {
   ruc: string;
   environment: "" | CompanyEnvironment;
   certificate_status: "" | CertificateStatus;
+  status: "" | CompanyStatus;
 }
 
 export function filterCompanies(
@@ -20,6 +26,9 @@ export function filterCompanies(
       filters.certificate_status &&
       c.certificate_status !== filters.certificate_status
     ) {
+      return false;
+    }
+    if (filters.status && (c.status ?? "active") !== filters.status) {
       return false;
     }
     return true;

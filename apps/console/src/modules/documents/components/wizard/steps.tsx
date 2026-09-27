@@ -16,6 +16,11 @@ import { FieldError } from "@/shared/ui/FieldError";
 
 import { fetchSeries } from "../../api";
 import type { CustomerInput, InvoiceLineInput } from "../../types";
+import {
+  customerStepSchema,
+  headerStepSchema,
+  zodFieldErrors,
+} from "../../validation";
 
 export interface CommonHeaderState {
   company_id: string;
@@ -92,6 +97,7 @@ export function HeaderStep({
   showOperationType?: boolean;
   extra?: React.ReactNode;
 }) {
+  const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
   const seriesQuery = useQuery({
     queryKey: ["series", value.company_id],
     queryFn: () => fetchSeries(value.company_id),
@@ -104,11 +110,28 @@ export function HeaderStep({
     return true;
   });
 
+  const fieldErrors = zodFieldErrors<
+    "company_id" | "serie" | "number" | "operation_type" | "issue_date" | "currency"
+  >(
+    headerStepSchema.safeParse({
+      company_id: value.company_id || undefined,
+      serie: value.serie,
+      number: value.number,
+      operation_type: value.operation_type || "0101",
+      issue_date: value.issue_date,
+      currency: value.currency,
+    }),
+  );
+
   useEffect(() => {
     if (!value.serie && series[0]) {
       onChange({ ...value, serie: series[0].serie });
     }
   }, [series, value, onChange]);
+
+  function err(key: keyof typeof fieldErrors) {
+    return touched[key] ? fieldErrors[key] : undefined;
+  }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -117,24 +140,35 @@ export function HeaderStep({
         <Select
           data-testid="wizard-company"
           value={value.company_id}
-          onChange={(e) =>
-            onChange({ ...value, company_id: e.target.value, serie: "" })
-          }
+          aria-invalid={Boolean(err("company_id"))}
+          onBlur={() => setTouched((t) => ({ ...t, company_id: true }))}
+          onChange={(e) => {
+            setTouched((t) => ({ ...t, company_id: true }));
+            onChange({ ...value, company_id: e.target.value, serie: "" });
+          }}
         >
           <option value="">Seleccionar…</option>
-          {companies.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.ruc} — {c.legal_name} ({c.environment})
-            </option>
-          ))}
+          {companies
+            .filter((c) => (c.status ?? "active") === "active")
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.ruc} — {c.legal_name} ({c.environment})
+              </option>
+            ))}
         </Select>
+        <FieldError message={err("company_id")} />
       </div>
       <div className="space-y-1.5">
         <Label>Serie</Label>
         <Select
           data-testid="wizard-serie"
           value={value.serie}
-          onChange={(e) => onChange({ ...value, serie: e.target.value })}
+          aria-invalid={Boolean(err("serie"))}
+          onBlur={() => setTouched((t) => ({ ...t, serie: true }))}
+          onChange={(e) => {
+            setTouched((t) => ({ ...t, serie: true }));
+            onChange({ ...value, serie: e.target.value });
+          }}
           disabled={!value.company_id}
         >
           <option value="">Seleccionar…</option>
@@ -144,6 +178,7 @@ export function HeaderStep({
             </option>
           ))}
         </Select>
+        <FieldError message={err("serie")} />
       </div>
       <div className="space-y-1.5">
         <Label>Número (opcional)</Label>
@@ -153,20 +188,31 @@ export function HeaderStep({
           pattern="[0-9]*"
           min={1}
           value={value.number}
-          onChange={(e) => onChange({ ...value, number: e.target.value.replace(/\D/g, "") })}
+          aria-invalid={Boolean(err("number"))}
+          onBlur={() => setTouched((t) => ({ ...t, number: true }))}
+          onChange={(e) =>
+            onChange({ ...value, number: e.target.value.replace(/\D/g, "") })
+          }
         />
+        <FieldError message={err("number")} />
       </div>
       {showOperationType ? (
         <div className="space-y-1.5">
           <Label>Tipo de operación</Label>
           <Input
             value={value.operation_type}
+            aria-invalid={Boolean(err("operation_type"))}
+            onBlur={() => setTouched((t) => ({ ...t, operation_type: true }))}
             onChange={(e) =>
-              onChange({ ...value, operation_type: e.target.value.replace(/\D/g, "").slice(0, 4) })
+              onChange({
+                ...value,
+                operation_type: e.target.value.replace(/\D/g, "").slice(0, 4),
+              })
             }
             inputMode="numeric"
             maxLength={4}
           />
+          <FieldError message={err("operation_type")} />
         </div>
       ) : null}
       <div className="space-y-1.5">
@@ -174,8 +220,11 @@ export function HeaderStep({
         <Input
           type="date"
           value={value.issue_date}
+          aria-invalid={Boolean(err("issue_date"))}
+          onBlur={() => setTouched((t) => ({ ...t, issue_date: true }))}
           onChange={(e) => onChange({ ...value, issue_date: e.target.value })}
         />
+        <FieldError message={err("issue_date")} />
       </div>
       <div className="space-y-1.5">
         <Label>Hora (opcional)</Label>
@@ -243,6 +292,33 @@ export function CustomerStep({
   onChange: (next: CustomerInput) => void;
   identityHint?: string;
 }) {
+  const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
+  const fieldErrors = zodFieldErrors<
+    "identity_type" | "identity_number" | "name" | "email"
+  >(
+    customerStepSchema.safeParse({
+      identity_type: value.identity_type,
+      identity_number: value.identity_number,
+      name: value.name,
+      email: value.email ?? "",
+    }),
+  );
+
+  function err(key: keyof typeof fieldErrors) {
+    if (touched[key]) return fieldErrors[key];
+    // Live feedback while typing partial values
+    if (key === "identity_number" && value.identity_number.length > 0) {
+      return fieldErrors.identity_number;
+    }
+    if (key === "name" && value.name.trim().length > 0) {
+      return fieldErrors.name;
+    }
+    if (key === "email" && value.email) {
+      return fieldErrors.email;
+    }
+    return undefined;
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1.5">
@@ -267,13 +343,20 @@ export function CustomerStep({
         <Input
           data-testid="wizard-customer-number"
           value={value.identity_number}
-          inputMode={value.identity_type === "1" || value.identity_type === "6" ? "numeric" : "text"}
-          maxLength={value.identity_type === "6" ? 11 : value.identity_type === "1" ? 8 : 20}
-          aria-invalid={
-            value.identity_number.length > 0 &&
-            ((value.identity_type === "6" && !/^\d{11}$/.test(value.identity_number)) ||
-              (value.identity_type === "1" && !/^\d{8}$/.test(value.identity_number)))
+          inputMode={
+            value.identity_type === "1" || value.identity_type === "6"
+              ? "numeric"
+              : "text"
           }
+          maxLength={
+            value.identity_type === "6"
+              ? 11
+              : value.identity_type === "1"
+                ? 8
+                : 20
+          }
+          aria-invalid={Boolean(err("identity_number"))}
+          onBlur={() => setTouched((t) => ({ ...t, identity_number: true }))}
           onChange={(e) =>
             onChange({
               ...value,
@@ -284,31 +367,29 @@ export function CustomerStep({
             })
           }
         />
-        <FieldError
-          message={
-            value.identity_number.length > 0 && value.identity_type === "6" && !/^\d{11}$/.test(value.identity_number)
-              ? "El RUC debe tener 11 dígitos"
-              : value.identity_number.length > 0 && value.identity_type === "1" && !/^\d{8}$/.test(value.identity_number)
-                ? "El DNI debe tener 8 dígitos"
-                : undefined
-          }
-        />
+        <FieldError message={err("identity_number")} />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <Label>Nombre / Razón social</Label>
         <Input
           data-testid="wizard-customer-name"
           value={value.name}
+          aria-invalid={Boolean(err("name"))}
+          onBlur={() => setTouched((t) => ({ ...t, name: true }))}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
         />
+        <FieldError message={err("name")} />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <Label>Email (opcional)</Label>
         <Input
           type="email"
           value={value.email ?? ""}
+          aria-invalid={Boolean(err("email"))}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
           onChange={(e) => onChange({ ...value, email: e.target.value })}
         />
+        <FieldError message={err("email")} />
       </div>
     </div>
   );
@@ -330,14 +411,24 @@ export function LinesStep({
       {lines.map((line, i) => (
         <div
           key={line.id}
-          className="grid gap-3 rounded-md border border-gray-200 p-3 sm:grid-cols-2 dark:border-gray-800"
+          className="grid gap-3 rounded-xl border border-gray-200 p-4 sm:grid-cols-2 dark:border-gray-800"
         >
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Descripción</Label>
             <Input
               data-testid={i === 0 ? "wizard-line-description" : undefined}
               value={line.description}
+              aria-invalid={
+                line.description.length > 0 && !line.description.trim()
+              }
               onChange={(e) => update(i, { description: e.target.value })}
+            />
+            <FieldError
+              message={
+                line.description.length > 0 && !line.description.trim()
+                  ? "Descripción requerida"
+                  : undefined
+              }
             />
           </div>
           <div className="space-y-1.5">
@@ -352,6 +443,13 @@ export function LinesStep({
               onKeyDown={preventInvalidNumberKey}
               onChange={(e) =>
                 update(i, { quantity: Number(e.target.value) || 0 })
+              }
+            />
+            <FieldError
+              message={
+                line.quantity <= 0
+                  ? "Cantidad debe ser mayor a cero"
+                  : undefined
               }
             />
           </div>

@@ -11,6 +11,7 @@ const sample: Company[] = [
     legal_name: "Demo SAC",
     trade_name: null,
     environment: "sandbox",
+    status: "active",
     address: null,
     catalog_pin: {},
     timezone: "America/Lima",
@@ -27,6 +28,7 @@ const sample: Company[] = [
     legal_name: "Prod SAC",
     trade_name: null,
     environment: "production",
+    status: "disabled",
     address: null,
     catalog_pin: {},
     timezone: "America/Lima",
@@ -45,6 +47,7 @@ describe("filterCompanies", () => {
         ruc: "999",
         environment: "",
         certificate_status: "",
+        status: "",
       }).map((c) => c.id),
     ).toEqual(["2"]);
   });
@@ -55,6 +58,18 @@ describe("filterCompanies", () => {
         ruc: "",
         environment: "sandbox",
         certificate_status: "missing",
+        status: "",
+      }).map((c) => c.id),
+    ).toEqual(["1"]);
+  });
+
+  it("filters by status", () => {
+    expect(
+      filterCompanies(sample, {
+        ruc: "",
+        environment: "",
+        certificate_status: "",
+        status: "active",
       }).map((c) => c.id),
     ).toEqual(["1"]);
   });

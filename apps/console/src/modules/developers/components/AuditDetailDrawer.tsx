@@ -28,6 +28,7 @@ export function AuditDetailDrawer({
       open={Boolean(event)}
       onClose={onClose}
       ariaLabel="Detalle de auditoría"
+      size="lg"
     >
       {event ? (
         <>

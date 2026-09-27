@@ -21,6 +21,7 @@ import {
   type GreHeaderState,
 } from "../components/wizard/steps";
 import type { GreLineInput, GrePartyInput, GreShipmentInput } from "../types";
+import { gre09StepError } from "../validation";
 
 const STEPS = ["Cabecera", "Destinatario", "Traslado", "Líneas", "Revisión"];
 
@@ -84,7 +85,12 @@ export function Gre09WizardPage() {
     );
   }
 
-  const mode = shipment.transport_mode_code;
+  const nextError = gre09StepError(step, {
+    header,
+    delivery,
+    shipment,
+    lines,
+  });
 
   return (
     <WizardShell
@@ -96,35 +102,7 @@ export function Gre09WizardPage() {
       onNext={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
       onSubmit={() => void onSubmit()}
       submitting={submitting}
-      nextError={
-        step === 0 && (!header.company_id || !header.serie)
-          ? "Selecciona la empresa y una serie T### activa."
-          : step === 1 && (!delivery.identity_number || !delivery.name)
-            ? "Completa el destinatario."
-            : step === 2 &&
-                (!shipment.transfer_reason_code ||
-                  !shipment.transport_mode_code ||
-                  !shipment.origin.ubigeo ||
-                  !shipment.origin.address ||
-                  !shipment.destination.ubigeo ||
-                  !shipment.destination.address ||
-                  shipment.gross_weight <= 0 ||
-                  (mode === "01" &&
-                    !(
-                      shipment.carrier?.identity_number && shipment.carrier?.name
-                    )) ||
-                  (mode === "02" &&
-                    (!(shipment.vehicles?.[0]?.plate) ||
-                      !(shipment.drivers?.[0]?.identity_number) ||
-                      !(shipment.drivers?.[0]?.name))))
-              ? "Completa motivo, modalidad, peso, origen/destino y datos de transporte."
-              : step === 3 &&
-                  lines.some(
-                    (l) => !l.description || l.quantity <= 0 || !l.unit_code,
-                  )
-                ? "Cada línea requiere descripción, cantidad > 0 y unidad."
-                : null
-      }
+      nextError={nextError}
     >
       {step === 0 ? (
         <GreHeaderStep

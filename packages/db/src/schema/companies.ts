@@ -30,6 +30,7 @@ export const companies = pgTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     timezone: text("timezone").notNull().default("America/Lima"),
+    status: text("status").notNull().default("active"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -40,10 +41,15 @@ export const companies = pgTable(
       t.environment,
     ),
     index("companies_org_id_idx").on(t.organizationId, t.id),
+    index("companies_org_status_idx").on(t.organizationId, t.status),
     check(
       "companies_environment_check",
       sql`${t.environment} in ('sandbox', 'production')`,
     ),
     check("companies_ruc_len_check", sql`char_length(${t.ruc}) = 11`),
+    check(
+      "companies_status_check",
+      sql`${t.status} in ('active', 'disabled')`,
+    ),
   ],
 );

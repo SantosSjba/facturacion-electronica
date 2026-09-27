@@ -14,7 +14,6 @@ export const DEMO = {
 } as const;
 
 export const testIds = {
-  loginOrg: "login-org",
   loginEmail: "login-email",
   loginPassword: "login-password",
   loginSubmit: "login-submit",

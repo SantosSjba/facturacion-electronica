@@ -19,6 +19,7 @@ import {
   setAccessTokenMemory,
   setAuthFailureHandler,
   setStoredRefreshToken,
+  type LoginOrganizationOption,
 } from "../api/http-client";
 import {
   decodeAccessToken,
@@ -34,14 +35,22 @@ export interface SessionUser {
   roles: string[];
 }
 
+export type LoginOutcome =
+  | { status: "authenticated" }
+  | {
+      status: "org_selection_required";
+      organizations: LoginOrganizationOption[];
+    };
+
 interface SessionContextValue {
   user: SessionUser | null;
   bootstrapping: boolean;
   login: (input: {
     email: string;
     password: string;
-    organizationSlug: string;
-  }) => Promise<void>;
+    organizationSlug?: string;
+    organizationId?: string;
+  }) => Promise<LoginOutcome>;
   logout: () => Promise<void>;
   hasPermission: (perm: string) => boolean;
 }
@@ -122,17 +131,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     async (input: {
       email: string;
       password: string;
-      organizationSlug: string;
-    }) => {
-      const pair = await loginRequest({
+      organizationSlug?: string;
+      organizationId?: string;
+    }): Promise<LoginOutcome> => {
+      const result = await loginRequest({
         email: input.email,
         password: input.password,
         organization_slug: input.organizationSlug,
+        organization_id: input.organizationId,
       });
+
+      if ("status" in result && result.status === "org_selection_required") {
+        return {
+          status: "org_selection_required",
+          organizations: result.organizations,
+        };
+      }
+
+      const pair = result as {
+        accessToken: string;
+        refreshToken: string;
+        expiresIn: number;
+      };
       setStoredRefreshToken(pair.refreshToken);
       const u = applyAccessToken(pair.accessToken);
       if (!u) throw new Error("Invalid access token from login");
       setUser(u);
+      return { status: "authenticated" };
     },
     [],
   );
