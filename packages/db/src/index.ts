@@ -10,6 +10,9 @@ export {
   DEMO_OWNER_PASSWORD,
   DEMO_VIEWER_EMAIL,
   DEMO_VIEWER_PASSWORD,
+  PLATFORM_ORG_SLUG,
+  PLATFORM_ADMIN_EMAIL,
+  PLATFORM_ADMIN_PASSWORD,
   RULESET_VERSION,
   RULESET_SHA256,
   RULESET_ARTIFACT,
@@ -17,8 +20,11 @@ export {
 export {
   seedRbacMatrix,
   PERMISSION_CODES,
+  ORG_PERMISSION_CODES,
+  PLATFORM_PERMISSION_CODES,
   ROLE_DEFS,
   ROLE_PERMISSION_MATRIX,
+  isPlatformRole,
 } from "./seeds/rbac-matrix";
 export type { PermissionCode, RoleCode } from "./seeds/rbac-matrix";
 

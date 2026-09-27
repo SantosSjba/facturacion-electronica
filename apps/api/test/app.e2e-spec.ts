@@ -1652,4 +1652,75 @@ describe("API e2e", () => {
     });
     expect((hit?.data as { secret?: string }).secret).toBe("[REDACTED]");
   });
+
+  it("SaaS stubs: GET /saas/plans and legal documents return empty items", async () => {
+    const plans = await request(server).get("/saas/plans").expect(200);
+    expect(plans.body).toEqual({ items: [] });
+
+    const legal = await request(server)
+      .get("/saas/legal/documents")
+      .expect(200);
+    expect(legal.body).toEqual({ items: [] });
+  });
+
+  it("SaaS stub: POST /saas/signup-requests returns 501", async () => {
+    await request(server).post("/saas/signup-requests").send({}).expect(501);
+  });
+
+  it("platform health: org JWT → 403; platform JWT → 200", async () => {
+    const orgDenied = await request(server)
+      .get("/saas/platform/health")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+    expect(orgDenied.body).toMatchObject({
+      code: "FACTOSYS_FORBIDDEN",
+    });
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+
+    const platformToken = platformLogin.body.access_token as string;
+    const ok = await request(server)
+      .get("/saas/platform/health")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(ok.body).toEqual({ status: "ok" });
+  });
+
+  it("refresh rotation: new token works; reused old refresh → 401", async () => {
+    const login = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "owner@demo.local",
+        password: "DemoOwner!2026",
+        organization_slug: "demo",
+      })
+      .expect(200);
+
+    const oldRefresh = login.body.refresh_token as string;
+    const rotated = await request(server)
+      .post("/auth/refresh")
+      .send({ refresh_token: oldRefresh })
+      .expect(200);
+
+    expect(rotated.body.refresh_token).toBeTruthy();
+    expect(rotated.body.refresh_token).not.toBe(oldRefresh);
+    expect(rotated.body.access_token).toBeTruthy();
+
+    await request(server)
+      .post("/auth/refresh")
+      .send({ refresh_token: oldRefresh })
+      .expect(401);
+
+    await request(server)
+      .post("/auth/refresh")
+      .send({ refresh_token: rotated.body.refresh_token })
+      .expect(200);
+  });
 });

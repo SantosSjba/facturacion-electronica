@@ -35,6 +35,9 @@ export class UsersAdminService {
 
     const result = [];
     for (const role of roleRows) {
+      if (role.code.startsWith("platform_")) {
+        continue;
+      }
       const perms = await this.db
         .select({ code: permissions.code })
         .from(rolePermissions)
@@ -202,6 +205,9 @@ export class UsersAdminService {
     }
     if (roleCodes.includes("owner") && !actor.roles.includes("owner")) {
       throw AppError.forbidden("Only owner can assign the owner role");
+    }
+    if (roleCodes.some((c) => c.startsWith("platform_"))) {
+      throw AppError.forbidden("Platform roles cannot be assigned via org users API");
     }
   }
 

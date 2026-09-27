@@ -19,5 +19,12 @@
     "tag": "companies_status",
     "up": "0003_companies_status.sql",
     "down": "0003_companies_status.down.sql"
+  },
+  {
+    "id": "0004_saas_tables",
+    "when": 4,
+    "tag": "saas_tables",
+    "up": "0004_saas_tables.sql",
+    "down": "0004_saas_tables.down.sql"
   }
 ]

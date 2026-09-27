@@ -25,8 +25,15 @@ export const DEMO_VIEWER_EMAIL = "viewer@demo.local";
 /** Dev-only password for demo viewer — never use in production. */
 export const DEMO_VIEWER_PASSWORD = "DemoViewer!2026";
 
+/** Platform org shell for seed-only platform operators (S12). */
+export const PLATFORM_ORG_SLUG = "factosys-platform";
+export const PLATFORM_ADMIN_EMAIL = "platform@factosys.local";
+/** Dev-only password for platform admin — never use in production. */
+export const PLATFORM_ADMIN_PASSWORD = "PlatformAdmin!2026";
+
 /**
  * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner + viewer.
+ * Also seeds platform org + platform_superadmin user (dev only).
  * No API key secrets.
  */
 export async function seedDemo(db: Db): Promise<{
@@ -34,6 +41,8 @@ export async function seedDemo(db: Db): Promise<{
   catalogVersionId: string;
   ownerUserId: string;
   viewerUserId: string;
+  platformOrgId: string;
+  platformUserId: string;
 }> {
   const existingOrg = await db
     .select()
@@ -173,5 +182,72 @@ export async function seedDemo(db: Db): Promise<{
     });
   }
 
-  return { organizationId, catalogVersionId, ownerUserId, viewerUserId };
+  const existingPlatformOrg = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.slug, PLATFORM_ORG_SLUG))
+    .limit(1);
+
+  let platformOrgId = existingPlatformOrg[0]?.id;
+  if (!platformOrgId) {
+    platformOrgId = uuidv7();
+    await db.insert(organizations).values({
+      id: platformOrgId,
+      name: "Factosys Platform",
+      slug: PLATFORM_ORG_SLUG,
+      status: "active",
+    });
+  }
+
+  const existingPlatformUser = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.organizationId, platformOrgId),
+        eq(users.email, PLATFORM_ADMIN_EMAIL),
+      ),
+    )
+    .limit(1);
+
+  let platformUserId = existingPlatformUser[0]?.id;
+  if (!platformUserId) {
+    platformUserId = uuidv7();
+    const passwordHash = await hash(PLATFORM_ADMIN_PASSWORD);
+    await db.insert(users).values({
+      id: platformUserId,
+      organizationId: platformOrgId,
+      email: PLATFORM_ADMIN_EMAIL,
+      name: "Platform Superadmin",
+      passwordHash,
+      status: "active",
+    });
+  }
+
+  const platformRoleId = roleIds.platform_superadmin;
+  const hasPlatformRole = await db
+    .select()
+    .from(userRoles)
+    .where(
+      and(
+        eq(userRoles.userId, platformUserId),
+        eq(userRoles.roleId, platformRoleId),
+      ),
+    )
+    .limit(1);
+  if (hasPlatformRole.length === 0) {
+    await db.insert(userRoles).values({
+      userId: platformUserId,
+      roleId: platformRoleId,
+    });
+  }
+
+  return {
+    organizationId,
+    catalogVersionId,
+    ownerUserId,
+    viewerUserId,
+    platformOrgId,
+    platformUserId,
+  };
 }

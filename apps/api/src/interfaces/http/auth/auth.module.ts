@@ -13,6 +13,7 @@ import { AuthController } from "../auth/auth.controller";
 import { ApiKeyGuard } from "../guards/api-key.guard";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { PermissionsGuard } from "../guards/permissions.guard";
+import { PlatformGuard } from "../guards/platform.guard";
 import { UsersController } from "../users/users.controller";
 import { WhoamiController } from "../v1/whoami.controller";
 
@@ -41,9 +42,11 @@ import { WhoamiController } from "../v1/whoami.controller";
     ApiKeyGuard,
     JwtAuthGuard,
     PermissionsGuard,
+    PlatformGuard,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ApiKeyGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: PlatformGuard },
   ],
   exports: [Argon2Hasher, ApiKeyService, AuthService, UsersAdminService, JwtModule],
 })

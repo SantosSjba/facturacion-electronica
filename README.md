@@ -50,6 +50,8 @@ pnpm dev:landing
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
 `DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (default `http://localhost:5173`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
+**S12-API stubs** (prefijo `/saas`): `GET /saas/plans`, `GET /saas/legal/documents`, `GET /saas/notifications`, `POST /saas/signup-requests` (501), `GET /saas/platform/health` (JWT `ctx=platform` only).
+
 ### Contrato del monorepo
 
 | Script                              | Descripción                                |

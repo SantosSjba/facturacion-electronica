@@ -6,8 +6,8 @@ import { permissions } from "../schema/permissions";
 import { rolePermissions } from "../schema/role-permissions";
 import { roles } from "../schema/roles";
 
-/** Atomic permissions (doc 33 §1). */
-export const PERMISSION_CODES = [
+/** Organization-scoped permissions (doc 33 §1). */
+export const ORG_PERMISSION_CODES = [
   "users:read",
   "users:write",
   "companies:read",
@@ -26,7 +26,21 @@ export const PERMISSION_CODES = [
   "catalog:read",
 ] as const;
 
+/** Platform (Factosys ops) permissions — never granted to org roles. */
+export const PLATFORM_PERMISSION_CODES = [
+  "platform:admin",
+  "platform:ops",
+] as const;
+
+/** Atomic permissions (org + platform). */
+export const PERMISSION_CODES = [
+  ...ORG_PERMISSION_CODES,
+  ...PLATFORM_PERMISSION_CODES,
+] as const;
+
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
+export type OrgPermissionCode = (typeof ORG_PERMISSION_CODES)[number];
+export type PlatformPermissionCode = (typeof PLATFORM_PERMISSION_CODES)[number];
 
 export const ROLE_DEFS = [
   { code: "owner", name: "Owner", description: "Dueño de la organización" },
@@ -34,14 +48,24 @@ export const ROLE_DEFS = [
   { code: "operator", name: "Operator", description: "Emisión y consulta CPE/GRE" },
   { code: "developer", name: "Developer", description: "API keys, webhooks, validaciones" },
   { code: "viewer", name: "Viewer", description: "Solo lectura" },
+  {
+    code: "platform_superadmin",
+    name: "Platform Superadmin",
+    description: "Administración global de la plataforma Factosys",
+  },
+  {
+    code: "platform_ops",
+    name: "Platform Ops",
+    description: "Operaciones de plataforma (soporte / ops)",
+  },
 ] as const;
 
 export type RoleCode = (typeof ROLE_DEFS)[number]["code"];
 
-/** Role → permissions matrix (doc 33 §1). */
+/** Role → permissions matrix (doc 33 §1 + S12 platform). */
 export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly PermissionCode[]> = {
-  owner: [...PERMISSION_CODES],
-  admin: [...PERMISSION_CODES],
+  owner: [...ORG_PERMISSION_CODES],
+  admin: [...ORG_PERMISSION_CODES],
   operator: [
     "companies:read",
     "series:read",
@@ -71,7 +95,13 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly PermissionCode[]>
     "gre:read",
     "catalog:read",
   ],
+  platform_superadmin: ["platform:admin", "platform:ops"],
+  platform_ops: ["platform:ops"],
 };
+
+export function isPlatformRole(code: string): boolean {
+  return code.startsWith("platform_");
+}
 
 /**
  * Idempotent seed of global roles, permissions and role_permissions.

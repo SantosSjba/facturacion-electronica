@@ -18,6 +18,7 @@ import { RequestIdMiddleware } from "./interfaces/http/middleware/request-id.mid
 import { DocumentsModule } from "./interfaces/http/v1/documents.module";
 import { WebhooksModule } from "./interfaces/http/v1/webhooks.module";
 import { ValidationsModule } from "./interfaces/http/v1/validations.module";
+import { SaasModule } from "./interfaces/http/saas/saas.module";
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ValidationsModule } from "./interfaces/http/v1/validations.module";
     DocumentsModule,
     WebhooksModule,
     ValidationsModule,
+    SaasModule,
     MetaModule,
     HealthModule,
   ],

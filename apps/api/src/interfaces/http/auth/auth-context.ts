@@ -7,6 +7,8 @@ export interface ApiKeyAuthContext {
   scopes: string[];
 }
 
+export type AuthCtx = "platform" | "org";
+
 export interface UserAuthContext {
   kind: "user";
   organizationId: string;
@@ -14,6 +16,8 @@ export interface UserAuthContext {
   email: string;
   permissions: string[];
   roles: string[];
+  /** `platform` when the user holds any `platform_*` role; otherwise `org`. */
+  ctx: AuthCtx;
 }
 
 export type AuthContext = ApiKeyAuthContext | UserAuthContext;

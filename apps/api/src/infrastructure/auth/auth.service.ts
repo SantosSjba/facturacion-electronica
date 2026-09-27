@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { and, eq, inArray, isNull, gt } from "drizzle-orm";
 import {
+  isPlatformRole,
   newId,
   organizations,
   permissions,
@@ -20,8 +21,12 @@ import { AppError } from "@factosys/shared";
 import type { Env } from "../config/env.schema";
 import { Argon2Hasher } from "../crypto/argon2-hasher";
 import { DB } from "../persistence/db.tokens";
-import type { UserAuthContext } from "../../interfaces/http/auth/auth-context";
+import type {
+  AuthCtx,
+  UserAuthContext,
+} from "../../interfaces/http/auth/auth-context";
 import { sha256Hex } from "../api-keys/api-key.service";
+import { RateLimitService } from "../redis/rate-limit.service";
 
 export interface AccessTokenPayload {
   sub: string;
@@ -29,6 +34,7 @@ export interface AccessTokenPayload {
   email: string;
   perms: string[];
   roles: string[];
+  ctx: AuthCtx;
   typ: "access";
 }
 
@@ -57,6 +63,7 @@ export class AuthService {
     private readonly hasher: Argon2Hasher,
     private readonly jwt: JwtService,
     private readonly config: ConfigService<Env, true>,
+    private readonly rateLimit: RateLimitService,
   ) {}
 
   async login(input: {
@@ -66,6 +73,7 @@ export class AuthService {
     organizationId?: string;
   }): Promise<LoginResult> {
     const email = input.email.trim().toLowerCase();
+    await this.rateLimit.consumeLogin(email);
     const hasOrgHint = Boolean(input.organizationSlug || input.organizationId);
 
     if (hasOrgHint) {
@@ -157,7 +165,18 @@ export class AuthService {
     return { kind: "tokens", ...tokens };
   }
 
+  /**
+   * Rotate refresh token: revoke the presented token and issue a new pair.
+   * Reusing a revoked/rotated refresh token yields 401.
+   */
   async refresh(
+    refreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+    return this.rotateRefreshToken(refreshToken);
+  }
+
+  /** Explicit refresh-token rotation (FE-368). */
+  async rotateRefreshToken(
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
     const tokenHash = sha256Hex(refreshToken);
@@ -233,6 +252,7 @@ export class AuthService {
       email: user.email,
       permissions: perms,
       roles: roleCodes,
+      ctx: this.resolveAuthCtx(roleCodes),
     };
   }
 
@@ -305,6 +325,10 @@ export class AuthService {
       .where(eq(users.id, userId));
   }
 
+  private resolveAuthCtx(roleCodes: string[]): AuthCtx {
+    return roleCodes.some(isPlatformRole) ? "platform" : "org";
+  }
+
   private async issueTokens(input: {
     userId: string;
     organizationId: string;
@@ -313,12 +337,14 @@ export class AuthService {
     roles: string[];
   }) {
     const expiresIn = this.config.get("JWT_ACCESS_TTL_SEC", { infer: true });
+    const ctx = this.resolveAuthCtx(input.roles);
     const payload: AccessTokenPayload = {
       sub: input.userId,
       org: input.organizationId,
       email: input.email,
       perms: input.permissions,
       roles: input.roles,
+      ctx,
       typ: "access",
     };
     const accessToken = await this.jwt.signAsync(payload, {

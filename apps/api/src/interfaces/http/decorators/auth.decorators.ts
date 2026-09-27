@@ -13,3 +13,6 @@ export const RequirePermissions = (...permissions: string[]) =>
 export const REQUIRE_SCOPES_KEY = "requireScopes";
 export const RequireScopes = (...scopes: string[]) =>
   SetMetadata(REQUIRE_SCOPES_KEY, scopes);
+
+export const REQUIRE_PLATFORM_KEY = "requirePlatform";
+export const RequirePlatform = () => SetMetadata(REQUIRE_PLATFORM_KEY, true);
