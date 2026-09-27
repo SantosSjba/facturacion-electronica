@@ -1653,14 +1653,9 @@ describe("API e2e", () => {
     expect((hit?.data as { secret?: string }).secret).toBe("[REDACTED]");
   });
 
-  it("SaaS stubs: GET /saas/plans and legal documents return empty items", async () => {
+  it("SaaS stubs: GET /saas/plans returns empty items", async () => {
     const plans = await request(server).get("/saas/plans").expect(200);
     expect(plans.body).toEqual({ items: [] });
-
-    const legal = await request(server)
-      .get("/saas/legal/documents")
-      .expect(200);
-    expect(legal.body).toEqual({ items: [] });
   });
 
   it("SaaS stub: POST /saas/signup-requests returns 501", async () => {
@@ -1691,6 +1686,66 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${platformToken}`)
       .expect(200);
     expect(ok.body).toEqual({ status: "ok" });
+  });
+
+  it("legal drafts: org JWT → 403; platform create + list", async () => {
+    await request(server)
+      .get("/saas/legal/documents")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const code = `e2e-legal-${Date.now()}`;
+    const bodyMd = "# Draft\n\nE2E legal document body.";
+    const created = await request(server)
+      .post("/saas/legal/documents")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        code,
+        title: "E2E Legal Draft",
+        body_md: bodyMd,
+      })
+      .expect(201);
+
+    expect(created.body).toMatchObject({
+      code,
+      version: 1,
+      title: "E2E Legal Draft",
+      body_md: bodyMd,
+      status: "draft",
+    });
+    expect(created.body.hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(created.body.id).toBeTruthy();
+
+    const listed = await request(server)
+      .get("/saas/legal/documents")
+      .query({ status: "draft" })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+
+    expect(Array.isArray(listed.body.items)).toBe(true);
+    const hit = (
+      listed.body.items as Array<Record<string, unknown>>
+    ).find((d) => d.id === created.body.id);
+    expect(hit).toBeTruthy();
+    expect(hit?.hash).toBe(created.body.hash);
+
+    const patched = await request(server)
+      .patch(`/saas/legal/documents/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ body_md: "# Draft\n\nUpdated body." })
+      .expect(200);
+    expect(patched.body.hash).not.toBe(created.body.hash);
+    expect(patched.body.body_md).toContain("Updated body");
   });
 
   it("refresh rotation: new token works; reused old refresh → 401", async () => {

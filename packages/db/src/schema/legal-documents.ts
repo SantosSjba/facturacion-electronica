@@ -14,10 +14,11 @@ export const legalDocuments = pgTable(
   "legal_documents",
   {
     id: idColumn(),
-    slug: text("slug").notNull(),
+    code: text("code").notNull(),
     version: integer("version").notNull(),
     title: text("title").notNull(),
     bodyMd: text("body_md").notNull(),
+    hash: text("hash").notNull(),
     status: text("status").notNull().default("draft"),
     publishedAt: timestamp("published_at", {
       withTimezone: true,
@@ -26,7 +27,7 @@ export const legalDocuments = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex("legal_documents_slug_version_uidx").on(t.slug, t.version),
+    uniqueIndex("legal_documents_code_version_uidx").on(t.code, t.version),
     check(
       "legal_documents_status_check",
       sql`${t.status} in ('draft', 'published')`,

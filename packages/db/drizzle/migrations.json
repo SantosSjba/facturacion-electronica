@@ -26,5 +26,12 @@
     "tag": "saas_tables",
     "up": "0004_saas_tables.sql",
     "down": "0004_saas_tables.down.sql"
+  },
+  {
+    "id": "0005_legal_documents_code_hash",
+    "when": 5,
+    "tag": "legal_documents_code_hash",
+    "up": "0005_legal_documents_code_hash.sql",
+    "down": "0005_legal_documents_code_hash.down.sql"
   }
 ]

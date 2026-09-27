@@ -1,13 +1,20 @@
+import { createHash } from "node:crypto";
+
 import { hash } from "argon2";
 import { and, eq } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 
 import type { Db } from "../client";
 import { catalogVersions } from "../schema/catalog-versions";
+import { legalDocuments } from "../schema/legal-documents";
 import { organizations } from "../schema/organizations";
 import { userRoles } from "../schema/user-roles";
 import { users } from "../schema/users";
 import { seedRbacMatrix } from "./rbac-matrix";
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 /** Official Excel ruleset pin (docs/sunat-oficial). */
 export const RULESET_VERSION = "2026-08-26";
@@ -242,6 +249,8 @@ export async function seedDemo(db: Db): Promise<{
     });
   }
 
+  await seedLegalDraftsEsPe(db);
+
   return {
     organizationId,
     catalogVersionId,
@@ -250,4 +259,102 @@ export async function seedDemo(db: Db): Promise<{
     platformOrgId,
     platformUserId,
   };
+}
+
+const PRIVACY_ES_PE_BODY = `# Política de privacidad (borrador es-PE)
+
+> **AVISO:** Este texto es un **placeholder** para desarrollo. No constituye asesoría legal ni texto final para producción. Debe ser revisado y aprobado por un abogado antes de publicarse.
+
+## Resumen
+
+Factosys trata datos personales necesarios para prestar el servicio de facturación electrónica en Perú.
+
+## Checklist abogado
+
+- [ ] Identidad y datos de contacto del responsable del tratamiento
+- [ ] Bases legales (consentimiento / contrato / obligación legal SUNAT)
+- [ ] Categorías de datos (identidad, contacto, RUC, CPE/GRE, logs)
+- [ ] Finalidades y plazos de conservación
+- [ ] Destinatarios / encargados (hosting, email, SUNAT)
+- [ ] Transferencias internacionales (si aplica)
+- [ ] Derechos ARCO / derechos del titular (Ley 29733 y normas aplicables)
+- [ ] Cookies / tecnologías similares
+- [ ] Medidas de seguridad (cifrado, acceso, backups)
+- [ ] Procedimiento de notificación de brechas
+- [ ] Jurisdicción y ley aplicable (Perú)
+- [ ] Canal de contacto DPO / privacidad
+`;
+
+const TERMS_ES_PE_BODY = `# Términos de uso (borrador es-PE)
+
+> **AVISO:** Este texto es un **placeholder** para desarrollo. No constituye asesoría legal ni texto final para producción. Debe ser revisado y aprobado por un abogado antes de publicarse.
+
+## Resumen
+
+Estos términos regulan el acceso y uso de la plataforma SaaS Factosys para emisión y gestión de comprobantes electrónicos.
+
+## Checklist abogado
+
+- [ ] Definiciones (Cuenta, Organización, Plan, CPE/GRE)
+- [ ] Elegibilidad y capacidad legal del cliente
+- [ ] Cuenta, credenciales y responsabilidad del usuario
+- [ ] Licencia de uso del software (SaaS, no cesión)
+- [ ] Obligaciones del cliente (datos SUNAT, certificados, veracidad)
+- [ ] Obligaciones de Factosys (disponibilidad razonable, soporte)
+- [ ] Planes, facturación, renovación y cancelación
+- [ ] Limitación de responsabilidad y exclusiones
+- [ ] Propiedad intelectual y confidencialidad
+- [ ] Suspensión / terminación por abuso o incumplimiento
+- [ ] Ley aplicable y jurisdicción (Perú)
+- [ ] Procedimiento de cambios a los términos
+`;
+
+/**
+ * Idempotent draft legal documents for locale es-PE (S12-LEGAL / FE-374).
+ */
+async function seedLegalDraftsEsPe(db: Db): Promise<void> {
+  const drafts: Array<{
+    code: string;
+    version: number;
+    title: string;
+    bodyMd: string;
+  }> = [
+    {
+      code: "privacy.es-PE",
+      version: 1,
+      title: "Política de privacidad (borrador)",
+      bodyMd: PRIVACY_ES_PE_BODY,
+    },
+    {
+      code: "terms.es-PE",
+      version: 1,
+      title: "Términos de uso (borrador)",
+      bodyMd: TERMS_ES_PE_BODY,
+    },
+  ];
+
+  for (const draft of drafts) {
+    const existing = await db
+      .select({ id: legalDocuments.id })
+      .from(legalDocuments)
+      .where(
+        and(
+          eq(legalDocuments.code, draft.code),
+          eq(legalDocuments.version, draft.version),
+        ),
+      )
+      .limit(1);
+    if (existing[0]) {
+      continue;
+    }
+    await db.insert(legalDocuments).values({
+      id: uuidv7(),
+      code: draft.code,
+      version: draft.version,
+      title: draft.title,
+      bodyMd: draft.bodyMd,
+      hash: sha256Hex(draft.bodyMd),
+      status: "draft",
+    });
+  }
 }
