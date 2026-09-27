@@ -33,5 +33,12 @@
     "tag": "legal_documents_code_hash",
     "up": "0005_legal_documents_code_hash.sql",
     "down": "0005_legal_documents_code_hash.down.sql"
+  },
+  {
+    "id": "0006_signup_request_statuses",
+    "when": 6,
+    "tag": "signup_request_statuses",
+    "up": "0006_signup_request_statuses.sql",
+    "down": "0006_signup_request_statuses.down.sql"
   }
 ]

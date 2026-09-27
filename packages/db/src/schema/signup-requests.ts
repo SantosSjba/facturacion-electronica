@@ -13,7 +13,7 @@ export const signupRequests = pgTable(
     contactEmail: citext("contact_email").notNull(),
     contactName: text("contact_name").notNull(),
     planCode: text("plan_code"),
-    status: text("status").notNull().default("pending"),
+    status: text("status").notNull().default("received"),
     notes: text("notes"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -22,7 +22,7 @@ export const signupRequests = pgTable(
     index("signup_requests_status_idx").on(t.status),
     check(
       "signup_requests_status_check",
-      sql`${t.status} in ('pending', 'approved', 'rejected')`,
+      sql`${t.status} in ('received', 'under_review', 'approved', 'rejected')`,
     ),
   ],
 );

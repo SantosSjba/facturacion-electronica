@@ -1658,10 +1658,6 @@ describe("API e2e", () => {
     expect(plans.body).toEqual({ items: [] });
   });
 
-  it("SaaS stub: POST /saas/signup-requests returns 501", async () => {
-    await request(server).post("/saas/signup-requests").send({}).expect(501);
-  });
-
   it("public signup: POST /saas/public/signup-requests → 201", async () => {
     const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(
       11,
@@ -1684,7 +1680,7 @@ describe("API e2e", () => {
       company_name: "E2E Landing SAC",
       ruc,
       contact_name: "Ana Demo",
-      status: "pending",
+      status: "received",
     });
     expect(res.body.id).toBeTruthy();
     expect(res.body.created_at).toBeTruthy();
@@ -1699,6 +1695,90 @@ describe("API e2e", () => {
         accept_privacy: false,
       })
       .expect(400);
+  });
+
+  it("signup requests platform: org JWT → 403; list/detail/patch", async () => {
+    await request(server)
+      .get("/saas/signup-requests")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(
+      11,
+      "2",
+    );
+    const email = `signup-plat-${Date.now()}@example.com`;
+    const created = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Platform SAC",
+        ruc,
+        contact_name: "Ops Demo",
+        contact_email: email,
+        plan_code: "starter",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    const listed = await request(server)
+      .get("/saas/signup-requests")
+      .query({ status: "received", q: "E2E Platform" })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+
+    expect(Array.isArray(listed.body.items)).toBe(true);
+    expect(listed.body).toHaveProperty("next_cursor");
+    const hit = (
+      listed.body.items as Array<Record<string, unknown>>
+    ).find((d) => d.id === created.body.id);
+    expect(hit).toBeTruthy();
+    expect(hit?.status).toBe("received");
+
+    const detail = await request(server)
+      .get(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(detail.body).toMatchObject({
+      id: created.body.id,
+      company_name: "E2E Platform SAC",
+      status: "received",
+    });
+
+    const patched = await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "under_review" })
+      .expect(200);
+    expect(patched.body.status).toBe("under_review");
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "received" })
+      .expect(409);
+
+    const approved = await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "approved" })
+      .expect(200);
+    expect(approved.body.status).toBe("approved");
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "rejected" })
+      .expect(409);
   });
 
   it("platform health: org JWT → 403; platform JWT → 200", async () => {
