@@ -50,7 +50,7 @@ pnpm dev:landing
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
 `DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (console `:5173`, landing `:4321`, saas-web `:5174`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
-**SaaS** (prefijo `/saas`): `POST /saas/public/signup-requests` (landing, 201 + status `received`), stubs `GET /saas/plans` / notifications, `GET /saas/platform/health` (JWT `ctx=platform`). **Signup requests** (platform): `GET/PATCH /saas/signup-requests` (list/detail, filtros status/q/fechas, cursor; estados `received`→`under_review`→`approved|rejected` + auditoría). **Legal drafts** (platform): `/saas/legal/documents`. Landing: plantilla [Landwind](https://github.com/themesberg/landwind) (MIT) + tokens `@factosys/ui` + formulario cableado (`PUBLIC_API_URL`).
+**SaaS** (prefijo `/saas`): `POST /saas/public/signup-requests` (landing, 201 + status `received` → emails acuse/received vía cola BullMQ `notifications`), stub `GET /saas/plans`, `GET /saas/platform/health` (JWT `ctx=platform`). **Signup requests** (platform): `GET/PATCH /saas/signup-requests`. **Notifications** (platform): `GET /saas/notifications` (deliveries; filtros `status`/`event_key`). Email: `EMAIL_DRIVER=log|resend|smtp` (default `log` sandbox). Templates seed `signup.*`. **Legal drafts** (platform): `/saas/legal/documents`. Landing: plantilla [Landwind](https://github.com/themesberg/landwind) (MIT) + tokens `@factosys/ui`.
 
 ### Contrato del monorepo
 

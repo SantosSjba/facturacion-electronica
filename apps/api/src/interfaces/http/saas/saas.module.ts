@@ -1,6 +1,20 @@
-import { Module } from "@nestjs/common";
+import {
+  Inject,
+  Module,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from "@nestjs/common";
+import { Worker, type ConnectionOptions } from "bullmq";
 
 import { LegalDocumentsService } from "../../../infrastructure/legal/legal-documents.service";
+import { EmailService } from "../../../infrastructure/notifications/email.service";
+import { NotificationDeliveryProcessor } from "../../../infrastructure/notifications/notification-delivery.processor";
+import { NotificationDispatchService } from "../../../infrastructure/notifications/notification-dispatch.service";
+import { NotificationsService } from "../../../infrastructure/notifications/notifications.service";
+import {
+  BULLMQ_CONNECTION,
+  type QueueJobData,
+} from "../../../infrastructure/queues/queue.tokens";
 import { SignupRequestsService } from "../../../infrastructure/saas/signup-requests.service";
 import { LegalController } from "./legal.controller";
 import { NotificationsController } from "./notifications.controller";
@@ -18,7 +32,40 @@ import { SignupRequestsController } from "./signup-requests.controller";
     NotificationsController,
     PlatformAdminController,
   ],
-  providers: [LegalDocumentsService, SignupRequestsService],
-  exports: [LegalDocumentsService, SignupRequestsService],
+  providers: [
+    LegalDocumentsService,
+    SignupRequestsService,
+    EmailService,
+    NotificationDispatchService,
+    NotificationDeliveryProcessor,
+    NotificationsService,
+  ],
+  exports: [
+    LegalDocumentsService,
+    SignupRequestsService,
+    NotificationDispatchService,
+  ],
 })
-export class SaasModule {}
+export class SaasModule implements OnModuleInit, OnModuleDestroy {
+  private workers: Worker<QueueJobData>[] = [];
+
+  constructor(
+    @Inject(BULLMQ_CONNECTION)
+    private readonly connection: ConnectionOptions,
+    private readonly delivery: NotificationDeliveryProcessor,
+  ) {}
+
+  onModuleInit(): void {
+    this.workers.push(
+      new Worker<QueueJobData>(
+        "notifications",
+        async (job) => this.delivery.process(job),
+        { connection: this.connection, concurrency: 4 },
+      ),
+    );
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await Promise.all(this.workers.map((w) => w.close()));
+  }
+}

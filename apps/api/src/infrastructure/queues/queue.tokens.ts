@@ -3,6 +3,7 @@ export const QUEUE_NAMES = [
   "sunat-poll",
   "webhooks",
   "pdf-render",
+  "notifications",
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];

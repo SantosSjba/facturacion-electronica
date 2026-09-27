@@ -1,10 +1,11 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { and, desc, eq, gte, ilike, lt, lte, or, type SQL } from "drizzle-orm";
 import { newId, signupRequests, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import type { Env } from "../config/env.schema";
+import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
 import { DB } from "../persistence/db.tokens";
 import { RateLimitService } from "../redis/rate-limit.service";
 
@@ -48,10 +49,13 @@ export interface SignupListFilters {
 
 @Injectable()
 export class SignupRequestsService {
+  private readonly logger = new Logger(SignupRequestsService.name);
+
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly rateLimit: RateLimitService,
     private readonly config: ConfigService<Env, true>,
+    @Optional() private readonly notifications?: NotificationDispatchService,
   ) {}
 
   /**
@@ -98,6 +102,24 @@ export class SignupRequestsService {
       createdAt: now,
       updatedAt: now,
     });
+
+    if (this.notifications) {
+      try {
+        await this.notifications.signupReceived({
+          signupId: id,
+          companyName: input.companyName,
+          ruc: input.ruc,
+          contactName: input.contactName,
+          contactEmail: email,
+        });
+      } catch (cause) {
+        this.logger.warn(
+          `signup notification dispatch failed id=${id}: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`,
+        );
+      }
+    }
 
     return {
       id,

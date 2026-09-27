@@ -25,3 +25,4 @@ export { legalDocuments } from "./legal-documents";
 export { legalAcceptances } from "./legal-acceptances";
 export { notificationTemplates } from "./notification-templates";
 export { notifications } from "./notifications";
+export { notificationDeliveries } from "./notification-deliveries";

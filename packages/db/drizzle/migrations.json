@@ -40,5 +40,12 @@
     "tag": "signup_request_statuses",
     "up": "0006_signup_request_statuses.sql",
     "down": "0006_signup_request_statuses.down.sql"
+  },
+  {
+    "id": "0007_notification_deliveries",
+    "when": 7,
+    "tag": "notification_deliveries",
+    "up": "0007_notification_deliveries.sql",
+    "down": "0007_notification_deliveries.down.sql"
   }
 ]

@@ -7,6 +7,7 @@ import { uuidv7 } from "uuidv7";
 import type { Db } from "../client";
 import { catalogVersions } from "../schema/catalog-versions";
 import { legalDocuments } from "../schema/legal-documents";
+import { notificationTemplates } from "../schema/notification-templates";
 import { organizations } from "../schema/organizations";
 import { userRoles } from "../schema/user-roles";
 import { users } from "../schema/users";
@@ -250,6 +251,7 @@ export async function seedDemo(db: Db): Promise<{
   }
 
   await seedLegalDraftsEsPe(db);
+  await seedSignupNotificationTemplates(db);
 
   return {
     organizationId,
@@ -355,6 +357,92 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
       bodyMd: draft.bodyMd,
       hash: sha256Hex(draft.bodyMd),
       status: "draft",
+    });
+  }
+}
+
+/**
+ * Idempotent signup.* email templates (S13-NOTIF / FE-393–394).
+ * Placeholders: {{company_name}}, {{ruc}}, {{contact_name}}, {{contact_email}}.
+ */
+async function seedSignupNotificationTemplates(db: Db): Promise<void> {
+  const templates: Array<{
+    code: string;
+    subject: string;
+    bodyMd: string;
+  }> = [
+    {
+      code: "signup.acuse",
+      subject: "Recibimos tu solicitud — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+Gracias por solicitar acceso a Factosys. Hemos recibido la solicitud de **{{company_name}}** (RUC {{ruc}}).
+
+Nuestro equipo la revisará y te contactaremos a {{contact_email}} cuando avancemos.
+
+— Equipo Factosys`,
+    },
+    {
+      code: "signup.received",
+      subject: "[Factosys] Nueva solicitud de acceso: {{company_name}}",
+      bodyMd: `Nueva solicitud de signup recibida.
+
+- Empresa: {{company_name}}
+- RUC: {{ruc}}
+- Contacto: {{contact_name}} <{{contact_email}}>
+
+Revisar en el panel plataforma.`,
+    },
+    {
+      code: "signup.under_review",
+      subject: "Tu solicitud está en revisión — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+La solicitud de **{{company_name}}** (RUC {{ruc}}) está en revisión.
+
+Te avisaremos a {{contact_email}} cuando haya una decisión.
+
+— Equipo Factosys`,
+    },
+    {
+      code: "signup.approved",
+      subject: "Solicitud aprobada — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+¡Buenas noticias! La solicitud de **{{company_name}}** (RUC {{ruc}}) fue aprobada.
+
+Pronto recibirás instrucciones de onboarding en {{contact_email}}.
+
+— Equipo Factosys`,
+    },
+    {
+      code: "signup.rejected",
+      subject: "Actualización sobre tu solicitud — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+Tras revisar la solicitud de **{{company_name}}** (RUC {{ruc}}), no podemos continuar en este momento.
+
+Si tienes dudas, responde a este mensaje o escribe a soporte.
+
+— Equipo Factosys`,
+    },
+  ];
+
+  for (const tpl of templates) {
+    const existing = await db
+      .select({ id: notificationTemplates.id })
+      .from(notificationTemplates)
+      .where(eq(notificationTemplates.code, tpl.code))
+      .limit(1);
+    if (existing[0]) {
+      continue;
+    }
+    await db.insert(notificationTemplates).values({
+      id: uuidv7(),
+      code: tpl.code,
+      channel: "email",
+      subject: tpl.subject,
+      bodyMd: tpl.bodyMd,
     });
   }
 }

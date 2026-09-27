@@ -28,6 +28,7 @@ describe("API e2e", () => {
     process.env["PDF_RI_MODE"] = "fake";
     process.env["SUNAT_VALIDEZ_MODE"] = "fake";
     process.env["WEBHOOK_ALLOW_LOCALHOST"] = "1";
+    process.env["EMAIL_DRIVER"] = "log";
 
     const moduleRef = await Test.createTestingModule({
       imports: [E2eAppModule],
@@ -1696,6 +1697,81 @@ describe("API e2e", () => {
       })
       .expect(400);
   });
+
+  it(
+    "signup notifications: acuse+received deliveries; event_key idempotent",
+    async () => {
+      await request(server)
+        .get("/saas/notifications")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(403);
+
+      const platformLogin = await request(server)
+        .post("/auth/login")
+        .send({
+          email: "platform@factosys.local",
+          password: "PlatformAdmin!2026",
+          organization_slug: "factosys-platform",
+        })
+        .expect(200);
+      const platformToken = platformLogin.body.access_token as string;
+
+      const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(
+        11,
+        "2",
+      );
+      const created = await request(server)
+        .post("/saas/public/signup-requests")
+        .send({
+          company_name: "E2E Notif SAC",
+          ruc,
+          contact_name: "Notif Demo",
+          contact_email: `signup-notif-${Date.now()}@example.com`,
+          accept_privacy: true,
+        })
+        .expect(201);
+
+      const signupId = created.body.id as string;
+      const acuseKey = `signup:${signupId}:acuse`;
+      const receivedKey = `signup:${signupId}:received`;
+
+      const waitDelivery = async (eventKey: string) => {
+        for (let i = 0; i < 40; i++) {
+          const listed = await request(server)
+            .get("/saas/notifications")
+            .query({ event_key: eventKey })
+            .set("Authorization", `Bearer ${platformToken}`)
+            .expect(200);
+          const item = (
+            listed.body.items as Array<Record<string, unknown>>
+          )[0];
+          if (item?.status === "success") {
+            return item;
+          }
+          if (item?.status === "failed") {
+            throw new Error(
+              `delivery ${eventKey} failed: ${String(item.last_error)}`,
+            );
+          }
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        throw new Error(`delivery ${eventKey} did not reach success`);
+      };
+
+      const acuse = await waitDelivery(acuseKey);
+      expect(acuse.template_code).toBe("signup.acuse");
+      const received = await waitDelivery(receivedKey);
+      expect(received.template_code).toBe("signup.received");
+
+      const listedAgain = await request(server)
+        .get("/saas/notifications")
+        .query({ event_key: acuseKey })
+        .set("Authorization", `Bearer ${platformToken}`)
+        .expect(200);
+      expect(listedAgain.body.items).toHaveLength(1);
+    },
+    15_000,
+  );
 
   it("signup requests platform: org JWT → 403; list/detail/patch", async () => {
     await request(server)
