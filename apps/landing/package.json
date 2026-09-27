@@ -1,0 +1,22 @@
+{
+  "name": "landing",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Factosys marketing landing (Astro) — S12",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --port 4321",
+    "lint": "echo \"no lint configured\""
+  },
+  "dependencies": {
+    "@factosys/ui": "workspace:*",
+    "astro": "^5.14.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "tailwindcss": "^4.1.13",
+    "typescript": "~5.9.3"
+  }
+}

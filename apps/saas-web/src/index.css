@@ -1,0 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
+@import "tailwindcss";
+@import "@factosys/ui/styles.css";
+
+@custom-variant dark (&:is(.dark *));
+
+body {
+  margin: 0;
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  background: var(--fs-bg);
+  color: var(--fs-fg);
+}

@@ -40,8 +40,13 @@ pnpm dev:api
 
 pnpm dev:console
 # http://localhost:5173 — ops console (S10-APP; JWT + RBAC nav)
-```
 
+pnpm dev:saas-web
+# http://localhost:5174 — SaaS web skeleton (S12-APP; /platform /app /auth)
+
+pnpm dev:landing
+# http://localhost:4321 — marketing landing (S12-APP; Astro)
+```
 La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).  
 `DATABASE_URL` (Postgres **:5433**), `REDIS_URL`, `JWT_ACCESS_SECRET`, `CORS_ORIGINS` (default `http://localhost:5173`) y rate-limit en `.env.example`. Nest valida env; `/ready` hace ping a Postgres y Redis.
 
@@ -56,6 +61,8 @@ La API corre en el host con `pnpm dev:api` (sin contenedor Nest en S0).
 | `pnpm db:migrate` / `db:migrate:down` / `db:seed` | Postgres schema + seeds (`@factosys/db`) |
 | `pnpm dev:api`                      | Nest watch — `@factosys/api` (`start:dev`) |
 | `pnpm dev:console`                  | Vite — `@factosys/console` ops UI (S10)    |
+| `pnpm dev:saas-web`                 | Vite — `saas-web` SaaS UI skeleton (S12)   |
+| `pnpm dev:landing`                  | Astro — `landing` marketing (S12)          |
 | `pnpm demo:api-mvp`                 | Demo Fake: ruleset → invoice → PDF (`scripts/demo-api-mvp.mjs`) |
 | `pnpm spike:sign`                   | Spike A — firma XML (`tmp/spikes/sign/`)   |
 | `pnpm spike:ubl`                    | Spike B — Invoice UBL + firma B→A          |
@@ -74,8 +81,11 @@ Nightly: `.github/workflows/xsl-nightly.yml` (`continue-on-error`).
 apps/
   api/                  # @factosys/api — NestJS clean architecture
   console/              # @factosys/console — Vite React ops console (S10)
+  saas-web/             # saas-web — Vite React SaaS skeleton (S12)
+  landing/              # landing — Astro marketing (S12)
 packages/
   shared/               # @factosys/shared — AppError, Result
+  ui/                   # @factosys/ui — TailAdmin tokens + Button/Input/Shell (S12)
   domain/               # @factosys/domain — DocumentStatus, VOs
   sdk/                  # @factosys/sdk — cliente TS mínimo (S9)
   sunat-ubl/            # Spike B — Invoice UBL unsigned builder
@@ -101,7 +111,11 @@ docker-compose.yml      # Postgres 16 (:5433), Redis 7, MinIO (S0-DEV)
 | Path                        | Nombre npm                   | Rol                                  |
 | --------------------------- | ---------------------------- | ------------------------------------ |
 | `apps/api`                  | `@factosys/api`              | HTTP API NestJS                      |
+| `apps/console`              | `@factosys/console`          | Ops console Vite React (S10)         |
+| `apps/saas-web`             | `saas-web`                   | SaaS web skeleton (S12)              |
+| `apps/landing`              | `landing`                    | Marketing Astro (S12)                |
 | `packages/shared`           | `@factosys/shared`           | `AppError`, `AppErrorCode`, `Result` |
+| `packages/ui`               | `@factosys/ui`               | Tokens TailAdmin + Button/Input/Shell |
 | `packages/domain`           | `@factosys/domain`           | `DocumentStatus`, VOs (sin Nest)     |
 | `packages/sunat-ubl`        | `@factosys/sunat-ubl`        | Builder Invoice UBL unsigned         |
 | `packages/sunat-sign`       | `@factosys/sunat-sign`       | Firma XMLDSig (`SignXmlPort`)        |
