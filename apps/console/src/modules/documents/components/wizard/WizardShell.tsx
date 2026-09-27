@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -18,6 +18,13 @@ import {
 import { Card } from "@/shared/ui/components/card";
 import { MutedText } from "@/shared/ui/components/muted-text";
 import { cn } from "@/shared/ui/utils";
+
+const WizardAttemptedContext = createContext(false);
+
+/** True after the user tries Next/Emit while the current step is invalid. */
+export function useWizardAttempted() {
+  return useContext(WizardAttemptedContext);
+}
 
 export function WizardShell({
   title,
@@ -130,7 +137,9 @@ export function WizardShell({
         </nav>
 
         <div className="min-w-0 space-y-4">
-          <Card className="min-h-64">{children}</Card>
+          <WizardAttemptedContext.Provider value={attempted}>
+            <Card className="min-h-64 overflow-x-auto">{children}</Card>
+          </WizardAttemptedContext.Provider>
 
           {attempted && nextError ? (
             <div

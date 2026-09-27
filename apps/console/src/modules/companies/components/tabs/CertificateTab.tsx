@@ -115,8 +115,9 @@ export function CertificateTab() {
           </dl>
         ) : (
           <MutedText>
-            Sin certificado cargado. Sube un archivo .pfx / .p12 para firmar
-            comprobantes.
+            Sin certificado cargado. Aunque la empresa esté en sandbox, hace
+            falta un .pfx / .p12 para firmar el XML (certificado de prueba SUNAT
+            o uno autogenerado en entorno Fake).
           </MutedText>
         )}
 

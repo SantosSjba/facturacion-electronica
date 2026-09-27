@@ -17,11 +17,30 @@ export const IDENTITY_TYPE_LABELS: Record<string, string> = {
   "7": "Pasaporte",
 };
 
+/** Money fields shown in the Totales card (user-facing order). */
+export const TOTAL_MONEY_KEYS = [
+  "line_extension_amount",
+  "total_taxed",
+  "total_exonerated",
+  "total_unaffected",
+  "total_free",
+  "total_export",
+  "total_discount",
+  "total_other_charges",
+  "tax_amount",
+  "total_igv",
+  "total_other_taxes",
+  "tax_inclusive_amount",
+  "payable_amount",
+  "total_payable",
+] as const;
+
 export const TOTAL_LABELS: Record<string, string> = {
   total_payable: "Importe total",
   payable_amount: "Importe total",
   total_taxed: "Op. gravada",
   total_igv: "IGV",
+  tax_amount: "IGV",
   total_exonerated: "Op. exonerada",
   total_unaffected: "Op. inafecta",
   total_free: "Op. gratuita",
@@ -29,8 +48,29 @@ export const TOTAL_LABELS: Record<string, string> = {
   total_other_charges: "Otros cargos",
   total_other_taxes: "Otros tributos",
   total_export: "Exportación",
-  line_extension_amount: "Valor venta",
+  line_extension_amount: "Valor de venta",
   tax_inclusive_amount: "Total con IGV",
+};
+
+/** SUNAT Catálogo 05 — código de tributo (no es un monto). */
+export const TAX_SCHEME_LABELS: Record<string, string> = {
+  "1000": "IGV",
+  "1016": "IVAP",
+  "2000": "ISC",
+  "9995": "Exportación",
+  "9996": "Gratuito",
+  "9997": "Exonerado",
+  "9998": "Inafecto",
+  "9999": "Otros tributos",
+};
+
+/** UBL tax category id (TaxCategory/ID). */
+export const TAX_CATEGORY_LABELS: Record<string, string> = {
+  S: "Gravado",
+  E: "Exonerado",
+  O: "Inafecto",
+  Z: "Gratuito",
+  G: "Exportación",
 };
 
 export function formatDocDate(value: string | null | undefined): string {

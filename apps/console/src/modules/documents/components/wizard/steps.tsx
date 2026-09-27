@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Plus, Trash2 } from "lucide-react";
 
 import type { Company, DocumentSeries } from "@/modules/companies/types";
+import { UNIT_CODES } from "@/shared/sunat/unit-codes";
 import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
@@ -12,6 +13,7 @@ import {
   buttonIconClassName,
 } from "@/shared/ui/components/button";
 import { MutedText } from "@/shared/ui/components/muted-text";
+import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
 import { FieldError } from "@/shared/ui/FieldError";
 
 import { fetchSeries } from "../../api";
@@ -19,8 +21,10 @@ import type { CustomerInput, InvoiceLineInput } from "../../types";
 import {
   customerStepSchema,
   headerStepSchema,
+  lineItemSchema,
   zodFieldErrors,
 } from "../../validation";
+import { useWizardAttempted } from "./WizardShell";
 
 export interface CommonHeaderState {
   company_id: string;
@@ -97,6 +101,7 @@ export function HeaderStep({
   showOperationType?: boolean;
   extra?: React.ReactNode;
 }) {
+  const attempted = useWizardAttempted();
   const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
   const seriesQuery = useQuery({
     queryKey: ["series", value.company_id],
@@ -114,7 +119,7 @@ export function HeaderStep({
     "company_id" | "serie" | "number" | "operation_type" | "issue_date" | "currency"
   >(
     headerStepSchema.safeParse({
-      company_id: value.company_id || undefined,
+      company_id: value.company_id,
       serie: value.serie,
       number: value.number,
       operation_type: value.operation_type || "0101",
@@ -130,7 +135,8 @@ export function HeaderStep({
   }, [series, value, onChange]);
 
   function err(key: keyof typeof fieldErrors) {
-    return touched[key] ? fieldErrors[key] : undefined;
+    if (touched[key] || attempted) return fieldErrors[key];
+    return undefined;
   }
 
   return (
@@ -292,6 +298,7 @@ export function CustomerStep({
   onChange: (next: CustomerInput) => void;
   identityHint?: string;
 }) {
+  const attempted = useWizardAttempted();
   const [touched, setTouched] = useState<Partial<Record<string, boolean>>>({});
   const fieldErrors = zodFieldErrors<
     "identity_type" | "identity_number" | "name" | "email"
@@ -305,7 +312,7 @@ export function CustomerStep({
   );
 
   function err(key: keyof typeof fieldErrors) {
-    if (touched[key]) return fieldErrors[key];
+    if (touched[key] || attempted) return fieldErrors[key];
     // Live feedback while typing partial values
     if (key === "identity_number" && value.identity_number.length > 0) {
       return fieldErrors.identity_number;
@@ -395,6 +402,45 @@ export function CustomerStep({
   );
 }
 
+/** Compact controls inside the lines table so values aren't clipped. */
+const lineFieldClassName = "h-9 min-w-0 px-2.5 text-sm";
+const lineSelectClassName = "h-9 min-w-0 px-2.5 pe-8 text-sm";
+
+function UnitCodeSelect({
+  value,
+  onChange,
+  "data-testid": testId,
+}: {
+  value: string;
+  onChange: (code: string) => void;
+  "data-testid"?: string;
+}) {
+  const known = UNIT_CODES.find((u) => u.code === value);
+  const title = known
+    ? `${known.code} — ${known.description}`
+    : value || undefined;
+  return (
+    <Select
+      data-testid={testId}
+      className={lineSelectClassName}
+      title={title}
+      value={known ? value : value || "NIU"}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {!known && value ? <option value={value}>{value}</option> : null}
+      {UNIT_CODES.map((u) => (
+        <option
+          key={u.code}
+          value={u.code}
+          label={`${u.code} — ${u.description}`}
+        >
+          {u.code}
+        </option>
+      ))}
+    </Select>
+  );
+}
+
 export function LinesStep({
   lines,
   onChange,
@@ -402,141 +448,171 @@ export function LinesStep({
   lines: InvoiceLineInput[];
   onChange: (next: InvoiceLineInput[]) => void;
 }) {
+  const attempted = useWizardAttempted();
+
   function update(i: number, patch: Partial<InvoiceLineInput>) {
     onChange(lines.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
+  function lineErr(
+    line: InvoiceLineInput,
+    key: "description" | "quantity" | "unit_value",
+  ) {
+    const parsed = lineItemSchema.safeParse(line);
+    const msg = zodFieldErrors<"description" | "quantity" | "unit_value">(
+      parsed,
+    )[key];
+    if (!msg) return undefined;
+    if (attempted) return msg;
+    if (key === "description" && line.description.length > 0) return msg;
+    if (key === "quantity") return msg;
+    if (key === "unit_value" && line.unit_value < 0) return msg;
+    return undefined;
+  }
+
   return (
     <div className="space-y-4">
-      {lines.map((line, i) => (
-        <div
-          key={line.id}
-          className="grid gap-3 rounded-xl border border-gray-200 p-4 sm:grid-cols-2 dark:border-gray-800"
-        >
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Descripción</Label>
-            <Input
-              data-testid={i === 0 ? "wizard-line-description" : undefined}
-              value={line.description}
-              aria-invalid={
-                line.description.length > 0 && !line.description.trim()
-              }
-              onChange={(e) => update(i, { description: e.target.value })}
-            />
-            <FieldError
-              message={
-                line.description.length > 0 && !line.description.trim()
-                  ? "Descripción requerida"
-                  : undefined
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Cantidad</Label>
-            <Input
-              type="number"
-              min={0.0001}
-              step="any"
-              data-testid={i === 0 ? "wizard-line-quantity" : undefined}
-              value={line.quantity}
-              aria-invalid={line.quantity <= 0}
-              onKeyDown={preventInvalidNumberKey}
-              onChange={(e) =>
-                update(i, { quantity: Number(e.target.value) || 0 })
-              }
-            />
-            <FieldError
-              message={
-                line.quantity <= 0
-                  ? "Cantidad debe ser mayor a cero"
-                  : undefined
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Unidad</Label>
-            <Input
-              value={line.unit_code}
-              onChange={(e) => update(i, { unit_code: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Valor unitario</Label>
-            <Input
-              type="number"
-              min={0}
-              step="any"
-              data-testid={i === 0 ? "wizard-line-unit-value" : undefined}
-              value={line.unit_value}
-              aria-invalid={line.unit_value < 0}
-              onKeyDown={preventInvalidNumberKey}
-              onChange={(e) =>
-                update(i, { unit_value: Number(e.target.value) || 0 })
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Precio unitario (opc.)</Label>
-            <Input
-              type="number"
-              min={0}
-              step="any"
-              value={line.unit_price ?? ""}
-              onKeyDown={preventInvalidNumberKey}
-              onChange={(e) =>
-                update(i, {
-                  unit_price: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                })
-              }
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Afectación IGV</Label>
-            <Select
-              value={line.tax_affectation}
-              onChange={(e) => update(i, { tax_affectation: e.target.value })}
-            >
-              <option value="10">10 Gravado</option>
-              <option value="20">20 Exonerado</option>
-              <option value="30">30 Inafecto</option>
-              <option value="40">40 Exportación</option>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>% IGV</Label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={line.igv_percent ?? ""}
-              onKeyDown={preventInvalidNumberKey}
-              onChange={(e) =>
-                update(i, {
-                  igv_percent: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                })
-              }
-            />
-          </div>
-          {lines.length > 1 ? (
-            <div className="sm:col-span-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-label-sm"
-                aria-label="Quitar línea"
-                onClick={() => onChange(lines.filter((_, idx) => idx !== i))}
-              >
-                <Trash2 className={buttonIconClassName} />
-                <ButtonLabel>Quitar línea</ButtonLabel>
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ))}
+      <Table className="min-w-[52rem]">
+        <THead>
+          <TR>
+            <TH className="min-w-[12rem] px-3">Descripción</TH>
+            <TH className="min-w-[5.5rem] px-3">Cantidad</TH>
+            <TH className="min-w-[7rem] px-3">Unidad</TH>
+            <TH className="min-w-[6.5rem] px-3">Valor unit.</TH>
+            <TH className="min-w-[6.5rem] px-3">Precio unit.</TH>
+            <TH className="min-w-[7.5rem] px-3">Afectación</TH>
+            <TH className="min-w-[5rem] px-3">% IGV</TH>
+            <TH className="w-12 px-2" />
+          </TR>
+        </THead>
+        <TBody>
+          {lines.map((line, i) => (
+            <TR key={line.id}>
+              <TD label="Descripción" className="min-w-[12rem] px-3 py-2.5">
+                <Input
+                  className={lineFieldClassName}
+                  data-testid={i === 0 ? "wizard-line-description" : undefined}
+                  value={line.description}
+                  aria-invalid={Boolean(lineErr(line, "description"))}
+                  onChange={(e) => update(i, { description: e.target.value })}
+                />
+                <FieldError message={lineErr(line, "description")} />
+              </TD>
+              <TD label="Cantidad" className="min-w-[5.5rem] px-3 py-2.5">
+                <Input
+                  className={lineFieldClassName}
+                  type="number"
+                  min={0.0001}
+                  step="any"
+                  data-testid={i === 0 ? "wizard-line-quantity" : undefined}
+                  value={line.quantity}
+                  aria-invalid={Boolean(lineErr(line, "quantity"))}
+                  onKeyDown={preventInvalidNumberKey}
+                  onChange={(e) =>
+                    update(i, { quantity: Number(e.target.value) || 0 })
+                  }
+                />
+                <FieldError message={lineErr(line, "quantity")} />
+              </TD>
+              <TD label="Unidad" className="min-w-[7rem] px-3 py-2.5">
+                <UnitCodeSelect
+                  value={line.unit_code}
+                  onChange={(unit_code) => update(i, { unit_code })}
+                />
+              </TD>
+              <TD label="Valor unit." className="min-w-[6.5rem] px-3 py-2.5">
+                <Input
+                  className={lineFieldClassName}
+                  type="number"
+                  min={0}
+                  step="any"
+                  data-testid={i === 0 ? "wizard-line-unit-value" : undefined}
+                  value={line.unit_value}
+                  aria-invalid={Boolean(lineErr(line, "unit_value"))}
+                  onKeyDown={preventInvalidNumberKey}
+                  onChange={(e) =>
+                    update(i, { unit_value: Number(e.target.value) || 0 })
+                  }
+                />
+                <FieldError message={lineErr(line, "unit_value")} />
+              </TD>
+              <TD label="Precio unit." className="min-w-[6.5rem] px-3 py-2.5">
+                <Input
+                  className={lineFieldClassName}
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={line.unit_price ?? ""}
+                  placeholder="Opc."
+                  onKeyDown={preventInvalidNumberKey}
+                  onChange={(e) =>
+                    update(i, {
+                      unit_price: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+              </TD>
+              <TD label="Afectación" className="min-w-[7.5rem] px-3 py-2.5">
+                <Select
+                  className={lineSelectClassName}
+                  value={line.tax_affectation}
+                  title={
+                    {
+                      "10": "10 Gravado",
+                      "20": "20 Exonerado",
+                      "30": "30 Inafecto",
+                      "40": "40 Exportación",
+                    }[line.tax_affectation]
+                  }
+                  onChange={(e) =>
+                    update(i, { tax_affectation: e.target.value })
+                  }
+                >
+                  <option value="10">10 Grav.</option>
+                  <option value="20">20 Exon.</option>
+                  <option value="30">30 Inaf.</option>
+                  <option value="40">40 Exp.</option>
+                </Select>
+              </TD>
+              <TD label="% IGV" className="min-w-[5rem] px-3 py-2.5">
+                <Input
+                  className={lineFieldClassName}
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={line.igv_percent ?? ""}
+                  onKeyDown={preventInvalidNumberKey}
+                  onChange={(e) =>
+                    update(i, {
+                      igv_percent: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+              </TD>
+              <TD actions className="w-12 px-2 py-2.5">
+                {lines.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-9"
+                    aria-label="Quitar línea"
+                    onClick={() =>
+                      onChange(lines.filter((_, idx) => idx !== i))
+                    }
+                  >
+                    <Trash2 className={buttonIconClassName} />
+                  </Button>
+                ) : null}
+              </TD>
+            </TR>
+          ))}
+        </TBody>
+      </Table>
       <Button
         type="button"
         variant="outline"

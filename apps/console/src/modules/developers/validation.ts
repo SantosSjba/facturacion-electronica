@@ -15,7 +15,10 @@ export const webhookFormSchema = z.object({
 });
 
 export const cpeValidationSchema = z.object({
-  company_id: z.string().uuid("Selecciona una empresa"),
+  company_id: z
+    .string()
+    .min(1, "Selecciona una empresa")
+    .uuid("Empresa inválida"),
   ruc: z.string().regex(/^\d{11}$/, "RUC debe tener 11 dígitos"),
   document_type: z.string().min(1),
   serie: z.string().trim().min(1, "Serie requerida"),

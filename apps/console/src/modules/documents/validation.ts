@@ -2,7 +2,10 @@ import { z } from "zod";
 
 /** Aligned with API invoice/receipt/note create schemas. */
 export const headerStepSchema = z.object({
-  company_id: z.string().uuid("Selecciona una empresa"),
+  company_id: z
+    .string()
+    .min(1, "Selecciona una empresa")
+    .uuid("Empresa inválida"),
   serie: z
     .string()
     .min(1, "Selecciona una serie")
@@ -81,7 +84,10 @@ export const noteAffectedSchema = z.object({
 });
 
 export const voidedFormSchema = z.object({
-  company_id: z.string().uuid("Selecciona una empresa"),
+  company_id: z
+    .string()
+    .min(1, "Selecciona una empresa")
+    .uuid("Empresa inválida"),
   reference_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de referencia inválida"),
@@ -100,7 +106,10 @@ export const voidedFormSchema = z.object({
 });
 
 export const dailySummaryFormSchema = z.object({
-  company_id: z.string().uuid("Selecciona una empresa"),
+  company_id: z
+    .string()
+    .min(1, "Selecciona una empresa")
+    .uuid("Empresa inválida"),
   reference_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de referencia inválida"),
@@ -158,7 +167,7 @@ export function wizardCommonStepError(
 ): string | null {
   if (step === 0) {
     const parsed = headerStepSchema.safeParse({
-      company_id: input.header.company_id || undefined,
+      company_id: input.header.company_id,
       serie: input.header.serie,
       number: input.header.number,
       operation_type: input.header.operation_type || "0101",

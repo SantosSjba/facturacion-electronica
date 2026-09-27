@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Plus, Trash2 } from "lucide-react";
 
 import type { Company, DocumentSeries } from "@/modules/companies/types";
+import { UNIT_CODES } from "@/shared/sunat/unit-codes";
 import {
   Button,
   ButtonLabel,
@@ -824,10 +825,31 @@ export function GreLinesStep({
           </div>
           <div className="space-y-1.5">
             <Label>Unidad</Label>
-            <Input
-              value={line.unit_code}
-              onChange={(e) => update(i, { unit_code: e.target.value })}
-            />
+            {(() => {
+              const unit = UNIT_CODES.find((u) => u.code === line.unit_code);
+              return (
+                <Select
+                  title={
+                    unit ? `${unit.code} — ${unit.description}` : undefined
+                  }
+                  value={unit ? line.unit_code : line.unit_code || "NIU"}
+                  onChange={(e) => update(i, { unit_code: e.target.value })}
+                >
+                  {!unit && line.unit_code ? (
+                    <option value={line.unit_code}>{line.unit_code}</option>
+                  ) : null}
+                  {UNIT_CODES.map((u) => (
+                    <option
+                      key={u.code}
+                      value={u.code}
+                      label={`${u.code} — ${u.description}`}
+                    >
+                      {u.code}
+                    </option>
+                  ))}
+                </Select>
+              );
+            })()}
           </div>
           {lines.length > 1 ? (
             <div className="sm:col-span-2">

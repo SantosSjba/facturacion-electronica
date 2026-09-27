@@ -53,7 +53,17 @@ export class PdfService {
         documentId,
         "pdf",
       );
-      return { body: existing.body, contentType: "application/pdf" };
+      // Re-render when switching from Fake → Playwright (cached stub would stick).
+      if (
+        this.mode === "playwright" &&
+        isFakeRiPdf(existing.body)
+      ) {
+        this.logger.log(
+          `Replacing Fake RI PDF for ${documentId} with Playwright render`,
+        );
+      } else {
+        return { body: existing.body, contentType: "application/pdf" };
+      }
     } catch {
       // lazy render
     }
@@ -61,6 +71,19 @@ export class PdfService {
     if (this.mode === "fake") {
       const body = await this.renderAndStore(organizationId, documentId);
       return { body, contentType: "application/pdf" };
+    }
+
+    // Prefer sync Playwright render on download so local/dev does not depend
+    // on the pdf-render worker being idle. Still enqueue for background warm-up.
+    try {
+      const body = await this.renderAndStore(organizationId, documentId);
+      return { body, contentType: "application/pdf" };
+    } catch (err) {
+      this.logger.warn(
+        `Sync Playwright PDF failed for ${documentId}; enqueueing worker: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
     }
 
     await this.queues.enqueue(
@@ -73,8 +96,7 @@ export class PdfService {
       { jobId: `pdf-${documentId}` },
     );
 
-    // Short poll for worker completion
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       await sleep(250);
       try {
         const art = await this.documents.getArtifact(
@@ -82,16 +104,17 @@ export class PdfService {
           documentId,
           "pdf",
         );
-        return { body: art.body, contentType: "application/pdf" };
+        if (!isFakeRiPdf(art.body)) {
+          return { body: art.body, contentType: "application/pdf" };
+        }
       } catch {
         // continue
       }
     }
 
-    // Fallback sync render if worker is slow
-    this.logger.warn(`PDF poll timeout for ${documentId}; rendering sync`);
-    const body = await this.renderAndStore(organizationId, documentId);
-    return { body, contentType: "application/pdf" };
+    throw AppError.internal(
+      "PDF RI no pudo generarse. Verifica PDF_RI_MODE=playwright y que Chromium de Playwright esté instalado (`pnpm exec playwright install chromium`).",
+    );
   }
 
   async renderAndStore(
@@ -127,11 +150,26 @@ export class PdfService {
         ? String(doc.number)
         : (doc.serieNumber?.split("-")[1] ?? "");
     const totals = (doc.totals ?? {}) as Record<string, unknown>;
-    const igv = String(totals["igv"] ?? totals["tax"] ?? "0.00");
-    const total = String(
-      totals["total"] ?? totals["payable"] ?? totals["TaxInclusiveAmount"] ?? "0.00",
+    const igv = moneyStr(
+      totals["tax_amount"] ??
+        totals["total_igv"] ??
+        totals["igv"] ??
+        totals["tax"],
     );
-    const gravado = totals["gravado"] != null ? String(totals["gravado"]) : undefined;
+    const total = moneyStr(
+      totals["payable_amount"] ??
+        totals["total_payable"] ??
+        totals["tax_inclusive_amount"] ??
+        totals["total"] ??
+        totals["payable"] ??
+        totals["TaxInclusiveAmount"],
+    );
+    const gravado = moneyStr(
+      totals["line_extension_amount"] ??
+        totals["total_taxed"] ??
+        totals["gravado"],
+      undefined,
+    );
 
     const payload = (doc.payload ?? {}) as Record<string, unknown>;
     const linesRaw = Array.isArray(payload["lines"])
@@ -141,14 +179,24 @@ export class PdfService {
         : [];
 
     const lines = linesRaw.length
-      ? linesRaw.map((l) => ({
-          description: String(l["description"] ?? l["name"] ?? "Item"),
-          quantity: String(l["quantity"] ?? "1"),
-          unit: String(l["unit_code"] ?? l["unit"] ?? "NIU"),
-          unitPrice: String(l["unit_price"] ?? l["price"] ?? "0"),
-          igv: String(l["igv"] ?? "0"),
-          amount: String(l["amount"] ?? l["line_total"] ?? "0"),
-        }))
+      ? linesRaw.map((l) => {
+          const qty = Number(l["quantity"] ?? 1) || 1;
+          const unitValue = Number(l["unit_value"] ?? l["unit_price"] ?? l["price"] ?? 0);
+          const lineExt =
+            l["line_extension_amount"] ??
+            l["amount"] ??
+            l["line_total"] ??
+            unitValue * qty;
+          const lineIgv = l["tax_amount"] ?? l["igv"] ?? 0;
+          return {
+            description: String(l["description"] ?? l["name"] ?? "Item"),
+            quantity: String(l["quantity"] ?? "1"),
+            unit: String(l["unit_code"] ?? l["unit"] ?? "NIU"),
+            unitPrice: moneyStr(l["unit_price"] ?? unitValue),
+            igv: moneyStr(lineIgv),
+            amount: moneyStr(lineExt),
+          };
+        })
       : [
           {
             description: "Ver XML firmado",
@@ -221,4 +269,15 @@ export class PdfService {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isFakeRiPdf(body: Buffer): boolean {
+  return body.toString("latin1").includes("Factosys RI Fake PDF");
+}
+
+function moneyStr(value: unknown, fallback = "0.00"): string {
+  if (value == null || value === "") return fallback;
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return n.toFixed(2);
 }

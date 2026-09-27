@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const greHeaderSchema = z.object({
-  company_id: z.string().uuid("Selecciona una empresa"),
+  company_id: z
+    .string()
+    .min(1, "Selecciona una empresa")
+    .uuid("Empresa inválida"),
   serie: z
     .string()
     .min(1, "Selecciona una serie")

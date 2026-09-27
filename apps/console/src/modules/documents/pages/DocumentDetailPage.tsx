@@ -33,7 +33,10 @@ import { StatusBadge } from "../components/StatusBadge";
 import {
   DOC_TYPE_LABELS,
   IDENTITY_TYPE_LABELS,
+  TAX_CATEGORY_LABELS,
+  TAX_SCHEME_LABELS,
   TOTAL_LABELS,
+  TOTAL_MONEY_KEYS,
   formatDocDate,
   formatMoney,
 } from "../doc-labels";
@@ -77,6 +80,10 @@ function MetaRow({
   );
 }
 
+function isMoneyTotalKey(key: string): boolean {
+  return (TOTAL_MONEY_KEYS as readonly string[]).includes(key);
+}
+
 function TotalsList({
   totals,
   currency,
@@ -88,67 +95,100 @@ function TotalsList({
     return <MutedText>Sin totales registrados.</MutedText>;
   }
 
-  const entries = Object.entries(totals);
-  const preferred = [
-    "total_taxed",
-    "total_exonerated",
-    "total_unaffected",
-    "total_igv",
-    "total_payable",
-    "payable_amount",
-    "tax_inclusive_amount",
-  ];
-  const ordered = [
-    ...preferred.filter((k) => k in totals),
-    ...entries.map(([k]) => k).filter((k) => !preferred.includes(k)),
-  ];
+  const moneyKeys = TOTAL_MONEY_KEYS.filter((k) => k in totals);
+  const payableKey =
+    moneyKeys.find((k) => k === "payable_amount" || k === "total_payable") ??
+    moneyKeys.find((k) => k === "tax_inclusive_amount");
 
-  const payableKey = ordered.find(
-    (k) =>
-      k === "total_payable" ||
-      k === "payable_amount" ||
-      k === "tax_inclusive_amount",
-  );
+  const payableNum =
+    payableKey != null ? Number(totals[payableKey]) : Number.NaN;
+  const inclusiveNum =
+    "tax_inclusive_amount" in totals
+      ? Number(totals.tax_inclusive_amount)
+      : Number.NaN;
+
+  const detailKeys = moneyKeys.filter((k) => {
+    if (k === payableKey) return false;
+    // Avoid duplicate "Total con IGV" when it equals importe total
+    if (
+      k === "tax_inclusive_amount" &&
+      payableKey &&
+      payableKey !== "tax_inclusive_amount" &&
+      Number.isFinite(payableNum) &&
+      Number.isFinite(inclusiveNum) &&
+      payableNum === inclusiveNum
+    ) {
+      return false;
+    }
+    // Prefer tax_amount over total_igv if both exist
+    if (k === "total_igv" && "tax_amount" in totals) return false;
+    return true;
+  });
+
+  const schemeId = String(totals.tax_scheme_id ?? "");
+  const schemeName =
+    (typeof totals.tax_scheme_name === "string" && totals.tax_scheme_name) ||
+    TAX_SCHEME_LABELS[schemeId] ||
+    null;
+  const categoryId = String(totals.tax_category_id ?? "");
+  const categoryLabel = TAX_CATEGORY_LABELS[categoryId] ?? null;
 
   return (
     <div className="space-y-3">
       {payableKey ? (
         <div className="rounded-xl bg-brand-50 px-4 py-3 dark:bg-brand-500/10">
-          <MutedText className="text-theme-xs">
-            {TOTAL_LABELS[payableKey] ?? payableKey}
-          </MutedText>
+          <MutedText className="text-theme-xs">Importe total</MutedText>
           <p className="mt-0.5 text-xl font-semibold tracking-tight text-brand-700 dark:text-brand-300">
             {formatMoney(totals[payableKey], currency)}
           </p>
         </div>
       ) : null}
       <dl className="space-y-2">
-        {ordered
-          .filter((k) => k !== payableKey)
-          .map((key) => {
-            const value = totals[key];
-            const isNumeric =
-              typeof value === "number" ||
-              (typeof value === "string" && value !== "" && !Number.isNaN(Number(value)));
-            return (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0 dark:border-gray-800"
-              >
-                <MutedText as="dt" className="text-theme-xs">
-                  {TOTAL_LABELS[key] ?? key}
-                </MutedText>
-                <dd className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  {isNumeric
-                    ? formatMoney(value, currency)
-                    : typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value ?? "—")}
-                </dd>
-              </div>
-            );
-          })}
+        {detailKeys.map((key) => (
+          <div
+            key={key}
+            className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0 dark:border-gray-800"
+          >
+            <MutedText as="dt" className="text-theme-xs">
+              {TOTAL_LABELS[key] ?? key}
+            </MutedText>
+            <dd className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {formatMoney(totals[key], currency)}
+            </dd>
+          </div>
+        ))}
       </dl>
+      {schemeName || categoryLabel ? (
+        <MutedText className="text-theme-xs">
+          Impuesto: {schemeName ?? "—"}
+          {categoryLabel ? ` · ${categoryLabel}` : null}
+          {schemeId ? ` (${schemeId})` : null}
+        </MutedText>
+      ) : null}
+      {/* Unknown leftover keys (should be rare) — never format codes as money */}
+      {Object.keys(totals)
+        .filter(
+          (k) =>
+            !isMoneyTotalKey(k) &&
+            k !== "tax_scheme_id" &&
+            k !== "tax_scheme_name" &&
+            k !== "tax_category_id",
+        )
+        .map((key) => (
+          <div
+            key={key}
+            className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-0 dark:border-gray-800"
+          >
+            <MutedText as="dt" className="text-theme-xs">
+              {TOTAL_LABELS[key] ?? key}
+            </MutedText>
+            <dd className="text-sm font-medium text-gray-800 dark:text-white/90">
+              {typeof totals[key] === "object"
+                ? JSON.stringify(totals[key])
+                : String(totals[key] ?? "—")}
+            </dd>
+          </div>
+        ))}
     </div>
   );
 }
