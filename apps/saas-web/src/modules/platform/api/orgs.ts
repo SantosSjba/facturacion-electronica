@@ -1,3 +1,4 @@
+import { getAccessTokenMemory } from "@/shared/api/http-client";
 import { apiRequest } from "@/shared/api/http-client";
 
 export type OrgStatus = "active" | "suspended";
@@ -58,6 +59,52 @@ export function impersonateOrganization(body: {
   reason: string;
 }> {
   return apiRequest("/saas/platform/impersonate", { method: "POST", body });
+}
+
+export interface OrgExportTicket {
+  id: string;
+  organization_id: string;
+  status: "queued" | "processing" | "ready" | "failed";
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export function requestOrgExport(orgId: string): Promise<OrgExportTicket> {
+  return apiRequest(`/saas/organizations/${orgId}/exports`, {
+    method: "POST",
+  });
+}
+
+export function fetchOrgExport(
+  orgId: string,
+  exportId: string,
+): Promise<OrgExportTicket> {
+  return apiRequest(`/saas/organizations/${orgId}/exports/${exportId}`);
+}
+
+/** Poll until ready/failed then download JSON blob. */
+export async function downloadOrgExport(
+  orgId: string,
+  exportId: string,
+): Promise<Blob> {
+  const base =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
+      /\/$/,
+      "",
+    ) || "http://localhost:3000";
+  const token = getAccessTokenMemory();
+  const res = await fetch(
+    `${base}/saas/organizations/${orgId}/exports/${exportId}/download`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.slice(0, 200) || `Download failed (${res.status})`);
+  }
+  return res.blob();
 }
 
 export function assignOrgPlan(body: {

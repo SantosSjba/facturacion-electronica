@@ -48,4 +48,4 @@ pnpm --filter @factosys/console test:e2e
 ## Fuera de este DoD
 
 - Homologación SUNAT beta live → [`checklist-sandbox-beta.md`](./checklist-sandbox-beta.md).
-- SaaS comercial (S12+) → doc 34/35.
+- SaaS comercial (S12+) → doc 34/35 → checklist operable [`dod-saas-comercial.md`](./dod-saas-comercial.md) (FE-487 / 34 §9).

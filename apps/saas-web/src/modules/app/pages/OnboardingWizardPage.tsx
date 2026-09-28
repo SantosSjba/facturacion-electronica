@@ -217,7 +217,11 @@ export function OnboardingWizardPage() {
                 los siguientes pasos registrarás tu primera empresa (RUC) y
                 aceptarás los términos legales.
               </p>
-              <Button type="button" onClick={() => setStep(1)}>
+              <Button
+                type="button"
+                data-testid="onb-welcome-next"
+                onClick={() => setStep(1)}
+              >
                 <ButtonLabel>Continuar</ButtonLabel>
                 <ArrowRight className={buttonIconClassName} />
               </Button>
@@ -240,6 +244,7 @@ export function OnboardingWizardPage() {
                     <Label htmlFor="onb-ruc">RUC</Label>
                     <Input
                       id="onb-ruc"
+                      data-testid="onb-ruc"
                       value={ruc}
                       onChange={(e) =>
                         setRuc(e.target.value.replace(/\D/g, "").slice(0, 11))
@@ -252,6 +257,7 @@ export function OnboardingWizardPage() {
                     <Label htmlFor="onb-name">Razón social</Label>
                     <Input
                       id="onb-name"
+                      data-testid="onb-legal-name"
                       value={legalName}
                       onChange={(e) => setLegalName(e.target.value)}
                     />
@@ -260,6 +266,7 @@ export function OnboardingWizardPage() {
                     <Label htmlFor="onb-env">Ambiente</Label>
                     <Select
                       id="onb-env"
+                      data-testid="onb-env"
                       value={environment}
                       onChange={(e) =>
                         setEnvironment(
@@ -290,6 +297,7 @@ export function OnboardingWizardPage() {
                 ) : (
                   <Button
                     type="button"
+                    data-testid="onb-create-company"
                     disabled={
                       companyMutation.isPending ||
                       ruc.length !== 11 ||
@@ -342,6 +350,7 @@ export function OnboardingWizardPage() {
                   ))}
                   <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
                     <Checkbox
+                      data-testid="onb-accept-privacy"
                       checked={acceptPrivacy}
                       onChange={(e) => setAcceptPrivacy(e.target.checked)}
                     />
@@ -349,6 +358,7 @@ export function OnboardingWizardPage() {
                   </label>
                   <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
                     <Checkbox
+                      data-testid="onb-accept-terms"
                       checked={acceptTerms}
                       onChange={(e) => setAcceptTerms(e.target.checked)}
                     />
@@ -367,6 +377,7 @@ export function OnboardingWizardPage() {
                 </Button>
                 <Button
                   type="button"
+                  data-testid="onb-accept-legal"
                   disabled={
                     legalMutation.isPending ||
                     !acceptPrivacy ||
@@ -405,6 +416,7 @@ export function OnboardingWizardPage() {
               </p>
               <Button
                 type="button"
+                data-testid="onb-goto-app"
                 onClick={() => {
                   void qc.invalidateQueries({
                     queryKey: ["onboarding-status"],

@@ -4,6 +4,7 @@ export const QUEUE_NAMES = [
   "webhooks",
   "pdf-render",
   "notifications",
+  "org-export",
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];
@@ -14,7 +15,9 @@ export const BULLMQ_QUEUES = Symbol("BULLMQ_QUEUES");
 /** Job payloads carry UUIDs only (doc 26 §7). */
 export interface QueueJobData {
   organizationId: string;
-  companyId: string;
+  /** Optional for org-export jobs (no company scope). */
+  companyId?: string;
   documentId?: string;
   deliveryId?: string;
+  exportId?: string;
 }

@@ -131,6 +131,7 @@ export function LegalReacceptModal() {
             ))}
             <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
               <Checkbox
+                data-testid="legal-reaccept-privacy"
                 checked={acceptPrivacy}
                 onChange={(e) => setAcceptPrivacy(e.target.checked)}
               />
@@ -138,6 +139,7 @@ export function LegalReacceptModal() {
             </label>
             <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
               <Checkbox
+                data-testid="legal-reaccept-terms"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
               />
@@ -150,6 +152,7 @@ export function LegalReacceptModal() {
       <DialogFooter>
         <Button
           type="button"
+          data-testid="legal-reaccept-submit"
           disabled={
             acceptMutation.isPending ||
             !acceptPrivacy ||

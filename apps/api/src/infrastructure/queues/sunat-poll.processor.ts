@@ -52,6 +52,9 @@ export class SunatPollProcessor {
     if (!documentId) {
       throw new Error("sunat-poll job missing documentId");
     }
+    if (!companyId) {
+      throw new Error("sunat-poll job missing companyId");
+    }
 
     const doc = await this.documents.getById(organizationId, documentId);
     if (doc.status !== "ticket_pending") {

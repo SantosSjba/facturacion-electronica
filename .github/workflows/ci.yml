@@ -130,7 +130,7 @@ jobs:
           SUNAT_GRE_MODE: fake
           SUNAT_VALIDEZ_MODE: fake
           PDF_RI_MODE: fake
-          CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+          CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
           WEBHOOK_ALLOW_LOCALHOST: "1"
         run: |
           node apps/api/dist/main.js &
@@ -146,7 +146,9 @@ jobs:
           exit 1
 
       - name: Install Playwright Chromium
-        run: pnpm --filter @factosys/console exec playwright install --with-deps chromium
+        run: |
+          pnpm --filter @factosys/console exec playwright install --with-deps chromium
+          pnpm --filter saas-web exec playwright install chromium
 
       - name: Start console preview
         run: |
@@ -167,6 +169,26 @@ jobs:
           API_BASE_URL: http://127.0.0.1:3000
           PLAYWRIGHT_BASE_URL: http://localhost:5173
         run: pnpm --filter @factosys/console test:e2e
+
+      - name: Start saas-web preview
+        run: |
+          pnpm --filter saas-web preview -- --host localhost --port 5174 &
+          echo $! > /tmp/factosys-saas-web.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5174/ >/dev/null; then
+              echo "saas-web ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "saas-web preview failed"
+          exit 1
+
+      - name: saas-web Playwright E2E (S17-QA)
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+          PLAYWRIGHT_BASE_URL: http://localhost:5174
+        run: pnpm --filter saas-web test:e2e
 
       - name: Verify DoD producto (HTTP)
         env:

@@ -118,6 +118,7 @@ export function SignupRequestDetailPage() {
               <>
                 <Button
                   type="button"
+                  data-testid="signup-mark-review"
                   disabled={mutation.isPending}
                   onClick={() =>
                     mutation.mutate({ status: "under_review" })
@@ -128,6 +129,7 @@ export function SignupRequestDetailPage() {
                 <Button
                   type="button"
                   variant="destructive"
+                  data-testid="signup-reject"
                   disabled={mutation.isPending}
                   onClick={() => {
                     setRejectNotes("");
@@ -142,6 +144,7 @@ export function SignupRequestDetailPage() {
               <>
                 <Button
                   type="button"
+                  data-testid="signup-approve"
                   disabled={mutation.isPending}
                   onClick={() => mutation.mutate({ status: "approved" })}
                 >
@@ -150,6 +153,7 @@ export function SignupRequestDetailPage() {
                 <Button
                   type="button"
                   variant="destructive"
+                  data-testid="signup-reject"
                   disabled={mutation.isPending}
                   onClick={() => {
                     setRejectNotes("");
@@ -161,7 +165,7 @@ export function SignupRequestDetailPage() {
               </>
             ) : null}
             {item.status === "approved" ? (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500" data-testid="signup-approved">
                 Aprobada
                 {item.organization_id ? (
                   <>
@@ -169,6 +173,7 @@ export function SignupRequestDetailPage() {
                     — org{" "}
                     <Link
                       className="font-mono text-brand-500 hover:underline"
+                      data-testid="signup-org-id"
                       to={`/platform/organizations/${item.organization_id}`}
                     >
                       {item.organization_id}

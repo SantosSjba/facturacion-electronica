@@ -19,6 +19,8 @@ import {
   BULLMQ_CONNECTION,
   type QueueJobData,
 } from "../../../infrastructure/queues/queue.tokens";
+import { OrgExportProcessor } from "../../../infrastructure/saas/org-export.processor";
+import { OrgExportService } from "../../../infrastructure/saas/org-export.service";
 import { OrgPlansService } from "../../../infrastructure/saas/org-plans.service";
 import { OnboardingService } from "../../../infrastructure/saas/onboarding.service";
 import { OrganizationsMeService } from "../../../infrastructure/saas/organizations-me.service";
@@ -57,6 +59,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
     PlansService,
     OrgPlansService,
     OrgsService,
+    OrgExportService,
+    OrgExportProcessor,
     PlatformStatsService,
     OnboardingService,
     OrganizationsMeService,
@@ -72,6 +76,7 @@ import { SignupRequestsController } from "./signup-requests.controller";
     PlansService,
     OrgPlansService,
     OrgsService,
+    OrgExportService,
     PlatformStatsService,
     OnboardingService,
     OrganizationsMeService,
@@ -86,6 +91,7 @@ export class SaasModule implements OnModuleInit, OnModuleDestroy {
     @Inject(BULLMQ_CONNECTION)
     private readonly connection: ConnectionOptions,
     private readonly delivery: NotificationDeliveryProcessor,
+    private readonly orgExport: OrgExportProcessor,
   ) {}
 
   onModuleInit(): void {
@@ -94,6 +100,13 @@ export class SaasModule implements OnModuleInit, OnModuleDestroy {
         "notifications",
         async (job) => this.delivery.process(job),
         { connection: this.connection, concurrency: 4 },
+      ),
+    );
+    this.workers.push(
+      new Worker<QueueJobData>(
+        "org-export",
+        async (job) => this.orgExport.process(job),
+        { connection: this.connection, concurrency: 2 },
       ),
     );
   }

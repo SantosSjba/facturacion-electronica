@@ -124,6 +124,7 @@ export function AcceptInvitePage() {
                   <div className="relative">
                     <Input
                       id="invite-password"
+                      data-testid="invite-password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       value={password}
@@ -156,6 +157,7 @@ export function AcceptInvitePage() {
                   <Label htmlFor="invite-confirm">Confirmar contraseña</Label>
                   <Input
                     id="invite-confirm"
+                    data-testid="invite-confirm"
                     type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     value={confirm}
@@ -168,6 +170,7 @@ export function AcceptInvitePage() {
 
                 <Button
                   type="submit"
+                  data-testid="invite-submit"
                   className="w-full"
                   disabled={submitting || !token}
                 >

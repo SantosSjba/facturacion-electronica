@@ -37,6 +37,9 @@ export class SunatSendProcessor {
     if (!documentId) {
       throw new Error("sunat-send job missing documentId");
     }
+    if (!companyId) {
+      throw new Error("sunat-send job missing companyId");
+    }
 
     return withSpan(
       "sunat.send",

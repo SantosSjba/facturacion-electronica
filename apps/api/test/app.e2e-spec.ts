@@ -3421,6 +3421,70 @@ describe("API e2e", () => {
     expect(Number.isFinite(forgotRetry)).toBe(true);
     expect(forgotRetry).toBeGreaterThan(0);
   });
+
+  it("S17-QA org export: POST → ready → download JSON without secrets", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const orgs = await request(server)
+      .get("/saas/organizations")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const demo = (
+      orgs.body.items as Array<{ id: string; slug: string | null }>
+    ).find((o) => o.slug === "demo");
+    expect(demo).toBeTruthy();
+
+    const created = await request(server)
+      .post(`/saas/organizations/${demo!.id}/exports`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(202);
+    expect(created.body.status).toBe("queued");
+    const exportId = created.body.id as string;
+
+    let status = "queued";
+    for (let i = 0; i < 40; i++) {
+      const ticket = await request(server)
+        .get(`/saas/organizations/${demo!.id}/exports/${exportId}`)
+        .set("Authorization", `Bearer ${platformToken}`)
+        .expect(200);
+      status = ticket.body.status as string;
+      if (status === "ready" || status === "failed") break;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    expect(status).toBe("ready");
+
+    const download = await request(server)
+      .get(`/saas/organizations/${demo!.id}/exports/${exportId}/download`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const text =
+      typeof download.text === "string" && download.text.length > 0
+        ? download.text
+        : download.body.toString();
+    const parsed = JSON.parse(text) as {
+      organization: { id: string };
+      users: Array<Record<string, unknown>>;
+      companies: unknown[];
+    };
+    expect(parsed.organization.id).toBe(demo!.id);
+    expect(Array.isArray(parsed.users)).toBe(true);
+    expect(Array.isArray(parsed.companies)).toBe(true);
+    const blob = JSON.stringify(parsed);
+    expect(blob).not.toMatch(/passwordHash|password_hash|secret|vault/i);
+
+    await request(server)
+      .post(`/saas/organizations/${demo!.id}/exports`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+  }, 30_000);
 });
 
 /** Unique RUC with valid módulo-11 checksum (companies create requires it). */

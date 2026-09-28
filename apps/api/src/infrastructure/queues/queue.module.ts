@@ -74,7 +74,8 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
         name === "sunat-poll" ||
         name === "webhooks" ||
         name === "pdf-render" ||
-        name === "notifications"
+        name === "notifications" ||
+        name === "org-export"
       ) {
         continue;
       }

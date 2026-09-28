@@ -14,6 +14,8 @@ export interface NotificationDeliveryPublic {
   attempt_count: number;
   provider_message_id: string | null;
   last_error: string | null;
+  /** Template payload (may include invite_token for owner invites; S17-QA). */
+  payload: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +56,7 @@ export class NotificationsService {
         attempt_count: r.attemptCount,
         provider_message_id: r.providerMessageId,
         last_error: r.lastError,
+        payload: (r.payload as Record<string, unknown> | null) ?? null,
         created_at: r.createdAt.toISOString(),
         updated_at: r.updatedAt.toISOString(),
       })),

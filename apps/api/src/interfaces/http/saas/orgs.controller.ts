@@ -2,10 +2,14 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  HttpCode,
   Param,
   Patch,
+  Post,
   Query,
   Req,
+  StreamableFile,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
@@ -13,6 +17,7 @@ import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
 import { AuditService } from "../../../infrastructure/audit/audit.service";
+import { OrgExportService } from "../../../infrastructure/saas/org-export.service";
 import {
   ORG_STATUSES,
   OrgsService,
@@ -20,7 +25,10 @@ import {
 import type { AuthContext, UserAuthContext } from "../auth/auth-context";
 import { actorFromAuth, requestMeta } from "../audit/audit-request.util";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
-import { RequirePlatform } from "../decorators/auth.decorators";
+import {
+  RequirePermissions,
+  RequirePlatform,
+} from "../decorators/auth.decorators";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
 const listQuerySchema = z.object({
@@ -48,6 +56,7 @@ export class OrgsController {
   constructor(
     private readonly orgs: OrgsService,
     private readonly audit: AuditService,
+    private readonly exports: OrgExportService,
   ) {}
 
   @Get()
@@ -65,6 +74,60 @@ export class OrgsController {
   @ApiOperation({ summary: "Get organization by id (platform)" })
   get(@Param("id") id: string) {
     return this.orgs.get(id);
+  }
+
+  @Post(":id/exports")
+  @HttpCode(202)
+  @RequirePermissions("platform:ops")
+  @ApiOperation({
+    summary: "Enqueue org JSON export (async stub; S17-QA)",
+  })
+  async requestExport(
+    @Param("id") id: string,
+    @CurrentAuth() auth: AuthContext,
+    @Req() req: Request,
+  ) {
+    const user = this.assertUser(auth);
+    const ticket = await this.exports.requestExport({
+      organizationId: id,
+      requestedByUserId: user.userId,
+    });
+    const actor = actorFromAuth(user);
+    await this.audit.append({
+      organizationId: id,
+      ...actor,
+      action: "organization.export.requested",
+      resourceType: "organization",
+      resourceId: id,
+      ...requestMeta(req),
+      data: { export_id: ticket.id },
+    });
+    return ticket;
+  }
+
+  @Get(":id/exports/:exportId")
+  @RequirePermissions("platform:ops")
+  @ApiOperation({ summary: "Get org export ticket status" })
+  getExport(
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+  ) {
+    return this.exports.getTicket(id, exportId);
+  }
+
+  @Get(":id/exports/:exportId/download")
+  @RequirePermissions("platform:ops")
+  @Header("Content-Type", "application/json")
+  @ApiOperation({ summary: "Download org export JSON when ready" })
+  async downloadExport(
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+  ): Promise<StreamableFile> {
+    const { filename, body } = await this.exports.downloadJson(id, exportId);
+    return new StreamableFile(body, {
+      type: "application/json",
+      disposition: `attachment; filename="${filename}"`,
+    });
   }
 
   @Patch(":id")

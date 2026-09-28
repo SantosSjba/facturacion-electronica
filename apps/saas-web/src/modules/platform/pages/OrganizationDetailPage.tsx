@@ -19,9 +19,12 @@ import { TextLink } from "@/shared/ui/components/text-link";
 
 import {
   assignOrgPlan,
+  downloadOrgExport,
   fetchOrganization,
+  fetchOrgExport,
   impersonateOrganization,
   patchOrganization,
+  requestOrgExport,
 } from "../api/orgs";
 import { fetchAdminPlans } from "../api/plans";
 import { orgStatusBadge } from "../lib/status-badges";
@@ -31,10 +34,12 @@ export function OrganizationDetailPage() {
   const navigate = useNavigate();
   const { hasPermission, adoptImpersonationToken } = useSession();
   const canImpersonate = hasPermission("platform:admin");
+  const canExport = hasPermission("platform:ops");
   const qc = useQueryClient();
   const [planId, setPlanId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [impReason, setImpReason] = useState("");
+  const [exportBusy, setExportBusy] = useState(false);
 
   const query = useQuery({
     queryKey: ["organization", id],
@@ -114,6 +119,46 @@ export function OrganizationDetailPage() {
       );
     },
   });
+
+  async function runExport(): Promise<void> {
+    setExportBusy(true);
+    setError(null);
+    try {
+      const ticket = await requestOrgExport(id);
+      let status = ticket.status;
+      let exportId = ticket.id;
+      for (let i = 0; i < 40 && status !== "ready" && status !== "failed"; i++) {
+        await new Promise((r) => setTimeout(r, 250));
+        const next = await fetchOrgExport(id, exportId);
+        status = next.status;
+        exportId = next.id;
+        if (status === "failed") {
+          throw new Error(next.error ?? "Export failed");
+        }
+      }
+      if (status !== "ready") {
+        throw new Error("Export timed out");
+      }
+      const blob = await downloadOrgExport(id, exportId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `org-export-${id.slice(0, 8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Exportación descargada");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "No se pudo exportar",
+      );
+    } finally {
+      setExportBusy(false);
+    }
+  }
 
   const org = query.data;
   const badge = org ? orgStatusBadge(org.status) : null;
@@ -233,6 +278,24 @@ export function OrganizationDetailPage() {
               </Button>
             </div>
           </Card>
+
+          {canExport && !org.is_platform ? (
+            <Card>
+              <CardTitle>Exportar JSON (stub)</CardTitle>
+              <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+                Genera un snapshot asíncrono (org, plan, empresas, usuarios sin
+                secretos) y descarga el archivo.
+              </p>
+              <Button
+                type="button"
+                data-testid="org-export-json"
+                disabled={exportBusy}
+                onClick={() => void runExport()}
+              >
+                {exportBusy ? "Exportando…" : "Exportar JSON"}
+              </Button>
+            </Card>
+          ) : null}
 
           {canImpersonate && !org.is_platform && org.status === "active" ? (
             <Card>
