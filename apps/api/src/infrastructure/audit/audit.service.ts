@@ -14,7 +14,7 @@ export type AuditActorType =
   | "user";
 
 export interface AuditAppendInput {
-  organizationId: string;
+  organizationId: string | null;
   companyId?: string | null;
   actorType: AuditActorType;
   actorId?: string | null;

@@ -2206,6 +2206,7 @@ describe("API e2e", () => {
       .expect(200);
     expect(status0.body.complete).toBe(false);
     expect(status0.body.has_company).toBe(false);
+    expect(status0.body.requires_reaccept).toBe(false);
     expect(status0.body.hints?.ruc).toBe(ruc);
 
     const legal = await request(server)
@@ -2233,9 +2234,208 @@ describe("API e2e", () => {
       .expect(200);
     expect(accepted.body.complete).toBe(true);
     expect(accepted.body.has_company).toBe(true);
+    expect(accepted.body.requires_reaccept).toBe(false);
     expect(accepted.body.legal.privacy).toBe(true);
     expect(accepted.body.legal.terms).toBe(true);
+
+    const { legalAcceptances } = await import("@factosys/db");
+    const { eq: eqCol } = await import("drizzle-orm");
+    const acceptanceRows = await db
+      .select()
+      .from(legalAcceptances)
+      .where(eqCol(legalAcceptances.organizationId, orgId));
+    expect(acceptanceRows.length).toBeGreaterThanOrEqual(2);
+    for (const row of acceptanceRows) {
+      expect(row.bodyHash).toMatch(/^[a-f0-9]{64}$/);
+    }
   }, 30_000);
+
+  it("S16-LEG: publish draft → immutable; re-accept + body_hash; org JWT denied", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    await request(server)
+      .post(`/saas/legal/documents/00000000-0000-4000-8000-000000000001/publish`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+
+    const stamp = Date.now();
+    const privacyBody = `# Privacy v2\n\nE2E privacy body ${stamp}`;
+    const termsBody = `# Terms v2\n\nE2E terms body ${stamp}`;
+
+    const privacyDraft = await request(server)
+      .post("/saas/legal/documents")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        code: "privacy.es-PE",
+        version: 1000 + (stamp % 100000),
+        title: "Privacidad E2E v2",
+        body_md: privacyBody,
+      })
+      .expect(201);
+
+    const termsDraft = await request(server)
+      .post("/saas/legal/documents")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        code: "terms.es-PE",
+        version: 1000 + (stamp % 100000),
+        title: "Términos E2E v2",
+        body_md: termsBody,
+      })
+      .expect(201);
+
+    const publishedPrivacy = await request(server)
+      .post(`/saas/legal/documents/${privacyDraft.body.id as string}/publish`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(publishedPrivacy.body.status).toBe("published");
+    expect(publishedPrivacy.body.published_at).toBeTruthy();
+    expect(publishedPrivacy.body.hash).toMatch(/^[a-f0-9]{64}$/);
+
+    const publishedTerms = await request(server)
+      .post(`/saas/legal/documents/${termsDraft.body.id as string}/publish`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(publishedTerms.body.status).toBe("published");
+
+    await request(server)
+      .patch(`/saas/legal/documents/${publishedPrivacy.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ body_md: "tamper" })
+      .expect(409);
+
+    const ruc = makeValidUniqueRuc(Date.now() + 7);
+    const email = `leg-reaccept-${Date.now()}@example.com`;
+    const created = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Legal Reaccept SAC",
+        ruc,
+        contact_name: "Legal Owner",
+        contact_email: email,
+        plan_code: "starter",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "under_review" })
+      .expect(200);
+
+    const approved = await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "approved" })
+      .expect(200);
+    const orgId = approved.body.organization_id as string;
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const { notificationDeliveries, legalAcceptances } = await import(
+      "@factosys/db"
+    );
+    const { and, eq } = await import("drizzle-orm");
+    const db = app.get(DB);
+
+    let inviteToken: string | undefined;
+    for (let i = 0; i < 40; i++) {
+      const rows = await db
+        .select()
+        .from(notificationDeliveries)
+        .where(
+          and(
+            eq(notificationDeliveries.templateCode, "invite.owner"),
+            eq(notificationDeliveries.toEmail, email),
+          ),
+        )
+        .limit(1);
+      if (rows[0]?.status === "success") {
+        inviteToken = (rows[0].payload as { invite_token?: string })
+          ?.invite_token;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(inviteToken).toBeTruthy();
+
+    const password = "LegalReaccept!2026";
+    await request(server)
+      .post("/auth/accept-invite")
+      .send({ token: inviteToken, password })
+      .expect(200);
+
+    const loginOwner = await request(server)
+      .post("/auth/login")
+      .send({ email, password, organization_id: orgId })
+      .expect(200);
+    const ownerToken = loginOwner.body.access_token as string;
+
+    await request(server)
+      .post("/companies")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        ruc,
+        legal_name: "E2E Legal Reaccept SAC",
+        environment: "sandbox",
+        seed_default_series: true,
+      })
+      .expect(201);
+
+    const statusBefore = await request(server)
+      .get("/saas/onboarding/status")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .expect(200);
+    expect(statusBefore.body.has_company).toBe(true);
+    expect(statusBefore.body.requires_reaccept).toBe(true);
+    expect(statusBefore.body.complete).toBe(false);
+
+    const legal = await request(server)
+      .get("/saas/onboarding/legal")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .expect(200);
+    const docs = legal.body.items as Array<{
+      id: string;
+      code: string;
+      hash: string;
+    }>;
+    expect(docs).toHaveLength(2);
+    expect(docs.find((d) => d.code === "privacy.es-PE")?.id).toBe(
+      publishedPrivacy.body.id,
+    );
+    expect(docs.find((d) => d.code === "terms.es-PE")?.id).toBe(
+      publishedTerms.body.id,
+    );
+
+    const accepted = await request(server)
+      .post("/saas/onboarding/accept-legal")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ document_ids: docs.map((d) => d.id) })
+      .expect(200);
+    expect(accepted.body.requires_reaccept).toBe(false);
+    expect(accepted.body.complete).toBe(true);
+
+    const acceptanceRows = await db
+      .select()
+      .from(legalAcceptances)
+      .where(eq(legalAcceptances.organizationId, orgId));
+    const byDoc = new Map(
+      acceptanceRows.map((r) => [r.legalDocumentId, r] as const),
+    );
+    for (const doc of docs) {
+      const row = byDoc.get(doc.id);
+      expect(row?.bodyHash).toBe(doc.hash);
+      expect(row?.ip != null || row?.userAgent != null).toBe(true);
+    }
+  }, 45_000);
 
   it("signup reject: notes required; rejected + signup.rejected delivery", async () => {
     const platformLogin = await request(server)

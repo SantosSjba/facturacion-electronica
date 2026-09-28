@@ -7,6 +7,7 @@ import {
   KeyRound,
   Layers,
   LayoutDashboard,
+  Scale,
   Users,
 } from "lucide-react";
 
@@ -43,6 +44,12 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
     label: "Planes",
     to: "/platform/plans",
     icon: Layers,
+  },
+  {
+    id: "legal",
+    label: "Legal",
+    to: "/platform/legal",
+    icon: Scale,
   },
 ];
 

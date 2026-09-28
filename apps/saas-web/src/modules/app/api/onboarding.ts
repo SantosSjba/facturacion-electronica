@@ -3,6 +3,7 @@ import { apiRequest } from "@/shared/api/http-client";
 export interface OnboardingStatus {
   complete: boolean;
   has_company: boolean;
+  requires_reaccept: boolean;
   organization_id: string;
   organization_name: string;
   organization_slug: string | null;

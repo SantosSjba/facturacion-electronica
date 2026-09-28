@@ -21,6 +21,7 @@ export const legalAcceptances = pgTable(
       .defaultNow(),
     ip: text("ip"),
     userAgent: text("user_agent"),
+    bodyHash: text("body_hash"),
   },
   (t) => [
     index("legal_acceptances_org_idx").on(t.organizationId),

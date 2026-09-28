@@ -19,6 +19,8 @@ const TERMS_CODE = "terms.es-PE";
 export interface OnboardingStatusPublic {
   complete: boolean;
   has_company: boolean;
+  /** True when org already has a company but must accept newer published legal docs. */
+  requires_reaccept: boolean;
   organization_id: string;
   organization_name: string;
   organization_slug: string | null;
@@ -70,6 +72,7 @@ export class OnboardingService {
     const acceptedIds = await this.acceptedDocumentIds(organizationId);
     const privacyOk = privacyDoc ? acceptedIds.has(privacyDoc.id) : false;
     const termsOk = termsDoc ? acceptedIds.has(termsDoc.id) : false;
+    const legalOk = privacyOk && termsOk;
 
     const signupRows = await this.db
       .select({
@@ -83,8 +86,9 @@ export class OnboardingService {
     const signup = signupRows[0];
 
     return {
-      complete: hasCompany && privacyOk && termsOk,
+      complete: hasCompany && legalOk,
       has_company: hasCompany,
+      requires_reaccept: hasCompany && !legalOk,
       organization_id: org.id,
       organization_name: org.name,
       organization_slug: org.slug,
@@ -137,13 +141,15 @@ export class OnboardingService {
     }
 
     const published = await this.latestPublished([PRIVACY_CODE, TERMS_CODE]);
-    const requiredIds = [...published.values()].map((d) => d.id);
+    const requiredDocs = [...published.values()];
+    const requiredIds = requiredDocs.map((d) => d.id);
     if (requiredIds.length < 2) {
       throw AppError.conflict(
         "Published privacy.es-PE and terms.es-PE documents are required",
       );
     }
     const allowed = new Set(requiredIds);
+    const docsById = new Map(requiredDocs.map((d) => [d.id, d]));
     for (const id of uniqueIds) {
       if (!allowed.has(id)) {
         throw AppError.validation(
@@ -165,6 +171,8 @@ export class OnboardingService {
     const now = new Date();
     for (const documentId of uniqueIds) {
       if (acceptedIds.has(documentId)) continue;
+      const doc = docsById.get(documentId);
+      if (!doc) continue;
       await this.db.insert(legalAcceptances).values({
         id: newId(),
         organizationId: input.organizationId,
@@ -173,6 +181,7 @@ export class OnboardingService {
         acceptedAt: now,
         ip: input.ip ?? null,
         userAgent: input.userAgent ?? null,
+        bodyHash: doc.hash,
       });
     }
 

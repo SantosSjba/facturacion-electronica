@@ -39,7 +39,10 @@ export function RequireOrg() {
   return <Outlet />;
 }
 
-/** Blocks /app (except onboarding) until company + legal acceptances exist. */
+/**
+ * Blocks /app until first company exists.
+ * If company exists but legal must be re-accepted, allow shell + blocking modal.
+ */
 export function RequireOnboarded() {
   const { user, bootstrapping } = useSession();
   const location = useLocation();
@@ -59,13 +62,13 @@ export function RequireOnboarded() {
       <Navigate to="/auth/login" replace state={{ from: location.pathname }} />
     );
   }
-  if (statusQuery.data && !statusQuery.data.complete) {
+  if (statusQuery.data && !statusQuery.data.has_company) {
     return <Navigate to="/app/onboarding" replace />;
   }
   return <Outlet />;
 }
 
-/** Onboarding route: if already complete, send to /app. */
+/** Onboarding route: if company exists (even with re-accept pending), send to /app. */
 export function RedirectIfOnboarded({
   children,
 }: {
@@ -82,7 +85,7 @@ export function RedirectIfOnboarded({
   if (bootstrapping || (user && statusQuery.isLoading)) {
     return <PageSpinner />;
   }
-  if (statusQuery.data?.complete) {
+  if (statusQuery.data?.complete || statusQuery.data?.has_company) {
     return <Navigate to="/app" replace />;
   }
   return children;

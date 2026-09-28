@@ -104,7 +104,9 @@ export class LegalDocumentsService {
   ): Promise<LegalDocumentPublic> {
     const row = await this.findById(id);
     if (row.status !== "draft") {
-      throw AppError.conflict("Only draft legal documents can be updated");
+      throw AppError.conflict(
+        "Published legal documents are immutable; only drafts can be updated",
+      );
     }
 
     const nextTitle = input.title?.trim() ?? row.title;
@@ -140,6 +142,29 @@ export class LegalDocumentsService {
         bodyMd: nextBody,
         version: nextVersion,
         hash: contentHash(nextBody),
+      })
+      .where(eq(legalDocuments.id, id));
+
+    return this.get(id);
+  }
+
+  async publish(id: string): Promise<LegalDocumentPublic> {
+    const row = await this.findById(id);
+    if (row.status !== "draft") {
+      throw AppError.conflict("Only draft legal documents can be published");
+    }
+    if (!row.bodyMd.trim()) {
+      throw AppError.validation("body_md must not be empty");
+    }
+
+    const hash = contentHash(row.bodyMd);
+    const now = new Date();
+    await this.db
+      .update(legalDocuments)
+      .set({
+        status: "published",
+        hash,
+        publishedAt: now,
       })
       .where(eq(legalDocuments.id, id));
 

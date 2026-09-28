@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 
+import { LegalReacceptModal } from "@/modules/app/components/LegalReacceptModal";
 import { cn } from "@/shared/ui/utils";
 
 import { AppHeader } from "./layout/AppHeader";
@@ -26,6 +27,7 @@ function LayoutContent() {
           <Outlet />
         </main>
       </div>
+      <LegalReacceptModal />
     </div>
   );
 }
