@@ -148,10 +148,10 @@ export class NotificationDispatchService {
     inviteToken: string;
     expiresAt: Date;
   }): Promise<void> {
-    const consoleUrl = this.config
-      .get("CONSOLE_PUBLIC_URL", { infer: true })
+    const saasWebUrl = this.config
+      .get("SAAS_WEB_PUBLIC_URL", { infer: true })
       .replace(/\/$/, "");
-    const inviteUrl = `${consoleUrl}/accept-invite?token=${encodeURIComponent(input.inviteToken)}`;
+    const inviteUrl = `${saasWebUrl}/auth/accept-invite?token=${encodeURIComponent(input.inviteToken)}`;
     const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
 
     await this.enqueueDelivery({

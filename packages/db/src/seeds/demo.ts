@@ -314,7 +314,8 @@ Estos términos regulan el acceso y uso de la plataforma SaaS Factosys para emis
 `;
 
 /**
- * Idempotent draft legal documents for locale es-PE (S12-LEGAL / FE-374).
+ * Idempotent legal documents for locale es-PE (S12-LEGAL / S15-ONB).
+ * Seeded as published so onboarding gate can accept them (S16 adds admin publish UI).
  */
 async function seedLegalDraftsEsPe(db: Db): Promise<void> {
   const drafts: Array<{
@@ -326,20 +327,21 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
     {
       code: "privacy.es-PE",
       version: 1,
-      title: "Política de privacidad (borrador)",
+      title: "Política de privacidad",
       bodyMd: PRIVACY_ES_PE_BODY,
     },
     {
       code: "terms.es-PE",
       version: 1,
-      title: "Términos de uso (borrador)",
+      title: "Términos de uso",
       bodyMd: TERMS_ES_PE_BODY,
     },
   ];
 
+  const now = new Date();
   for (const draft of drafts) {
     const existing = await db
-      .select({ id: legalDocuments.id })
+      .select({ id: legalDocuments.id, status: legalDocuments.status })
       .from(legalDocuments)
       .where(
         and(
@@ -349,6 +351,16 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
       )
       .limit(1);
     if (existing[0]) {
+      if (existing[0].status !== "published") {
+        await db
+          .update(legalDocuments)
+          .set({
+            status: "published",
+            publishedAt: now,
+            title: draft.title,
+          })
+          .where(eq(legalDocuments.id, existing[0].id));
+      }
       continue;
     }
     await db.insert(legalDocuments).values({
@@ -358,7 +370,8 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
       title: draft.title,
       bodyMd: draft.bodyMd,
       hash: sha256Hex(draft.bodyMd),
-      status: "draft",
+      status: "published",
+      publishedAt: now,
     });
   }
 }

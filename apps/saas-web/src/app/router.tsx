@@ -1,6 +1,9 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 
+import { AcceptInvitePage } from "@/modules/auth/pages/AcceptInvitePage";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
+import { AppHomePage } from "@/modules/app/pages/AppHomePage";
+import { OnboardingWizardPage } from "@/modules/app/pages/OnboardingWizardPage";
 import { DashboardPage } from "@/modules/platform/pages/DashboardPage";
 import { OrganizationDetailPage } from "@/modules/platform/pages/OrganizationDetailPage";
 import { OrganizationsListPage } from "@/modules/platform/pages/OrganizationsListPage";
@@ -9,7 +12,21 @@ import { SignupRequestDetailPage } from "@/modules/platform/pages/SignupRequestD
 import { SignupRequestsListPage } from "@/modules/platform/pages/SignupRequestsListPage";
 
 import { AppShell } from "./AppShell";
-import { RedirectIfAuthed, RequirePlatform } from "./guards";
+import {
+  RedirectIfAuthed,
+  RedirectIfOnboarded,
+  RequireOnboarded,
+  RequireOrg,
+  RequirePlatform,
+} from "./guards";
+
+function RedirectAcceptInvite() {
+  const [params] = useSearchParams();
+  const qs = params.toString();
+  return (
+    <Navigate to={`/auth/accept-invite${qs ? `?${qs}` : ""}`} replace />
+  );
+}
 
 export function AppRouter() {
   return (
@@ -25,6 +42,15 @@ export function AppRouter() {
         }
       />
       <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+      <Route
+        path="/auth/accept-invite"
+        element={
+          <RedirectIfAuthed>
+            <AcceptInvitePage />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route path="/accept-invite" element={<RedirectAcceptInvite />} />
 
       <Route element={<RequirePlatform />}>
         <Route element={<AppShell />}>
@@ -46,6 +72,21 @@ export function AppRouter() {
             element={<OrganizationDetailPage />}
           />
           <Route path="/platform/plans" element={<PlansListPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<RequireOrg />}>
+        <Route
+          path="/app/onboarding"
+          element={
+            <RedirectIfOnboarded>
+              <OnboardingWizardPage />
+            </RedirectIfOnboarded>
+          }
+        />
+        <Route element={<RequireOnboarded />}>
+          <Route path="/app" element={<AppHomePage />} />
+          <Route path="/app/*" element={<Navigate to="/app" replace />} />
         </Route>
       </Route>
 

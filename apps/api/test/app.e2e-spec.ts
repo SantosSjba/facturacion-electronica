@@ -2092,11 +2092,149 @@ describe("API e2e", () => {
       .expect(200);
     expect(loginOwner.body.access_token).toBeTruthy();
 
+    const invitePayload = inviteToken
+      ? (
+          await db
+            .select()
+            .from(notificationDeliveries)
+            .where(
+              and(
+                eq(notificationDeliveries.templateCode, "invite.owner"),
+                eq(notificationDeliveries.toEmail, email),
+              ),
+            )
+            .limit(1)
+        )[0]?.payload
+      : null;
+    expect(
+      String(
+        (invitePayload as { invite_url?: string } | null)?.invite_url ?? "",
+      ),
+    ).toContain("/auth/accept-invite?token=");
+
     await request(server)
       .patch(`/saas/signup-requests/${created.body.id as string}`)
       .set("Authorization", `Bearer ${platformToken}`)
       .send({ status: "rejected" })
       .expect(409);
+  }, 30_000);
+
+  it("onboarding: status incomplete → company + legal → complete", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const ruc = makeValidUniqueRuc(Date.now());
+    const email = `onb-e2e-${Date.now()}@example.com`;
+    const created = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Onboarding SAC",
+        ruc,
+        contact_name: "Onb Owner",
+        contact_email: email,
+        plan_code: "starter",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "under_review" })
+      .expect(200);
+
+    const approved = await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "approved" })
+      .expect(200);
+    const orgId = approved.body.organization_id as string;
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const { notificationDeliveries } = await import("@factosys/db");
+    const { and, eq } = await import("drizzle-orm");
+    const db = app.get(DB);
+
+    let inviteToken: string | undefined;
+    for (let i = 0; i < 40; i++) {
+      const rows = await db
+        .select()
+        .from(notificationDeliveries)
+        .where(
+          and(
+            eq(notificationDeliveries.templateCode, "invite.owner"),
+            eq(notificationDeliveries.toEmail, email),
+          ),
+        )
+        .limit(1);
+      if (rows[0]?.status === "success") {
+        inviteToken = (rows[0].payload as { invite_token?: string })
+          ?.invite_token;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(inviteToken).toBeTruthy();
+
+    const password = "OnboardOwner!2026";
+    await request(server)
+      .post("/auth/accept-invite")
+      .send({ token: inviteToken, password })
+      .expect(200);
+
+    const loginOwner = await request(server)
+      .post("/auth/login")
+      .send({ email, password, organization_id: orgId })
+      .expect(200);
+    const ownerToken = loginOwner.body.access_token as string;
+
+    await request(server)
+      .get("/saas/onboarding/status")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(403);
+
+    const status0 = await request(server)
+      .get("/saas/onboarding/status")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .expect(200);
+    expect(status0.body.complete).toBe(false);
+    expect(status0.body.has_company).toBe(false);
+    expect(status0.body.hints?.ruc).toBe(ruc);
+
+    const legal = await request(server)
+      .get("/saas/onboarding/legal")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .expect(200);
+    const docs = legal.body.items as Array<{ id: string; code: string }>;
+    expect(docs).toHaveLength(2);
+
+    await request(server)
+      .post("/companies")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        ruc,
+        legal_name: "E2E Onboarding SAC",
+        environment: "sandbox",
+        seed_default_series: true,
+      })
+      .expect(201);
+
+    const accepted = await request(server)
+      .post("/saas/onboarding/accept-legal")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ document_ids: docs.map((d) => d.id) })
+      .expect(200);
+    expect(accepted.body.complete).toBe(true);
+    expect(accepted.body.has_company).toBe(true);
+    expect(accepted.body.legal.privacy).toBe(true);
+    expect(accepted.body.legal.terms).toBe(true);
   }, 30_000);
 
   it("signup reject: notes required; rejected + signup.rejected delivery", async () => {
@@ -2351,3 +2489,16 @@ describe("API e2e", () => {
       .expect(200);
   });
 });
+
+/** Unique RUC with valid módulo-11 checksum (companies create requires it). */
+function makeValidUniqueRuc(seed: number): string {
+  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2] as const;
+  const base = String(20_000_000_00 + (seed % 1_000_000_000)).padStart(10, "0").slice(0, 10);
+  let sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += Number(base[i]) * weights[i]!;
+  }
+  const mod = 11 - (sum % 11);
+  const check = mod === 10 ? 0 : mod === 11 ? 1 : mod;
+  return `${base}${check}`;
+}

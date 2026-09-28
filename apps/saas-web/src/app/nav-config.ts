@@ -42,8 +42,12 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export const HOME_FALLBACK = "/platform";
+export const PLATFORM_HOME = "/platform";
+export const APP_HOME = "/app";
 
-export function resolveHomePath(_perms: readonly string[]): string {
-  return HOME_FALLBACK;
+export function resolveHomePath(
+  _perms: readonly string[],
+  ctx?: "platform" | "org",
+): string {
+  return ctx === "org" ? APP_HOME : PLATFORM_HOME;
 }

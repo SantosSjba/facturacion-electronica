@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
@@ -13,8 +13,13 @@ import {
 } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
-import type { LoginOrganizationOption } from "@/shared/api/http-client";
+import {
+  getAccessTokenMemory,
+  type LoginOrganizationOption,
+} from "@/shared/api/http-client";
+import { decodeAccessToken } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session-context";
+import { resolveHomePath } from "@/app/nav-config";
 import {
   Button,
   ButtonLabel,
@@ -30,8 +35,13 @@ import { cn } from "@/shared/ui/utils";
 export function LoginPage() {
   const { login } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefill = (location.state ?? {}) as {
+    email?: string;
+    organizationSlug?: string;
+  };
   const { theme, toggleTheme } = useTheme();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefill.email ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,6 +55,18 @@ export function LoginPage() {
   );
   const [selectingOrgId, setSelectingOrgId] = useState<string | null>(null);
 
+  function homeAfterLogin(): string {
+    const claims = decodeAccessToken(getAccessTokenMemory() ?? "");
+    if (!claims) return "/app";
+    const ctx =
+      claims.ctx === "platform" || claims.ctx === "org"
+        ? claims.ctx
+        : claims.roles.some((r) => r.startsWith("platform_"))
+          ? "platform"
+          : "org";
+    return resolveHomePath(claims.perms, ctx);
+  }
+
   async function authenticate(org?: {
     organizationId?: string;
     organizationSlug?: string;
@@ -56,14 +78,15 @@ export function LoginPage() {
         email,
         password,
         organizationId: org?.organizationId,
-        organizationSlug: org?.organizationSlug,
+        organizationSlug:
+          org?.organizationSlug ?? prefill.organizationSlug ?? undefined,
       });
       if (outcome.status === "org_selection_required") {
         setOrgChoices(outcome.organizations);
         return;
       }
       setOrgChoices(null);
-      navigate("/platform", { replace: true });
+      navigate(homeAfterLogin(), { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || "Credenciales inválidas");
