@@ -18,6 +18,7 @@ export { rolePermissions } from "./role-permissions";
 export { users } from "./users";
 export { userRoles } from "./user-roles";
 export { refreshTokens } from "./refresh-tokens";
+export { inviteTokens } from "./invite-tokens";
 export { plans } from "./plans";
 export { orgPlans } from "./org-plans";
 export { signupRequests } from "./signup-requests";

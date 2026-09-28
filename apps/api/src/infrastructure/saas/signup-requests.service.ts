@@ -1,10 +1,24 @@
+import { createHash, randomBytes } from "node:crypto";
+
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { and, desc, eq, gte, ilike, lt, lte, or, type SQL } from "drizzle-orm";
-import { newId, signupRequests, type Db } from "@factosys/db";
+import {
+  inviteTokens,
+  newId,
+  organizations,
+  orgPlans,
+  plans,
+  roles,
+  signupRequests,
+  userRoles,
+  users,
+  type Db,
+} from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import type { Env } from "../config/env.schema";
+import { Argon2Hasher } from "../crypto/argon2-hasher";
 import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
 import { DB } from "../persistence/db.tokens";
 import { RateLimitService } from "../redis/rate-limit.service";
@@ -34,6 +48,7 @@ export interface SignupRequestPublic {
   plan_code: string | null;
   status: string;
   notes: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +62,21 @@ export interface SignupListFilters {
   cursor?: string;
 }
 
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function slugify(name: string): string {
+  const base = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return base || "org";
+}
+
 @Injectable()
 export class SignupRequestsService {
   private readonly logger = new Logger(SignupRequestsService.name);
@@ -55,6 +85,7 @@ export class SignupRequestsService {
     @Inject(DB) private readonly db: Db,
     private readonly rateLimit: RateLimitService,
     private readonly config: ConfigService<Env, true>,
+    private readonly hasher: Argon2Hasher,
     @Optional() private readonly notifications?: NotificationDispatchService,
   ) {}
 
@@ -121,18 +152,19 @@ export class SignupRequestsService {
       }
     }
 
-    return {
+    return this.toPublic({
       id,
-      company_name: input.companyName,
+      companyName: input.companyName,
       ruc: input.ruc,
-      contact_name: input.contactName,
-      contact_email: email,
-      plan_code: input.planCode ?? null,
+      contactName: input.contactName,
+      contactEmail: email,
+      planCode: input.planCode ?? null,
       status: "received",
       notes: input.notes ?? null,
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
-    };
+      organizationId: null,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
   async list(
@@ -242,6 +274,16 @@ export class SignupRequestsService {
       notesUpdated = input.notes !== row.notes;
     }
 
+    if (statusChanged && nextStatus === "rejected") {
+      const motivo = (nextNotes ?? "").trim();
+      if (!motivo) {
+        throw AppError.validation("notes is required when rejecting", [
+          { path: "notes", issue: "Motivo de rechazo requerido" },
+        ]);
+      }
+      nextNotes = motivo;
+    }
+
     if (!statusChanged && !notesUpdated) {
       return {
         item: this.toPublic(row),
@@ -252,6 +294,71 @@ export class SignupRequestsService {
     }
 
     const now = new Date();
+
+    if (statusChanged && nextStatus === "approved") {
+      const provisioned = await this.provisionTenant(row, nextNotes, now);
+      if (this.notifications) {
+        try {
+          await this.notifications.signupApproved({
+            signupId: id,
+            companyName: row.companyName,
+            ruc: row.ruc,
+            contactName: row.contactName,
+            contactEmail: row.contactEmail,
+          });
+        } catch (cause) {
+          this.logger.warn(
+            `signup.approved notif failed id=${id}: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
+          );
+        }
+        try {
+          await this.notifications.ownerInvite({
+            inviteId: provisioned.inviteId,
+            userId: provisioned.userId,
+            contactName: row.contactName,
+            contactEmail: row.contactEmail,
+            organizationName: row.companyName,
+            organizationSlug: provisioned.orgSlug,
+            inviteToken: provisioned.inviteRaw,
+            expiresAt: provisioned.inviteExpiresAt,
+          });
+        } catch (cause) {
+          this.logger.warn(
+            `invite.owner notif failed id=${id}: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
+          );
+        }
+        try {
+          await this.notifications.planAssigned({
+            orgPlanId: provisioned.orgPlanId,
+            organizationId: provisioned.orgId,
+            organizationSlug: provisioned.orgSlug,
+            organizationName: row.companyName,
+            planId: provisioned.planId,
+            planCode: provisioned.planCode,
+            planName: provisioned.planName,
+            status: "active",
+          });
+        } catch (cause) {
+          this.logger.warn(
+            `plan.assigned notif failed id=${id}: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
+          );
+        }
+      }
+      const updated = await this.findById(id);
+      return {
+        item: this.toPublic(updated),
+        previousStatus,
+        statusChanged: true,
+        notesUpdated,
+      };
+    }
+
     await this.db
       .update(signupRequests)
       .set({
@@ -260,6 +367,25 @@ export class SignupRequestsService {
         updatedAt: now,
       })
       .where(eq(signupRequests.id, id));
+
+    if (statusChanged && nextStatus === "rejected" && this.notifications) {
+      try {
+        await this.notifications.signupRejected({
+          signupId: id,
+          companyName: row.companyName,
+          ruc: row.ruc,
+          contactName: row.contactName,
+          contactEmail: row.contactEmail,
+          notes: nextNotes ?? "",
+        });
+      } catch (cause) {
+        this.logger.warn(
+          `signup.rejected notif failed id=${id}: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`,
+        );
+      }
+    }
 
     return {
       item: this.toPublic({
@@ -272,6 +398,142 @@ export class SignupRequestsService {
       statusChanged,
       notesUpdated,
     };
+  }
+
+  private async provisionTenant(
+    row: typeof signupRequests.$inferSelect,
+    nextNotes: string | null,
+    now: Date,
+  ): Promise<{
+    orgId: string;
+    orgSlug: string;
+    userId: string;
+    inviteId: string;
+    inviteRaw: string;
+    inviteExpiresAt: Date;
+    orgPlanId: string;
+    planId: string;
+    planCode: string;
+    planName: string;
+  }> {
+    const planCode = row.planCode?.trim().toLowerCase();
+    if (!planCode) {
+      throw AppError.conflict("plan_code is required to approve signup");
+    }
+    const planRows = await this.db
+      .select()
+      .from(plans)
+      .where(and(eq(plans.code, planCode), eq(plans.isActive, true)))
+      .limit(1);
+    const plan = planRows[0];
+    if (!plan) {
+      throw AppError.conflict(`Active plan not found for code=${planCode}`);
+    }
+
+    const ownerRoleRows = await this.db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.code, "owner"))
+      .limit(1);
+    const ownerRoleId = ownerRoleRows[0]?.id;
+    if (!ownerRoleId) {
+      throw AppError.internal("Role owner is not seeded");
+    }
+
+    const orgId = newId();
+    const userId = newId();
+    const inviteId = newId();
+    const orgPlanId = newId();
+    const orgSlug = await this.uniqueSlug(slugify(row.companyName));
+    const inviteRaw = randomBytes(32).toString("base64url");
+    const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
+    const inviteExpiresAt = new Date(now.getTime() + ttlHours * 3600_000);
+    const placeholderPassword = await this.hasher.hash(
+      randomBytes(32).toString("base64url"),
+    );
+
+    await this.db.transaction(async (tx) => {
+      await tx.insert(organizations).values({
+        id: orgId,
+        name: row.companyName,
+        slug: orgSlug,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await tx.insert(users).values({
+        id: userId,
+        organizationId: orgId,
+        email: row.contactEmail,
+        name: row.contactName,
+        passwordHash: placeholderPassword,
+        status: "disabled",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await tx.insert(userRoles).values({
+        userId,
+        roleId: ownerRoleId,
+      });
+
+      await tx.insert(orgPlans).values({
+        id: orgPlanId,
+        organizationId: orgId,
+        planId: plan.id,
+        status: "active",
+        startsAt: now,
+        endsAt: null,
+        createdAt: now,
+      });
+
+      await tx.insert(inviteTokens).values({
+        id: inviteId,
+        userId,
+        tokenHash: sha256Hex(inviteRaw),
+        expiresAt: inviteExpiresAt,
+        consumedAt: null,
+        createdAt: now,
+      });
+
+      await tx
+        .update(signupRequests)
+        .set({
+          status: "approved",
+          notes: nextNotes,
+          organizationId: orgId,
+          updatedAt: now,
+        })
+        .where(eq(signupRequests.id, row.id));
+    });
+
+    return {
+      orgId,
+      orgSlug,
+      userId,
+      inviteId,
+      inviteRaw,
+      inviteExpiresAt,
+      orgPlanId,
+      planId: plan.id,
+      planCode: plan.code,
+      planName: plan.name,
+    };
+  }
+
+  private async uniqueSlug(base: string): Promise<string> {
+    let candidate = base;
+    for (let i = 0; i < 50; i++) {
+      const existing = await this.db
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.slug, candidate))
+        .limit(1);
+      if (!existing[0]) return candidate;
+      candidate = `${base}-${i + 2}`;
+    }
+    return `${base}-${newId().slice(0, 8)}`;
   }
 
   private async findById(
@@ -301,6 +563,7 @@ export class SignupRequestsService {
       plan_code: row.planCode,
       status: row.status,
       notes: row.notes,
+      organization_id: row.organizationId ?? null,
       created_at: row.createdAt.toISOString(),
       updated_at: row.updatedAt.toISOString(),
     };

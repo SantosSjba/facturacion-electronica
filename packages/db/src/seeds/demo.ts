@@ -425,7 +425,22 @@ Pronto recibirás instrucciones de onboarding en {{contact_email}}.
 
 Tras revisar la solicitud de **{{company_name}}** (RUC {{ruc}}), no podemos continuar en este momento.
 
+Motivo: {{notes}}
+
 Si tienes dudas, responde a este mensaje o escribe a soporte.
+
+— Equipo Factosys`,
+    },
+    {
+      code: "invite.owner",
+      subject: "Activa tu cuenta owner — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+Tu organización **{{organization_name}}** ya está lista. Para activar tu cuenta de owner, crea tu contraseña en este enlace (válido {{ttl_hours}} h):
+
+{{invite_url}}
+
+Slug: \`{{organization_slug}}\`
 
 — Equipo Factosys`,
     },

@@ -54,5 +54,12 @@
     "tag": "plans_limits",
     "up": "0008_plans_limits.sql",
     "down": "0008_plans_limits.down.sql"
+  },
+  {
+    "id": "0009_signup_approve_invite",
+    "when": 9,
+    "tag": "signup_approve_invite",
+    "up": "0009_signup_approve_invite.sql",
+    "down": "0009_signup_approve_invite.down.sql"
   }
 ]

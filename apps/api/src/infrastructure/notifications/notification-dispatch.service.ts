@@ -100,6 +100,77 @@ export class NotificationDispatchService {
     });
   }
 
+  /** Contact email when signup is approved (S14-APR / FE-422). */
+  async signupApproved(input: SignupReceivedInput): Promise<void> {
+    await this.enqueueDelivery({
+      templateCode: "signup.approved",
+      toEmail: input.contactEmail,
+      eventKey: `signup:${input.signupId}:approved`,
+      signupRequestId: input.signupId,
+      payload: {
+        company_name: input.companyName,
+        ruc: input.ruc,
+        contact_name: input.contactName,
+        contact_email: input.contactEmail,
+        signup_request_id: input.signupId,
+      },
+    });
+  }
+
+  /** Contact email when signup is rejected with motivo (S14-APR / FE-424). */
+  async signupRejected(
+    input: SignupReceivedInput & { notes: string },
+  ): Promise<void> {
+    await this.enqueueDelivery({
+      templateCode: "signup.rejected",
+      toEmail: input.contactEmail,
+      eventKey: `signup:${input.signupId}:rejected`,
+      signupRequestId: input.signupId,
+      payload: {
+        company_name: input.companyName,
+        ruc: input.ruc,
+        contact_name: input.contactName,
+        contact_email: input.contactEmail,
+        signup_request_id: input.signupId,
+        notes: input.notes,
+      },
+    });
+  }
+
+  /** Owner invite with set-password link (S14-APR / FE-422). */
+  async ownerInvite(input: {
+    inviteId: string;
+    userId: string;
+    contactName: string;
+    contactEmail: string;
+    organizationName: string;
+    organizationSlug: string;
+    inviteToken: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    const consoleUrl = this.config
+      .get("CONSOLE_PUBLIC_URL", { infer: true })
+      .replace(/\/$/, "");
+    const inviteUrl = `${consoleUrl}/accept-invite?token=${encodeURIComponent(input.inviteToken)}`;
+    const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
+
+    await this.enqueueDelivery({
+      templateCode: "invite.owner",
+      toEmail: input.contactEmail,
+      eventKey: `invite:${input.userId}:${input.inviteId}`,
+      payload: {
+        contact_name: input.contactName,
+        contact_email: input.contactEmail,
+        organization_name: input.organizationName,
+        organization_slug: input.organizationSlug,
+        invite_url: inviteUrl,
+        invite_token: input.inviteToken,
+        expires_at: input.expiresAt.toISOString(),
+        ttl_hours: String(ttlHours),
+      },
+    });
+  }
+
   private async enqueueDelivery(input: {
     templateCode: string;
     toEmail: string;

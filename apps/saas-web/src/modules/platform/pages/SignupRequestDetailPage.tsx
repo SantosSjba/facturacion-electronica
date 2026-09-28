@@ -115,17 +115,30 @@ export function SignupRequestDetailPage() {
 
           <div className="flex flex-wrap gap-2">
             {item.status === "received" ? (
-              <Button
-                type="button"
-                disabled={mutation.isPending}
-                onClick={() =>
-                  mutation.mutate({ status: "under_review" })
-                }
-              >
-                Marcar en revisión
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  disabled={mutation.isPending}
+                  onClick={() =>
+                    mutation.mutate({ status: "under_review" })
+                  }
+                >
+                  Marcar en revisión
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={mutation.isPending}
+                  onClick={() => {
+                    setRejectNotes("");
+                    setRejectOpen(true);
+                  }}
+                >
+                  Rechazar
+                </Button>
+              </>
             ) : null}
-            {item.status === "received" || item.status === "under_review" ? (
+            {item.status === "under_review" ? (
               <>
                 <Button
                   type="button"
@@ -149,13 +162,29 @@ export function SignupRequestDetailPage() {
             ) : null}
             {item.status === "approved" ? (
               <p className="text-sm text-gray-500">
-                Aprobada (provisioning de tenant en S14-APR).{" "}
-                <Link
-                  className="text-brand-500 hover:underline"
-                  to="/platform/organizations"
-                >
-                  Ver organizaciones
-                </Link>
+                Aprobada
+                {item.organization_id ? (
+                  <>
+                    {" "}
+                    — org{" "}
+                    <Link
+                      className="font-mono text-brand-500 hover:underline"
+                      to={`/platform/organizations/${item.organization_id}`}
+                    >
+                      {item.organization_id}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    .{" "}
+                    <Link
+                      className="text-brand-500 hover:underline"
+                      to="/platform/organizations"
+                    >
+                      Ver organizaciones
+                    </Link>
+                  </>
+                )}
               </p>
             ) : null}
           </div>

@@ -15,6 +15,7 @@ export interface SignupRequest {
   plan_code: string | null;
   status: SignupStatus;
   notes: string | null;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AccountPage } from "@/modules/auth/pages/AccountPage";
+import { AcceptInvitePage } from "@/modules/auth/pages/AcceptInvitePage";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
 import { CertificateTab } from "@/modules/companies/components/tabs/CertificateTab";
 import { GreTab } from "@/modules/companies/components/tabs/GreTab";
@@ -49,6 +50,7 @@ export function AppRouter() {
               </RedirectIfAuthed>
             }
           />
+          <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route element={<RequireAuth />}>
             <Route element={<AppShell />}>
               <Route index element={<HomeRedirect />} />

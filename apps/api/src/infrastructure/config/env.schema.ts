@@ -82,6 +82,12 @@ export const envSchema = z.object({
     .string()
     .email()
     .default("platform@factosys.local"),
+  /** S14-APR: invite link base (console accept-invite page). */
+  CONSOLE_PUBLIC_URL: z
+    .string()
+    .url()
+    .default("http://localhost:5173"),
+  INVITE_TOKEN_TTL_HOURS: z.coerce.number().int().positive().default(72),
   RESEND_API_KEY: z.string().min(1).optional(),
   SMTP_HOST: z.string().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),

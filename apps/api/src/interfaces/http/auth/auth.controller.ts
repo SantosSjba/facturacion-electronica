@@ -25,9 +25,15 @@ const changePasswordSchema = z.object({
   new_password: z.string().min(8),
 });
 
+const acceptInviteSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+});
+
 type LoginBody = z.infer<typeof loginSchema>;
 type RefreshBody = z.infer<typeof refreshSchema>;
 type ChangePasswordBody = z.infer<typeof changePasswordSchema>;
+type AcceptInviteBody = z.infer<typeof acceptInviteSchema>;
 
 @ApiTags("auth")
 @Controller("auth")
@@ -90,6 +96,22 @@ export class AuthController {
     @Body(new ZodValidationPipe(refreshSchema)) body: RefreshBody,
   ): Promise<void> {
     await this.auth.logout(body.refresh_token);
+  }
+
+  @Public()
+  @Post("accept-invite")
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      "Accept owner invite: set password and activate user (token from invite email)",
+  })
+  async acceptInvite(
+    @Body(new ZodValidationPipe(acceptInviteSchema)) body: AcceptInviteBody,
+  ) {
+    return this.auth.acceptInvite({
+      token: body.token,
+      password: body.password,
+    });
   }
 
   @Get("me")

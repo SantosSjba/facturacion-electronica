@@ -1,10 +1,11 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { and, eq, inArray, isNull, gt } from "drizzle-orm";
 import {
+  inviteTokens,
   isPlatformRole,
   newId,
   organizations,
@@ -27,6 +28,10 @@ import type {
 } from "../../interfaces/http/auth/auth-context";
 import { sha256Hex } from "../api-keys/api-key.service";
 import { RateLimitService } from "../redis/rate-limit.service";
+
+function hashInviteToken(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 export interface AccessTokenPayload {
   sub: string;
@@ -323,6 +328,63 @@ export class AuthService {
       .update(users)
       .set({ passwordHash, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  /**
+   * Accept owner invite: set password + activate user (S14-APR / FE-422).
+   */
+  async acceptInvite(input: {
+    token: string;
+    password: string;
+  }): Promise<{ organization_slug: string | null; email: string }> {
+    const tokenHash = hashInviteToken(input.token.trim());
+    const rows = await this.db
+      .select({
+        invite: inviteTokens,
+        user: users,
+        orgSlug: organizations.slug,
+      })
+      .from(inviteTokens)
+      .innerJoin(users, eq(users.id, inviteTokens.userId))
+      .innerJoin(organizations, eq(organizations.id, users.organizationId))
+      .where(eq(inviteTokens.tokenHash, tokenHash))
+      .limit(1);
+    const row = rows[0];
+    if (!row) {
+      throw AppError.validation("Invite token inválido", [
+        { path: "token", issue: "invalid" },
+      ]);
+    }
+    if (row.invite.consumedAt) {
+      throw AppError.conflict("Invite token already used");
+    }
+    if (row.invite.expiresAt.getTime() < Date.now()) {
+      throw AppError.validation("Invite token expirado", [
+        { path: "token", issue: "expired" },
+      ]);
+    }
+
+    const now = new Date();
+    const passwordHash = await this.hasher.hash(input.password);
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({
+          passwordHash,
+          status: "active",
+          updatedAt: now,
+        })
+        .where(eq(users.id, row.user.id));
+      await tx
+        .update(inviteTokens)
+        .set({ consumedAt: now })
+        .where(eq(inviteTokens.id, row.invite.id));
+    });
+
+    return {
+      organization_slug: row.orgSlug,
+      email: row.user.email,
+    };
   }
 
   private resolveAuthCtx(roleCodes: string[]): AuthCtx {

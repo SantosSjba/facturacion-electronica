@@ -1988,13 +1988,183 @@ describe("API e2e", () => {
       .send({ status: "approved" })
       .expect(200);
     expect(approved.body.status).toBe("approved");
+    expect(approved.body.organization_id).toBeTruthy();
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const {
+      organizations,
+      orgPlans,
+      users,
+      notificationDeliveries,
+    } = await import("@factosys/db");
+    const { and, eq } = await import("drizzle-orm");
+    const db = app.get(DB);
+
+    const orgId = approved.body.organization_id as string;
+    const orgRows = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .limit(1);
+    expect(orgRows[0]?.status).toBe("active");
+    expect(orgRows[0]?.name).toBe("E2E Platform SAC");
+
+    const ownerRows = await db
+      .select()
+      .from(users)
+      .where(
+        and(eq(users.organizationId, orgId), eq(users.email, email)),
+      )
+      .limit(1);
+    expect(ownerRows[0]?.status).toBe("disabled");
+
+    const planRows = await db
+      .select()
+      .from(orgPlans)
+      .where(
+        and(eq(orgPlans.organizationId, orgId), eq(orgPlans.status, "active")),
+      )
+      .limit(1);
+    expect(planRows[0]).toBeTruthy();
+
+    const waitDelivery = async (eventKey: string) => {
+      for (let i = 0; i < 40; i++) {
+        const listed = await request(server)
+          .get("/saas/notifications")
+          .query({ event_key: eventKey })
+          .set("Authorization", `Bearer ${platformToken}`)
+          .expect(200);
+        const item = (
+          listed.body.items as Array<Record<string, unknown>>
+        )[0];
+        if (item?.status === "success") return item;
+        if (item?.status === "failed") {
+          throw new Error(
+            `delivery ${eventKey} failed: ${String(item.last_error)}`,
+          );
+        }
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      throw new Error(`delivery ${eventKey} did not reach success`);
+    };
+
+    const signupId = created.body.id as string;
+    await waitDelivery(`signup:${signupId}:approved`);
+
+    let inviteToken: string | undefined;
+    for (let i = 0; i < 40; i++) {
+      const inviteRows = await db
+        .select()
+        .from(notificationDeliveries)
+        .where(
+          and(
+            eq(notificationDeliveries.templateCode, "invite.owner"),
+            eq(notificationDeliveries.toEmail, email),
+          ),
+        )
+        .limit(1);
+      const row = inviteRows[0];
+      if (row?.status === "success") {
+        inviteToken = (row.payload as { invite_token?: string } | null)
+          ?.invite_token;
+        break;
+      }
+      if (row?.status === "failed") {
+        throw new Error(`invite.owner failed: ${String(row.lastError)}`);
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(inviteToken).toBeTruthy();
+
+    const password = "OwnerInvite!2026";
+    await request(server)
+      .post("/auth/accept-invite")
+      .send({ token: inviteToken, password })
+      .expect(200);
+
+    const loginOwner = await request(server)
+      .post("/auth/login")
+      .send({
+        email,
+        password,
+        organization_id: orgId,
+      })
+      .expect(200);
+    expect(loginOwner.body.access_token).toBeTruthy();
 
     await request(server)
       .patch(`/saas/signup-requests/${created.body.id as string}`)
       .set("Authorization", `Bearer ${platformToken}`)
       .send({ status: "rejected" })
       .expect(409);
-  });
+  }, 30_000);
+
+  it("signup reject: notes required; rejected + signup.rejected delivery", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(
+      11,
+      "2",
+    );
+    const created = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Reject SAC",
+        ruc,
+        contact_name: "Reject Demo",
+        contact_email: `signup-reject-${Date.now()}@example.com`,
+        plan_code: "starter",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "under_review" })
+      .expect(200);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "rejected" })
+      .expect(400);
+
+    const rejected = await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "rejected", notes: "RUC no válido para onboarding" })
+      .expect(200);
+    expect(rejected.body.status).toBe("rejected");
+    expect(rejected.body.notes).toContain("RUC");
+
+    const signupId = created.body.id as string;
+    for (let i = 0; i < 40; i++) {
+      const listed = await request(server)
+        .get("/saas/notifications")
+        .query({ event_key: `signup:${signupId}:rejected` })
+        .set("Authorization", `Bearer ${platformToken}`)
+        .expect(200);
+      const item = (listed.body.items as Array<Record<string, unknown>>)[0];
+      if (item?.status === "success") {
+        expect(item.template_code).toBe("signup.rejected");
+        return;
+      }
+      if (item?.status === "failed") {
+        throw new Error(`rejected delivery failed: ${String(item.last_error)}`);
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("signup.rejected delivery did not reach success");
+  }, 15_000);
 
   it("platform health: org JWT → 403; platform JWT → 200", async () => {
     const orgDenied = await request(server)
