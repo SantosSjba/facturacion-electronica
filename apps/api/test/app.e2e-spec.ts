@@ -2650,13 +2650,135 @@ describe("API e2e", () => {
       .expect(200);
     expect(suspended.body.status).toBe("suspended");
 
+    const suspendAudit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "organization.suspended", limit: 20 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const suspendHit = (
+      suspendAudit.body.items as Array<Record<string, unknown>>
+    ).find(
+      (e) =>
+        e.action === "organization.suspended" &&
+        e.resource_id === demo!.id,
+    );
+    expect(suspendHit).toBeTruthy();
+    expect(suspendHit?.organization_id).toBe(demo!.id);
+
     const reactivated = await request(server)
       .patch(`/saas/organizations/${demo!.id}`)
       .set("Authorization", `Bearer ${platformToken}`)
       .send({ status: "active" })
       .expect(200);
     expect(reactivated.body.status).toBe("active");
+
+    const reactivateAudit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "organization.reactivated", limit: 20 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(
+      (
+        reactivateAudit.body.items as Array<Record<string, unknown>>
+      ).some(
+        (e) =>
+          e.action === "organization.reactivated" &&
+          e.resource_id === demo!.id,
+      ),
+    ).toBe(true);
   });
+
+  it("S16-AUD: platform audit list; org 403; approve action; legal publish visible", async () => {
+    await request(server)
+      .get("/saas/platform/audit-events")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const ruc = makeValidUniqueRuc(Date.now() + 91);
+    const email = `aud-approve-${Date.now()}@example.com`;
+    const created = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "E2E Audit Approve SAC",
+        ruc,
+        contact_name: "Audit Demo",
+        contact_email: email,
+        plan_code: "starter",
+        accept_privacy: true,
+      })
+      .expect(201);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "under_review" })
+      .expect(200);
+
+    await request(server)
+      .patch(`/saas/signup-requests/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "approved" })
+      .expect(200);
+
+    const approveAudit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "signup_request.approved", limit: 50 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const approveHit = (
+      approveAudit.body.items as Array<Record<string, unknown>>
+    ).find((e) => e.resource_id === created.body.id);
+    expect(approveHit).toBeTruthy();
+    expect(approveHit?.action).toBe("signup_request.approved");
+    expect(
+      JSON.stringify(approveHit?.data ?? {}).toLowerCase(),
+    ).not.toMatch(/password|secret|token(?!_)/);
+
+    const stamp = Date.now();
+    const draft = await request(server)
+      .post("/saas/legal/documents")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        code: `e2e-aud-legal-${stamp}`,
+        title: "Audit legal draft",
+        body_md: `# Audit\n\nbody ${stamp}`,
+      })
+      .expect(201);
+
+    const published = await request(server)
+      .post(`/saas/legal/documents/${draft.body.id as string}/publish`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(published.body.status).toBe("published");
+
+    const legalAudit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "legal.document.published", limit: 50 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const legalHit = (
+      legalAudit.body.items as Array<Record<string, unknown>>
+    ).find((e) => e.resource_id === published.body.id);
+    expect(legalHit).toBeTruthy();
+    expect(legalHit?.organization_id).toBeNull();
+
+    const planAudit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "plan.assigned", limit: 20 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(Array.isArray(planAudit.body.items)).toBe(true);
+  }, 30_000);
 
   it("refresh rotation: new token works; reused old refresh → 401", async () => {
     const login = await request(server)

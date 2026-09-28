@@ -1,11 +1,25 @@
-import { Body, Controller, Get, Param, Patch, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
 import { z } from "zod";
+import { AppError } from "@factosys/shared";
 
+import { AuditService } from "../../../infrastructure/audit/audit.service";
 import {
   ORG_STATUSES,
   OrgsService,
 } from "../../../infrastructure/saas/orgs.service";
+import type { AuthContext, UserAuthContext } from "../auth/auth-context";
+import { actorFromAuth, requestMeta } from "../audit/audit-request.util";
+import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { RequirePlatform } from "../decorators/auth.decorators";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
@@ -31,7 +45,10 @@ type PatchBody = z.infer<typeof patchSchema>;
 @RequirePlatform()
 @Controller("saas/organizations")
 export class OrgsController {
-  constructor(private readonly orgs: OrgsService) {}
+  constructor(
+    private readonly orgs: OrgsService,
+    private readonly audit: AuditService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "List tenant organizations (platform)" })
@@ -52,10 +69,43 @@ export class OrgsController {
 
   @Patch(":id")
   @ApiOperation({ summary: "Update organization status (platform)" })
-  patch(
+  async patch(
     @Param("id") id: string,
     @Body(new ZodValidationPipe(patchSchema)) body: PatchBody,
+    @CurrentAuth() auth: AuthContext,
+    @Req() req: Request,
   ) {
-    return this.orgs.patch(id, { status: body.status });
+    const user = this.assertUser(auth);
+    const before = await this.orgs.get(id);
+    const updated = await this.orgs.patch(id, { status: body.status });
+
+    if (before.status !== updated.status) {
+      const actor = actorFromAuth(user);
+      const action =
+        updated.status === "suspended"
+          ? "organization.suspended"
+          : "organization.reactivated";
+      await this.audit.append({
+        organizationId: updated.id,
+        ...actor,
+        action,
+        resourceType: "organization",
+        resourceId: updated.id,
+        ...requestMeta(req),
+        data: {
+          from: before.status,
+          to: updated.status,
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  private assertUser(auth: AuthContext): UserAuthContext {
+    if (auth.kind !== "user") {
+      throw AppError.forbidden("Platform JWT required");
+    }
+    return auth;
   }
 }

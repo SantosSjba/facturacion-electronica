@@ -10,6 +10,7 @@ import { AppSecurityPage } from "@/modules/app/pages/AppSecurityPage";
 import { AppUsersPage } from "@/modules/app/pages/AppUsersPage";
 import { OnboardingWizardPage } from "@/modules/app/pages/OnboardingWizardPage";
 import { DashboardPage } from "@/modules/platform/pages/DashboardPage";
+import { AuditListPage } from "@/modules/platform/pages/AuditListPage";
 import { LegalDocumentsPage } from "@/modules/platform/pages/LegalDocumentsPage";
 import { OrganizationDetailPage } from "@/modules/platform/pages/OrganizationDetailPage";
 import { OrganizationsListPage } from "@/modules/platform/pages/OrganizationsListPage";
@@ -79,6 +80,7 @@ export function AppRouter() {
           />
           <Route path="/platform/plans" element={<PlansListPage />} />
           <Route path="/platform/legal" element={<LegalDocumentsPage />} />
+          <Route path="/platform/audit" element={<AuditListPage />} />
         </Route>
       </Route>
 

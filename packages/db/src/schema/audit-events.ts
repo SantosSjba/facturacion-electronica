@@ -39,6 +39,7 @@ export const auditEvents = pgTable(
   (t) => [
     index("audit_events_org_created_idx").on(t.organizationId, t.createdAt),
     index("audit_events_resource_idx").on(t.resourceType, t.resourceId),
+    index("audit_events_created_idx").on(t.createdAt),
     check(
       "audit_events_actor_type_check",
       sql`${t.actorType} in ('api_key', 'system', 'worker', 'support', 'user')`,

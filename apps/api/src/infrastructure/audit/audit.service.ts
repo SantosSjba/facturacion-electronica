@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { and, desc, eq, gte, ilike, lt, lte, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNull, lt, lte, type SQL } from "drizzle-orm";
 import { auditEvents, newId, type Db } from "@factosys/db";
 
 import { DB } from "../persistence/db.tokens";
@@ -33,6 +33,13 @@ export interface AuditListFilters {
   dateTo?: string;
   limit?: number;
   cursor?: string;
+}
+
+export interface AuditPlatformListFilters extends AuditListFilters {
+  /** When set, filter by that org. Pass null to list only null-org (platform-global) events. */
+  organizationId?: string | null;
+  /** When true with organizationId undefined, no org filter (all events). */
+  allOrganizations?: boolean;
 }
 
 export interface AuditEventDto {
@@ -107,10 +114,36 @@ export class AuditService {
     organizationId: string,
     filters: AuditListFilters = {},
   ): Promise<{ items: AuditEventDto[]; next_cursor: string | null }> {
+    return this.queryEvents({
+      ...filters,
+      organizationId,
+    });
+  }
+
+  /** Cross-tenant platform list (S16-AUD). No org filter unless organizationId is set. */
+  async listPlatform(
+    filters: AuditListFilters & { organizationId?: string } = {},
+  ): Promise<{ items: AuditEventDto[]; next_cursor: string | null }> {
+    return this.queryEvents({
+      ...filters,
+      organizationId: filters.organizationId,
+      allOrganizations: filters.organizationId === undefined,
+    });
+  }
+
+  private async queryEvents(
+    filters: AuditPlatformListFilters,
+  ): Promise<{ items: AuditEventDto[]; next_cursor: string | null }> {
     const limit = Math.min(Math.max(filters.limit ?? 50, 1), 200);
-    const conditions: SQL[] = [
-      eq(auditEvents.organizationId, organizationId),
-    ];
+    const conditions: SQL[] = [];
+
+    if (!filters.allOrganizations) {
+      if (filters.organizationId === null) {
+        conditions.push(isNull(auditEvents.organizationId));
+      } else if (filters.organizationId) {
+        conditions.push(eq(auditEvents.organizationId, filters.organizationId));
+      }
+    }
 
     if (filters.action?.trim()) {
       conditions.push(eq(auditEvents.action, filters.action.trim()));
@@ -136,7 +169,7 @@ export class AuditService {
     const rows = await this.db
       .select()
       .from(auditEvents)
-      .where(and(...conditions))
+      .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(auditEvents.createdAt))
       .limit(limit + 1);
 

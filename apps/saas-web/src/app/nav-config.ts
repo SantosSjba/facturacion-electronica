@@ -8,6 +8,7 @@ import {
   Layers,
   LayoutDashboard,
   Scale,
+  ScrollText,
   Users,
 } from "lucide-react";
 
@@ -50,6 +51,12 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
     label: "Legal",
     to: "/platform/legal",
     icon: Scale,
+  },
+  {
+    id: "audit",
+    label: "Auditoría",
+    to: "/platform/audit",
+    icon: ScrollText,
   },
 ];
 

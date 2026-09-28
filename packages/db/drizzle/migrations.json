@@ -75,5 +75,12 @@
     "tag": "legal_acceptances_body_hash",
     "up": "0011_legal_acceptances_body_hash.sql",
     "down": "0011_legal_acceptances_body_hash.down.sql"
+  },
+  {
+    "id": "0012_audit_events_created_idx",
+    "when": 12,
+    "tag": "audit_events_created_idx",
+    "up": "0012_audit_events_created_idx.sql",
+    "down": "0012_audit_events_created_idx.down.sql"
   }
 ]

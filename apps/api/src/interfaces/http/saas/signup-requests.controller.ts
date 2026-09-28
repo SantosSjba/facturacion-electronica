@@ -94,9 +94,16 @@ export class SignupRequestsController {
 
     if (result.statusChanged || result.notesUpdated) {
       const actor = actorFromAuth(user);
-      const action = result.statusChanged
-        ? "signup_request.status_changed"
-        : "signup_request.updated";
+      let action = "signup_request.updated";
+      if (result.statusChanged) {
+        if (result.item.status === "approved") {
+          action = "signup_request.approved";
+        } else if (result.item.status === "rejected") {
+          action = "signup_request.rejected";
+        } else {
+          action = "signup_request.status_changed";
+        }
+      }
       await this.audit.append({
         organizationId: user.organizationId,
         ...actor,
