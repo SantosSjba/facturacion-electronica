@@ -34,6 +34,11 @@ export interface SessionUser {
   perms: string[];
   roles: string[];
   ctx: "platform" | "org";
+  impersonation?: {
+    reason: string;
+    actorUserId: string;
+    expiresAt: number | null;
+  };
 }
 
 export type LoginOutcome =
@@ -53,6 +58,8 @@ interface SessionContextValue {
     organizationSlug?: string;
     organizationId?: string;
   }) => Promise<LoginOutcome>;
+  /** Adopt a short-lived support impersonation access token (no refresh). */
+  adoptImpersonationToken: (accessToken: string) => void;
   logout: () => Promise<void>;
   hasPermission: (perm: string) => boolean;
 }
@@ -74,6 +81,13 @@ function claimsToUser(claims: AccessTokenClaims): SessionUser {
     perms: claims.perms,
     roles: claims.roles,
     ctx: resolveCtx(claims),
+    impersonation: claims.imp
+      ? {
+          reason: claims.imp.reason,
+          actorUserId: claims.imp.actor_user_id,
+          expiresAt: claims.exp ?? null,
+        }
+      : undefined,
   };
 }
 
@@ -177,6 +191,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     clearSession();
   }, [clearSession]);
 
+  const adoptImpersonationToken = useCallback((accessToken: string) => {
+    // Impersonation has no refresh — drop platform refresh so bootstrap cannot
+    // overwrite the temporary tenant session.
+    setStoredRefreshToken(null);
+    const u = applyAccessToken(accessToken);
+    if (!u) throw new Error("Invalid impersonation access token");
+    setUser(u);
+  }, []);
+
   const hasPermission = useCallback(
     (perm: string) => Boolean(user?.perms.includes(perm)),
     [user],
@@ -188,10 +211,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       bootstrapping,
       isPlatform: user?.ctx === "platform",
       login,
+      adoptImpersonationToken,
       logout,
       hasPermission,
     }),
-    [user, bootstrapping, login, logout, hasPermission],
+    [user, bootstrapping, login, adoptImpersonationToken, logout, hasPermission],
   );
 
   return createElement(SessionContext.Provider, { value }, children);

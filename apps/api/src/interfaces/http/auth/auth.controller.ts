@@ -1,9 +1,11 @@
-import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import type { Request } from "express";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
 import { AuthService } from "../../../infrastructure/auth/auth.service";
+import { RateLimitService } from "../../../infrastructure/redis/rate-limit.service";
 import type { UserAuthContext } from "./auth-context";
 import { Public } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
@@ -30,15 +32,23 @@ const acceptInviteSchema = z.object({
   password: z.string().min(8),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
 type LoginBody = z.infer<typeof loginSchema>;
 type RefreshBody = z.infer<typeof refreshSchema>;
 type ChangePasswordBody = z.infer<typeof changePasswordSchema>;
 type AcceptInviteBody = z.infer<typeof acceptInviteSchema>;
+type ForgotPasswordBody = z.infer<typeof forgotPasswordSchema>;
 
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly rateLimit: RateLimitService,
+  ) {}
 
   @Public()
   @Post("login")
@@ -71,6 +81,28 @@ export class AuthController {
       refresh_token: result.refreshToken,
       expires_in: result.expiresIn,
       token_type: "Bearer",
+    };
+  }
+
+  @Public()
+  @Post("forgot-password")
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      "Request password reset email (always 200; rate-limited; S17-SEC stub)",
+  })
+  async forgotPassword(
+    @Body(new ZodValidationPipe(forgotPasswordSchema)) body: ForgotPasswordBody,
+    @Req() req: Request,
+  ) {
+    const email = body.email.trim().toLowerCase();
+    const ip = req.ip ?? "unknown";
+    await this.rateLimit.consumeForgot(`${email}:${ip}`);
+    // Intentionally no user lookup / email send yet (anti-enumeration).
+    return {
+      status: "ok" as const,
+      message:
+        "If an account exists for that email, password reset instructions were sent.",
     };
   }
 

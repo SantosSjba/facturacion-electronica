@@ -24,6 +24,12 @@ export const envSchema = z.object({
   JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900),
   JWT_REFRESH_TTL_SEC: z.coerce.number().int().positive().default(604_800),
   RATE_LIMIT_RPM_DEFAULT: z.coerce.number().int().positive().default(120),
+  /** Login attempts per email per minute (S17-SEC). */
+  RATE_LIMIT_LOGIN_RPM: z.coerce.number().int().positive().default(10),
+  /** Public signup attempts per email+ip per minute (S17-SEC). */
+  RATE_LIMIT_SIGNUP_RPM: z.coerce.number().int().positive().default(5),
+  /** Forgot-password attempts per email+ip per minute (S17-SEC). */
+  RATE_LIMIT_FORGOT_RPM: z.coerce.number().int().positive().default(3),
   MINIO_ENDPOINT: z.string().url().default("http://localhost:9000"),
   MINIO_ACCESS_KEY: z.string().min(1).default("factosys"),
   MINIO_SECRET_KEY: z.string().min(1).default("factosysdev"),

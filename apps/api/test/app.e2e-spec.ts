@@ -20,6 +20,9 @@ describe("API e2e", () => {
     process.env["JWT_ACCESS_SECRET"] =
       process.env["JWT_ACCESS_SECRET"] ?? "test-jwt-access-secret-32bytes!!";
     process.env["RATE_LIMIT_RPM_DEFAULT"] = "5000";
+    process.env["RATE_LIMIT_LOGIN_RPM"] = "5000";
+    process.env["RATE_LIMIT_SIGNUP_RPM"] = "5000";
+    process.env["RATE_LIMIT_FORGOT_RPM"] = "5000";
     process.env["CREDENTIALS_MASTER_KEY"] =
       process.env["CREDENTIALS_MASTER_KEY"] ??
       Buffer.alloc(32, 7).toString("base64");
@@ -3022,6 +3025,402 @@ describe("API e2e", () => {
       })
       .expect(204);
   }, 45_000);
+
+  it("S17-SEC: forgot-password always 200 (no leak)", async () => {
+    const ok = await request(server)
+      .post("/auth/forgot-password")
+      .send({ email: "nobody-exists@example.com" })
+      .expect(200);
+    expect(ok.body).toMatchObject({ status: "ok" });
+    expect(String(ok.body.message)).toMatch(/if an account exists/i);
+  });
+
+  it(
+    "S17-SEC cross-tenant fail-closed: foreign resources 404; platform routes 403",
+    async () => {
+      const platformLogin = await request(server)
+        .post("/auth/login")
+        .send({
+          email: "platform@factosys.local",
+          password: "PlatformAdmin!2026",
+          organization_slug: "factosys-platform",
+        })
+        .expect(200);
+      const platformToken = platformLogin.body.access_token as string;
+
+      const ruc = makeValidUniqueRuc(Date.now() + 17);
+      const email = `sec-xt-${Date.now()}@example.com`;
+      const created = await request(server)
+        .post("/saas/public/signup-requests")
+        .send({
+          company_name: "E2E Sec Cross Tenant SAC",
+          ruc,
+          contact_name: "Sec XT",
+          contact_email: email,
+          plan_code: "starter",
+          accept_privacy: true,
+        })
+        .expect(201);
+
+      await request(server)
+        .patch(`/saas/signup-requests/${created.body.id as string}`)
+        .set("Authorization", `Bearer ${platformToken}`)
+        .send({ status: "under_review" })
+        .expect(200);
+
+      const approved = await request(server)
+        .patch(`/saas/signup-requests/${created.body.id as string}`)
+        .set("Authorization", `Bearer ${platformToken}`)
+        .send({ status: "approved" })
+        .expect(200);
+      const orgBId = approved.body.organization_id as string;
+
+      const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+      const { notificationDeliveries } = await import("@factosys/db");
+      const { and, eq } = await import("drizzle-orm");
+      const db = app.get(DB);
+
+      let inviteToken: string | undefined;
+      for (let i = 0; i < 40; i++) {
+        const inviteRows = await db
+          .select()
+          .from(notificationDeliveries)
+          .where(
+            and(
+              eq(notificationDeliveries.templateCode, "invite.owner"),
+              eq(notificationDeliveries.toEmail, email),
+            ),
+          )
+          .limit(1);
+        const row = inviteRows[0];
+        if (row?.status === "success") {
+          inviteToken = (row.payload as { invite_token?: string } | null)
+            ?.invite_token;
+          break;
+        }
+        if (row?.status === "failed") {
+          throw new Error(`invite.owner failed: ${String(row.lastError)}`);
+        }
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(inviteToken).toBeTruthy();
+
+      const password = "SecCrossTenant!2026";
+      await request(server)
+        .post("/auth/accept-invite")
+        .send({ token: inviteToken, password })
+        .expect(200);
+
+      const loginB = await request(server)
+        .post("/auth/login")
+        .send({ email, password, organization_id: orgBId })
+        .expect(200);
+      const tokenB = loginB.body.access_token as string;
+
+      const companyB = await request(server)
+        .post("/companies")
+        .set("Authorization", `Bearer ${tokenB}`)
+        .send({
+          ruc,
+          legal_name: "E2E Sec Cross Tenant SAC",
+          environment: "sandbox",
+        })
+        .expect(201);
+      const companyBId = companyB.body.id as string;
+
+      const userB = await request(server)
+        .post("/organizations/me/users")
+        .set("Authorization", `Bearer ${tokenB}`)
+        .send({
+          email: `viewer-b-${Date.now()}@example.com`,
+          name: "Viewer B",
+          password: "ViewerBPass1!",
+          roles: ["viewer"],
+        })
+        .expect(201);
+      const userBId = userB.body.id as string;
+
+      const keyB = await request(server)
+        .post("/organizations/me/api-keys")
+        .set("Authorization", `Bearer ${tokenB}`)
+        .send({
+          name: "sec-xt-key",
+          scopes: ["documents:read"],
+        })
+        .expect(201);
+      const keyBId = keyB.body.id as string;
+
+      // Org A (demo) must not see Org B resources (fail-closed 404).
+      await request(server)
+        .get(`/companies/${companyBId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404);
+
+      await request(server)
+        .put(`/organizations/me/users/${userBId}/roles`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ roles: ["viewer"] })
+        .expect(404);
+
+      await request(server)
+        .delete(`/organizations/me/api-keys/${keyBId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404);
+
+      // Document id from another tenant → 404 via Org A API key (create key here;
+      // filtered e2e runs may skip the suite-level key bootstrap).
+      const keyA = await request(server)
+        .post("/organizations/me/api-keys")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          name: `sec-xt-a-${Date.now()}`,
+          scopes: ["documents:read"],
+        })
+        .expect(201);
+      const foreignDocId = "00000000-0000-4000-8000-00000000d0c1";
+      await request(server)
+        .get(`/v1/documents/${foreignDocId}`)
+        .set("Authorization", `Bearer ${keyA.body.secret}`)
+        .expect(404);
+
+      // Platform-only SaaS routes (FE-471/472/473).
+      await request(server)
+        .get("/saas/signup-requests")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(403);
+      await request(server)
+        .get("/saas/notifications")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(403);
+      await request(server)
+        .get("/saas/organizations")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(403);
+
+      // Foreign in-app notification id → 404.
+      await request(server)
+        .post(
+          `/organizations/me/notifications/00000000-0000-4000-8000-00000000f001/read`,
+        )
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(404);
+    },
+    60_000,
+  );
+
+  it("S17-SEC impersonate: platform:admin + audit; platform_ops 403", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const orgs = await request(server)
+      .get("/saas/organizations")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const demo = (
+      orgs.body.items as Array<{ id: string; slug: string | null }>
+    ).find((o) => o.slug === "demo");
+    expect(demo).toBeTruthy();
+
+    await request(server)
+      .post("/saas/platform/impersonate")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        organization_id: demo!.id,
+        reason: "should fail for org JWT",
+      })
+      .expect(403);
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const {
+      users,
+      userRoles,
+      roles,
+      organizations,
+      newId,
+    } = await import("@factosys/db");
+    const { eq } = await import("drizzle-orm");
+    const argon2 = await import("argon2");
+    const db = app.get(DB);
+
+    const platformOrg = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, "factosys-platform"))
+      .limit(1);
+    const platformOrgId = platformOrg[0]!.id;
+
+    const opsEmail = `platform-ops-${Date.now()}@factosys.local`;
+    const opsPassword = "PlatformOps!2026";
+    const opsId = newId();
+    const passwordHash = await argon2.hash(opsPassword, {
+      type: argon2.argon2id,
+    });
+    await db.insert(users).values({
+      id: opsId,
+      organizationId: platformOrgId,
+      email: opsEmail,
+      name: "Platform Ops E2E",
+      passwordHash,
+      status: "active",
+    });
+    const opsRole = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.code, "platform_ops"))
+      .limit(1);
+    await db.insert(userRoles).values({
+      userId: opsId,
+      roleId: opsRole[0]!.id,
+    });
+
+    const opsLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: opsEmail,
+        password: opsPassword,
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    await request(server)
+      .post("/saas/platform/impersonate")
+      .set("Authorization", `Bearer ${opsLogin.body.access_token}`)
+      .send({
+        organization_id: demo!.id,
+        reason: "ops should not impersonate",
+        ttl_minutes: 10,
+      })
+      .expect(403);
+
+    const reason = "Investigar incidencia de facturación e2e";
+    const imp = await request(server)
+      .post("/saas/platform/impersonate")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        organization_id: demo!.id,
+        reason,
+        ttl_minutes: 15,
+      })
+      .expect(200);
+
+    expect(imp.body.access_token).toBeTruthy();
+    expect(imp.body.expires_in).toBe(15 * 60);
+    expect(imp.body.organization_id).toBe(demo!.id);
+    expect(imp.body.reason).toBe(reason);
+    expect(imp.body.refresh_token).toBeUndefined();
+
+    const me = await request(server)
+      .get("/auth/me")
+      .set("Authorization", `Bearer ${imp.body.access_token}`)
+      .expect(200);
+    expect(me.body.email).toBe("platform@factosys.local");
+
+    const companies = await request(server)
+      .get("/companies")
+      .set("Authorization", `Bearer ${imp.body.access_token}`)
+      .expect(200);
+    expect(Array.isArray(companies.body)).toBe(true);
+
+    const audit = await request(server)
+      .get("/saas/platform/audit-events")
+      .query({ action: "support.impersonation.started", limit: 20 })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const hit = (
+      audit.body.items as Array<Record<string, unknown>>
+    ).find(
+      (e) =>
+        e.action === "support.impersonation.started" &&
+        e.resource_id === demo!.id,
+    );
+    expect(hit).toBeTruthy();
+    expect(hit?.actor_type).toBe("support");
+    expect((hit?.data as { reason?: string } | undefined)?.reason).toBe(reason);
+  }, 45_000);
+
+  it("S17-SEC rate limit abuse: login/signup/forgot → 429 + Retry-After", async () => {
+    const { REDIS } = await import("../src/infrastructure/redis/redis.tokens");
+    const redis = app.get(REDIS) as {
+      set: (k: string, v: string, ...args: unknown[]) => Promise<unknown>;
+    };
+
+    // Pre-fill fixed windows to the configured high RPM so N+1 yields 429
+    // without lowering env limits for the rest of the suite (ConfigModule cache).
+    const loginEmail = `abuse-login-${Date.now()}@example.com`;
+    await redis.set(`rl:login:${loginEmail}`, "5000", "EX", 60);
+    const loginDenied = await request(server)
+      .post("/auth/login")
+      .send({
+        email: loginEmail,
+        password: "WrongPass!999",
+        organization_slug: "demo",
+      });
+    expect(loginDenied.status).toBe(429);
+    expect(loginDenied.body.code).toBe("FACTOSYS_RATE_LIMITED");
+    const loginRetry = Number(loginDenied.headers["retry-after"]);
+    expect(Number.isFinite(loginRetry)).toBe(true);
+    expect(loginRetry).toBeGreaterThan(0);
+    expect(loginRetry).toBeLessThanOrEqual(60);
+
+    const signupEmail = `abuse-signup-${Date.now()}@example.com`;
+    // Signup key is email:ip — supertest typically sees ::ffff:127.0.0.1 or similar.
+    const signupResProbe = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "Abuse Probe",
+        ruc: makeValidUniqueRuc(Date.now() + 3),
+        contact_name: "Abuse",
+        contact_email: signupEmail,
+        plan_code: "starter",
+        accept_privacy: true,
+      });
+    // First request succeeds and creates rl:signup:* — discover key via redis keys.
+    expect([201, 429]).toContain(signupResProbe.status);
+    const keys: string[] = await (
+      redis as { keys: (p: string) => Promise<string[]> }
+    ).keys(`rl:signup:${signupEmail}:*`);
+    expect(keys.length).toBeGreaterThan(0);
+    await redis.set(keys[0]!, "5000", "EX", 60);
+    const signupDenied = await request(server)
+      .post("/saas/public/signup-requests")
+      .send({
+        company_name: "Abuse Signup Over",
+        ruc: makeValidUniqueRuc(Date.now() + 99),
+        contact_name: "Abuse",
+        contact_email: signupEmail,
+        plan_code: "starter",
+        accept_privacy: true,
+      });
+    expect(signupDenied.status).toBe(429);
+    expect(signupDenied.body.code).toBe("FACTOSYS_RATE_LIMITED");
+    const signupRetry = Number(signupDenied.headers["retry-after"]);
+    expect(Number.isFinite(signupRetry)).toBe(true);
+    expect(signupRetry).toBeGreaterThan(0);
+
+    const forgotEmail = `abuse-forgot-${Date.now()}@example.com`;
+    const forgotProbe = await request(server)
+      .post("/auth/forgot-password")
+      .send({ email: forgotEmail });
+    expect(forgotProbe.status).toBe(200);
+    const forgotKeys: string[] = await (
+      redis as { keys: (p: string) => Promise<string[]> }
+    ).keys(`rl:forgot:${forgotEmail}:*`);
+    expect(forgotKeys.length).toBeGreaterThan(0);
+    await redis.set(forgotKeys[0]!, "5000", "EX", 60);
+    const forgotDenied = await request(server)
+      .post("/auth/forgot-password")
+      .send({ email: forgotEmail });
+    expect(forgotDenied.status).toBe(429);
+    const forgotRetry = Number(forgotDenied.headers["retry-after"]);
+    expect(Number.isFinite(forgotRetry)).toBe(true);
+    expect(forgotRetry).toBeGreaterThan(0);
+  });
 });
 
 /** Unique RUC with valid módulo-11 checksum (companies create requires it). */

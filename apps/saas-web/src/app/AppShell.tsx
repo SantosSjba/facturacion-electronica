@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 
+import { ImpersonationBanner } from "@/modules/app/components/ImpersonationBanner";
 import { LegalReacceptModal } from "@/modules/app/components/LegalReacceptModal";
 import { cn } from "@/shared/ui/utils";
 
@@ -22,6 +23,7 @@ function LayoutContent() {
           isMobileOpen && "ms-0",
         )}
       >
+        <ImpersonationBanner />
         <AppHeader />
         <main className="mx-auto max-w-(--breakpoint-2xl) p-4 md:p-6">
           <Outlet />

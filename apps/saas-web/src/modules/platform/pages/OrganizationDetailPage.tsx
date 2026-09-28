@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { ApiError } from "@/shared/api/errors";
+import { useSession } from "@/shared/auth/session-context";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { FieldError } from "@/shared/ui/FieldError";
 import { LoadingState } from "@/shared/ui/LoadingState";
@@ -11,6 +12,7 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { Badge } from "@/shared/ui/components/badge";
 import { Button } from "@/shared/ui/components/button";
 import { Card, CardTitle } from "@/shared/ui/components/card";
+import { Input } from "@/shared/ui/components/input";
 import { Label } from "@/shared/ui/components/label";
 import { Select } from "@/shared/ui/components/select";
 import { TextLink } from "@/shared/ui/components/text-link";
@@ -18,6 +20,7 @@ import { TextLink } from "@/shared/ui/components/text-link";
 import {
   assignOrgPlan,
   fetchOrganization,
+  impersonateOrganization,
   patchOrganization,
 } from "../api/orgs";
 import { fetchAdminPlans } from "../api/plans";
@@ -25,9 +28,13 @@ import { orgStatusBadge } from "../lib/status-badges";
 
 export function OrganizationDetailPage() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const { hasPermission, adoptImpersonationToken } = useSession();
+  const canImpersonate = hasPermission("platform:admin");
   const qc = useQueryClient();
   const [planId, setPlanId] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [impReason, setImpReason] = useState("");
 
   const query = useQuery({
     queryKey: ["organization", id],
@@ -81,6 +88,29 @@ export function OrganizationDetailPage() {
           : err instanceof Error
             ? err.message
             : "Error al asignar plan",
+      );
+    },
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: () =>
+      impersonateOrganization({
+        organization_id: id,
+        reason: impReason.trim(),
+        ttl_minutes: 15,
+      }),
+    onSuccess: (res) => {
+      toast.success(`Suplantando ${res.organization_name}`);
+      adoptImpersonationToken(res.access_token);
+      navigate("/app", { replace: true });
+    },
+    onError: (err) => {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "No se pudo suplantar",
       );
     },
   });
@@ -203,6 +233,37 @@ export function OrganizationDetailPage() {
               </Button>
             </div>
           </Card>
+
+          {canImpersonate && !org.is_platform && org.status === "active" ? (
+            <Card>
+              <CardTitle>Suplantar (soporte)</CardTitle>
+              <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+                Emite un access token corto con permisos owner del tenant.
+                Requiere motivo (auditado).
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <Label htmlFor="imp-reason">Motivo</Label>
+                  <Input
+                    id="imp-reason"
+                    value={impReason}
+                    onChange={(e) => setImpReason(e.target.value)}
+                    placeholder="Investigar incidencia de facturación…"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={
+                    impersonateMutation.isPending || impReason.trim().length < 3
+                  }
+                  onClick={() => impersonateMutation.mutate()}
+                >
+                  Suplantar
+                </Button>
+              </div>
+            </Card>
+          ) : null}
         </div>
       ) : null}
     </div>

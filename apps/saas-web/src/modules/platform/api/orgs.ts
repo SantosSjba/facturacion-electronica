@@ -46,6 +46,20 @@ export function patchOrganization(
   });
 }
 
+export function impersonateOrganization(body: {
+  organization_id: string;
+  reason: string;
+  ttl_minutes?: number;
+}): Promise<{
+  access_token: string;
+  expires_in: number;
+  organization_id: string;
+  organization_name: string;
+  reason: string;
+}> {
+  return apiRequest("/saas/platform/impersonate", { method: "POST", body });
+}
+
 export function assignOrgPlan(body: {
   organization_id: string;
   plan_id: string;

@@ -18,6 +18,8 @@ export interface AppErrorParams {
   sunatCode?: string;
   sunatMessage?: string;
   rulesetVersion?: string;
+  /** Seconds for Retry-After header (rate limits). */
+  retryAfterSec?: number;
   cause?: unknown;
 }
 
@@ -33,6 +35,7 @@ export class AppError extends Error {
   readonly sunatCode?: string;
   readonly sunatMessage?: string;
   readonly rulesetVersion?: string;
+  readonly retryAfterSec?: number;
 
   constructor(params: AppErrorParams) {
     super(params.message, params.cause !== undefined ? { cause: params.cause } : undefined);
@@ -45,6 +48,7 @@ export class AppError extends Error {
     this.sunatCode = params.sunatCode;
     this.sunatMessage = params.sunatMessage;
     this.rulesetVersion = params.rulesetVersion;
+    this.retryAfterSec = params.retryAfterSec;
   }
 
   static validation(

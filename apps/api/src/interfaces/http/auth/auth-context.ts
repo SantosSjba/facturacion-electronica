@@ -18,6 +18,11 @@ export interface UserAuthContext {
   roles: string[];
   /** `platform` when the user holds any `platform_*` role; otherwise `org`. */
   ctx: AuthCtx;
+  /** Present when access token is a support impersonation session (S17-SEC). */
+  impersonation?: {
+    reason: string;
+    actorUserId: string;
+  };
 }
 
 export type AuthContext = ApiKeyAuthContext | UserAuthContext;

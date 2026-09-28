@@ -41,6 +41,11 @@ export interface AccessTokenPayload {
   roles: string[];
   ctx: AuthCtx;
   typ: "access";
+  /** Support impersonation claim (S17-SEC). */
+  imp?: {
+    reason: string;
+    actor_user_id: string;
+  };
 }
 
 export interface LoginOrganizationOption {
@@ -389,6 +394,100 @@ export class AuthService {
 
   private resolveAuthCtx(roleCodes: string[]): AuthCtx {
     return roleCodes.some(isPlatformRole) ? "platform" : "org";
+  }
+
+  /**
+   * Issue a short-lived org-scoped access token for platform support (S17-SEC).
+   * No refresh token — session ends when access expires.
+   */
+  async impersonate(input: {
+    actorUserId: string;
+    targetOrganizationId: string;
+    reason: string;
+    ttlMinutes?: number;
+  }): Promise<{
+    access_token: string;
+    expires_in: number;
+    organization_id: string;
+    organization_name: string;
+    reason: string;
+  }> {
+    const actor = await this.buildUserContext(input.actorUserId);
+    if (actor.ctx !== "platform" || !actor.permissions.includes("platform:admin")) {
+      throw AppError.forbidden("platform:admin required to impersonate");
+    }
+
+    const reason = input.reason.trim();
+    if (reason.length < 3) {
+      throw AppError.validation("reason must be at least 3 characters", [
+        { path: "reason", issue: "Min length 3" },
+      ]);
+    }
+
+    const ttlMinutes = Math.min(
+      Math.max(input.ttlMinutes ?? 15, 1),
+      60,
+    );
+
+    const orgRows = await this.db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, input.targetOrganizationId))
+      .limit(1);
+    const org = orgRows[0];
+    if (!org) {
+      throw AppError.notFound("Organization not found");
+    }
+    if (org.slug === "factosys-platform") {
+      throw AppError.conflict("Cannot impersonate the platform organization");
+    }
+    if (org.status !== "active") {
+      throw AppError.conflict("Cannot impersonate a suspended organization");
+    }
+
+    const ownerPerms = await this.loadRolePermissions("owner");
+    const expiresIn = ttlMinutes * 60;
+    const payload: AccessTokenPayload = {
+      sub: actor.userId,
+      org: org.id,
+      email: actor.email,
+      perms: ownerPerms,
+      roles: ["support_impersonation"],
+      ctx: "org",
+      typ: "access",
+      imp: {
+        reason,
+        actor_user_id: actor.userId,
+      },
+    };
+    const accessToken = await this.jwt.signAsync(payload, {
+      secret: this.config.get("JWT_ACCESS_SECRET", { infer: true }),
+      expiresIn: `${expiresIn}s`,
+    });
+
+    return {
+      access_token: accessToken,
+      expires_in: expiresIn,
+      organization_id: org.id,
+      organization_name: org.name,
+      reason,
+    };
+  }
+
+  private async loadRolePermissions(roleCode: string): Promise<string[]> {
+    const roleRows = await this.db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.code, roleCode))
+      .limit(1);
+    const role = roleRows[0];
+    if (!role) return [];
+    const permRows = await this.db
+      .select({ code: permissions.code })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+      .where(eq(rolePermissions.roleId, role.id));
+    return [...new Set(permRows.map((p) => p.code))];
   }
 
   private async issueTokens(input: {

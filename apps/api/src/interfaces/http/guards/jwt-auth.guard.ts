@@ -73,6 +73,30 @@ export class JwtAuthGuard implements CanActivate {
       throw AppError.unauthorized("Invalid access token");
     }
 
+    if (payload.imp) {
+      const actor = await this.authService.buildUserContext(payload.sub);
+      if (
+        actor.ctx !== "platform" ||
+        !actor.permissions.includes("platform:admin")
+      ) {
+        throw AppError.unauthorized("Impersonation no longer authorized");
+      }
+      req[AUTH_CONTEXT_KEY] = {
+        kind: "user",
+        organizationId: payload.org,
+        userId: payload.sub,
+        email: payload.email,
+        permissions: payload.perms ?? [],
+        roles: payload.roles ?? ["support_impersonation"],
+        ctx: "org",
+        impersonation: {
+          reason: payload.imp.reason,
+          actorUserId: payload.imp.actor_user_id || payload.sub,
+        },
+      };
+      return true;
+    }
+
     const auth = await this.authService.buildUserContext(payload.sub);
     if (auth.organizationId !== payload.org) {
       throw AppError.unauthorized("Invalid access token");

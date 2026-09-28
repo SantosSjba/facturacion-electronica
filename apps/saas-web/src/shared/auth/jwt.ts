@@ -8,6 +8,10 @@ export interface AccessTokenClaims {
   typ?: string;
   exp?: number;
   iat?: number;
+  imp?: {
+    reason: string;
+    actor_user_id: string;
+  };
 }
 
 function base64UrlDecode(input: string): string {
