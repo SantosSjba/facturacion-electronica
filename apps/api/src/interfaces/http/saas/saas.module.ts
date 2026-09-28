@@ -16,11 +16,14 @@ import {
   type QueueJobData,
 } from "../../../infrastructure/queues/queue.tokens";
 import { OrgPlansService } from "../../../infrastructure/saas/org-plans.service";
+import { OrgsService } from "../../../infrastructure/saas/orgs.service";
 import { PlansService } from "../../../infrastructure/saas/plans.service";
+import { PlatformStatsService } from "../../../infrastructure/saas/platform-stats.service";
 import { SignupRequestsService } from "../../../infrastructure/saas/signup-requests.service";
 import { LegalController } from "./legal.controller";
 import { NotificationsController } from "./notifications.controller";
 import { OrgPlansController } from "./org-plans.controller";
+import { OrgsController } from "./orgs.controller";
 import { PlansController } from "./plans.controller";
 import { PlatformAdminController } from "./platform-admin.controller";
 import { SignupPublicController } from "./signup-public.controller";
@@ -30,6 +33,7 @@ import { SignupRequestsController } from "./signup-requests.controller";
   controllers: [
     PlansController,
     OrgPlansController,
+    OrgsController,
     SignupRequestsController,
     SignupPublicController,
     LegalController,
@@ -41,6 +45,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
     SignupRequestsService,
     PlansService,
     OrgPlansService,
+    OrgsService,
+    PlatformStatsService,
     EmailService,
     NotificationDispatchService,
     NotificationDeliveryProcessor,
@@ -51,6 +57,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
     SignupRequestsService,
     PlansService,
     OrgPlansService,
+    OrgsService,
+    PlatformStatsService,
     NotificationDispatchService,
   ],
 })

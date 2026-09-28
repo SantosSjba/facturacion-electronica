@@ -2082,6 +2082,74 @@ describe("API e2e", () => {
     expect(patched.body.body_md).toContain("Updated body");
   });
 
+  it("S14-PLAT API: stats, orgs suspend, platform plans; org JWT 403", async () => {
+    await request(server).get("/saas/platform/stats").expect(401);
+    await request(server)
+      .get("/saas/platform/stats")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+    await request(server)
+      .get("/saas/organizations")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(403);
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const stats = await request(server)
+      .get("/saas/platform/stats")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(stats.body).toMatchObject({
+      signup_requests: expect.objectContaining({ total: expect.any(Number) }),
+      organizations: expect.objectContaining({ total: expect.any(Number) }),
+      plans: expect.objectContaining({
+        active: expect.any(Number),
+        retired: expect.any(Number),
+      }),
+    });
+
+    const adminPlans = await request(server)
+      .get("/saas/platform/plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(
+      (adminPlans.body.items as Array<{ code: string }>).some(
+        (p) => p.code === "starter",
+      ),
+    ).toBe(true);
+
+    const orgs = await request(server)
+      .get("/saas/organizations")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const demo = (
+      orgs.body.items as Array<{ id: string; slug: string | null }>
+    ).find((o) => o.slug === "demo");
+    expect(demo).toBeTruthy();
+
+    const suspended = await request(server)
+      .patch(`/saas/organizations/${demo!.id}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "suspended" })
+      .expect(200);
+    expect(suspended.body.status).toBe("suspended");
+
+    const reactivated = await request(server)
+      .patch(`/saas/organizations/${demo!.id}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ status: "active" })
+      .expect(200);
+    expect(reactivated.body.status).toBe("active");
+  });
+
   it("refresh rotation: new token works; reused old refresh → 401", async () => {
     const login = await request(server)
       .post("/auth/login")

@@ -1,76 +1,55 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
-import { AuthLayout, LoginPage } from "./layouts/AuthLayout";
-import { PanelShell } from "./layouts/PanelShell";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { LoginPage } from "@/modules/auth/pages/LoginPage";
+import { DashboardPage } from "@/modules/platform/pages/DashboardPage";
+import { OrganizationDetailPage } from "@/modules/platform/pages/OrganizationDetailPage";
+import { OrganizationsListPage } from "@/modules/platform/pages/OrganizationsListPage";
+import { PlansListPage } from "@/modules/platform/pages/PlansListPage";
+import { SignupRequestDetailPage } from "@/modules/platform/pages/SignupRequestDetailPage";
+import { SignupRequestsListPage } from "@/modules/platform/pages/SignupRequestsListPage";
+
+import { AppShell } from "./AppShell";
+import { RedirectIfAuthed, RequirePlatform } from "./guards";
 
 export function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/app" replace />} />
-
-      <Route path="/auth" element={<AuthLayout />}>
-        <Route index element={<Navigate to="login" replace />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route
-          path="*"
-          element={
-            <PlaceholderPage
-              title="Auth"
-              description="Ruta /auth/* placeholder."
-            />
-          }
-        />
-      </Route>
+      <Route path="/" element={<Navigate to="/platform" replace />} />
 
       <Route
-        path="/platform"
-        element={<PanelShell area="platform" title="Platform" />}
-      >
-        <Route
-          index
-          element={
-            <PlaceholderPage
-              title="Platform"
-              description="Panel FACTOSYS (ops) — /platform/*"
-            />
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <PlaceholderPage
-              title="Platform"
-              description="Subruta /platform/* vacía."
-            />
-          }
-        />
-      </Route>
-
-      <Route path="/app" element={<PanelShell area="app" title="App" />}>
-        <Route
-          index
-          element={
-            <PlaceholderPage
-              title="App"
-              description="Panel tenant — /app/*"
-            />
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <PlaceholderPage title="App" description="Subruta /app/* vacía." />
-          }
-        />
-      </Route>
-
-      <Route
-        path="*"
+        path="/auth/login"
         element={
-          <PlaceholderPage title="404" description="Ruta no encontrada." />
+          <RedirectIfAuthed>
+            <LoginPage />
+          </RedirectIfAuthed>
         }
       />
+      <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+
+      <Route element={<RequirePlatform />}>
+        <Route element={<AppShell />}>
+          <Route path="/platform" element={<DashboardPage />} />
+          <Route
+            path="/platform/signup-requests"
+            element={<SignupRequestsListPage />}
+          />
+          <Route
+            path="/platform/signup-requests/:id"
+            element={<SignupRequestDetailPage />}
+          />
+          <Route
+            path="/platform/organizations"
+            element={<OrganizationsListPage />}
+          />
+          <Route
+            path="/platform/organizations/:id"
+            element={<OrganizationDetailPage />}
+          />
+          <Route path="/platform/plans" element={<PlansListPage />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/platform" replace />} />
     </Routes>
   );
 }

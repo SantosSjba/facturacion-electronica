@@ -49,6 +49,15 @@ export class PlansService {
     return { items: rows.map((r) => this.toPublic(r)) };
   }
 
+  /** Platform admin catalog: active + retired. */
+  async listAll(): Promise<{ items: PlanPublic[] }> {
+    const rows = await this.db
+      .select()
+      .from(plans)
+      .orderBy(asc(plans.priceMonthlyCents), asc(plans.code));
+    return { items: rows.map((r) => this.toPublic(r)) };
+  }
+
   async getPublic(id: string): Promise<PlanPublic> {
     const row = await this.findById(id);
     if (!row.isActive) {
