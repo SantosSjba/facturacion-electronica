@@ -15,9 +15,12 @@ import {
   BULLMQ_CONNECTION,
   type QueueJobData,
 } from "../../../infrastructure/queues/queue.tokens";
+import { OrgPlansService } from "../../../infrastructure/saas/org-plans.service";
+import { PlansService } from "../../../infrastructure/saas/plans.service";
 import { SignupRequestsService } from "../../../infrastructure/saas/signup-requests.service";
 import { LegalController } from "./legal.controller";
 import { NotificationsController } from "./notifications.controller";
+import { OrgPlansController } from "./org-plans.controller";
 import { PlansController } from "./plans.controller";
 import { PlatformAdminController } from "./platform-admin.controller";
 import { SignupPublicController } from "./signup-public.controller";
@@ -26,6 +29,7 @@ import { SignupRequestsController } from "./signup-requests.controller";
 @Module({
   controllers: [
     PlansController,
+    OrgPlansController,
     SignupRequestsController,
     SignupPublicController,
     LegalController,
@@ -35,6 +39,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
   providers: [
     LegalDocumentsService,
     SignupRequestsService,
+    PlansService,
+    OrgPlansService,
     EmailService,
     NotificationDispatchService,
     NotificationDeliveryProcessor,
@@ -43,6 +49,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
   exports: [
     LegalDocumentsService,
     SignupRequestsService,
+    PlansService,
+    OrgPlansService,
     NotificationDispatchService,
   ],
 })

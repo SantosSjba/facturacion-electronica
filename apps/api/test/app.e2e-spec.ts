@@ -1654,10 +1654,149 @@ describe("API e2e", () => {
     expect((hit?.data as { secret?: string }).secret).toBe("[REDACTED]");
   });
 
-  it("SaaS stubs: GET /saas/plans returns empty items", async () => {
-    const plans = await request(server).get("/saas/plans").expect(200);
-    expect(plans.body).toEqual({ items: [] });
-  });
+  it("S14-PLAN: public catalog, platform CRUD/retire, assign + audit, org 403", async () => {
+    const catalog = await request(server).get("/saas/plans").expect(200);
+    const codes = (catalog.body.items as Array<{ code: string }>).map(
+      (p) => p.code,
+    );
+    expect(codes).toEqual(
+      expect.arrayContaining(["starter", "growth", "business"]),
+    );
+    const starter = (
+      catalog.body.items as Array<{ id: string; code: string; active: boolean }>
+    ).find((p) => p.code === "starter");
+    expect(starter?.active).toBe(true);
+
+    await request(server)
+      .post("/saas/plans")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        code: "org-forbidden",
+        name: "X",
+        price_monthly_cents: 100,
+        price_display: "S/ 1",
+        currency: "PEN",
+        max_companies: 1,
+        max_users: 1,
+        max_documents_per_month: 10,
+        max_api_keys: 1,
+      })
+      .expect(403);
+
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const unique = `e2e-${Date.now()}`;
+    const created = await request(server)
+      .post("/saas/plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        code: unique,
+        name: "E2E Plan",
+        description: "temp",
+        price_monthly_cents: 9900,
+        price_display: "S/ 99",
+        currency: "PEN",
+        max_companies: 2,
+        max_users: 4,
+        max_documents_per_month: 200,
+        max_api_keys: 2,
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      code: unique,
+      active: true,
+      max_companies: 2,
+      price_display: "S/ 99",
+    });
+
+    const patched = await request(server)
+      .patch(`/saas/plans/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({ name: "E2E Plan Patched", max_users: 8 })
+      .expect(200);
+    expect(patched.body.name).toBe("E2E Plan Patched");
+    expect(patched.body.max_users).toBe(8);
+
+    const retired = await request(server)
+      .delete(`/saas/plans/${created.body.id as string}`)
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(retired.body.active).toBe(false);
+
+    await request(server)
+      .get(`/saas/plans/${created.body.id as string}`)
+      .expect(404);
+
+    const orgId = JSON.parse(
+      Buffer.from(accessToken.split(".")[1]!, "base64url").toString("utf8"),
+    ).org as string;
+
+    await request(server)
+      .post("/saas/org-plans")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ organization_id: orgId, plan_id: starter!.id })
+      .expect(403);
+
+    const assigned = await request(server)
+      .post("/saas/org-plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        organization_id: orgId,
+        plan_id: starter!.id,
+        status: "active",
+      })
+      .expect(201);
+    expect(assigned.body).toMatchObject({
+      organization_id: orgId,
+      plan_id: starter!.id,
+      plan_code: "starter",
+      status: "active",
+    });
+
+    const listed = await request(server)
+      .get("/saas/org-plans")
+      .query({ organization_id: orgId })
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    expect(
+      (listed.body.items as Array<{ id: string }>).some(
+        (r) => r.id === assigned.body.id,
+      ),
+    ).toBe(true);
+
+    const eventKey = `plan.assigned:${assigned.body.id as string}`;
+    let notifOk = false;
+    for (let i = 0; i < 40; i++) {
+      const notifs = await request(server)
+        .get("/saas/notifications")
+        .query({ event_key: eventKey })
+        .set("Authorization", `Bearer ${platformToken}`)
+        .expect(200);
+      if ((notifs.body.items as unknown[]).length > 0) {
+        notifOk = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    expect(notifOk).toBe(true);
+
+    const audit = await request(server)
+      .get("/organizations/me/audit-events")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    const hit = (audit.body.items as Array<Record<string, unknown>>).find(
+      (e) => e.resource_id === assigned.body.id && e.action === "plan.assigned",
+    );
+    expect(hit).toBeTruthy();
+  }, 30_000);
 
   it("public signup: POST /saas/public/signup-requests → 201", async () => {
     const ruc = String(20000000000 + (Date.now() % 1000000000)).padStart(

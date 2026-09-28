@@ -69,11 +69,42 @@ export class NotificationDispatchService {
     });
   }
 
+  /** Ops email when a plan is assigned to an organization (S14-PLAN / FE-408). */
+  async planAssigned(input: {
+    orgPlanId: string;
+    organizationId: string;
+    organizationSlug: string;
+    organizationName: string;
+    planId: string;
+    planCode: string;
+    planName: string;
+    status: string;
+  }): Promise<void> {
+    const opsEmail = this.config.get("NOTIFICATIONS_OPS_EMAIL", {
+      infer: true,
+    });
+    await this.enqueueDelivery({
+      templateCode: "plan.assigned",
+      toEmail: opsEmail,
+      eventKey: `plan.assigned:${input.orgPlanId}`,
+      payload: {
+        organization_id: input.organizationId,
+        organization_slug: input.organizationSlug,
+        organization_name: input.organizationName,
+        plan_id: input.planId,
+        plan_code: input.planCode,
+        plan_name: input.planName,
+        status: input.status,
+        org_plan_id: input.orgPlanId,
+      },
+    });
+  }
+
   private async enqueueDelivery(input: {
     templateCode: string;
     toEmail: string;
     eventKey: string;
-    signupRequestId: string;
+    signupRequestId?: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
     const deliveryId = newId();
@@ -83,7 +114,7 @@ export class NotificationDispatchService {
         templateCode: input.templateCode,
         toEmail: input.toEmail,
         eventKey: input.eventKey,
-        signupRequestId: input.signupRequestId,
+        signupRequestId: input.signupRequestId ?? null,
         payload: input.payload,
         status: "pending",
         attemptCount: 0,

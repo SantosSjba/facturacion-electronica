@@ -9,6 +9,7 @@ import { catalogVersions } from "../schema/catalog-versions";
 import { legalDocuments } from "../schema/legal-documents";
 import { notificationTemplates } from "../schema/notification-templates";
 import { organizations } from "../schema/organizations";
+import { plans } from "../schema/plans";
 import { userRoles } from "../schema/user-roles";
 import { users } from "../schema/users";
 import { seedRbacMatrix } from "./rbac-matrix";
@@ -252,6 +253,7 @@ export async function seedDemo(db: Db): Promise<{
 
   await seedLegalDraftsEsPe(db);
   await seedSignupNotificationTemplates(db);
+  await seedSaasPlans(db);
 
   return {
     organizationId,
@@ -362,8 +364,9 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
 }
 
 /**
- * Idempotent signup.* email templates (S13-NOTIF / FE-393–394).
- * Placeholders: {{company_name}}, {{ruc}}, {{contact_name}}, {{contact_email}}.
+ * Idempotent signup.* + plan.assigned email templates (S13-NOTIF / S14-PLAN).
+ * Signup placeholders: {{company_name}}, {{ruc}}, {{contact_name}}, {{contact_email}}.
+ * Plan placeholders: {{organization_name}}, {{plan_name}}, {{plan_code}}, {{status}}.
  */
 async function seedSignupNotificationTemplates(db: Db): Promise<void> {
   const templates: Array<{
@@ -426,6 +429,18 @@ Si tienes dudas, responde a este mensaje o escribe a soporte.
 
 — Equipo Factosys`,
     },
+    {
+      code: "plan.assigned",
+      subject: "[Factosys] Plan asignado: {{plan_name}} → {{organization_name}}",
+      bodyMd: `Se asignó un plan a una organización.
+
+- Organización: {{organization_name}} ({{organization_slug}})
+- Plan: {{plan_name}} (\`{{plan_code}}\`)
+- Estado: {{status}}
+- Org plan id: {{org_plan_id}}
+
+— Equipo Factosys`,
+    },
   ];
 
   for (const tpl of templates) {
@@ -443,6 +458,80 @@ Si tienes dudas, responde a este mensaje o escribe a soporte.
       channel: "email",
       subject: tpl.subject,
       bodyMd: tpl.bodyMd,
+    });
+  }
+}
+
+/** Idempotent Starter / Growth / Business catalog (S14-PLAN / FE-409–410). */
+async function seedSaasPlans(db: Db): Promise<void> {
+  const catalog: Array<{
+    code: string;
+    name: string;
+    description: string;
+    priceMonthlyCents: number;
+    priceDisplay: string;
+    maxCompanies: number;
+    maxUsers: number;
+    maxDocumentsPerMonth: number;
+    maxApiKeys: number;
+  }> = [
+    {
+      code: "starter",
+      name: "Starter",
+      description: "Para empezar a emitir con una empresa y límites básicos.",
+      priceMonthlyCents: 4900,
+      priceDisplay: "S/ 49",
+      maxCompanies: 1,
+      maxUsers: 2,
+      maxDocumentsPerMonth: 100,
+      maxApiKeys: 1,
+    },
+    {
+      code: "growth",
+      name: "Growth",
+      description: "Más empresas, usuarios y volumen mensual.",
+      priceMonthlyCents: 14900,
+      priceDisplay: "S/ 149",
+      maxCompanies: 3,
+      maxUsers: 10,
+      maxDocumentsPerMonth: 1000,
+      maxApiKeys: 5,
+    },
+    {
+      code: "business",
+      name: "Business",
+      description: "Escalas operativas para equipos y alto volumen.",
+      priceMonthlyCents: 39900,
+      priceDisplay: "S/ 399",
+      maxCompanies: 10,
+      maxUsers: 50,
+      maxDocumentsPerMonth: 10000,
+      maxApiKeys: 20,
+    },
+  ];
+
+  for (const p of catalog) {
+    const existing = await db
+      .select({ id: plans.id })
+      .from(plans)
+      .where(eq(plans.code, p.code))
+      .limit(1);
+    if (existing[0]) {
+      continue;
+    }
+    await db.insert(plans).values({
+      id: uuidv7(),
+      code: p.code,
+      name: p.name,
+      description: p.description,
+      priceMonthlyCents: p.priceMonthlyCents,
+      priceDisplay: p.priceDisplay,
+      currency: "PEN",
+      isActive: true,
+      maxCompanies: p.maxCompanies,
+      maxUsers: p.maxUsers,
+      maxDocumentsPerMonth: p.maxDocumentsPerMonth,
+      maxApiKeys: p.maxApiKeys,
     });
   }
 }
