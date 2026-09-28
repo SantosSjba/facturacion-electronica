@@ -1,5 +1,7 @@
 import {
+  Bell,
   ChevronDown,
+  KeyRound,
   LogOut,
   Menu,
   Moon,
@@ -7,7 +9,10 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
+import { fetchNotifications } from "@/modules/app/api/notifications";
 import { useSession } from "@/shared/auth/session-context";
 import {
   Button,
@@ -21,7 +26,7 @@ import { cn } from "@/shared/ui/utils";
 import { useSidebar } from "../sidebar-context";
 
 export function AppHeader() {
-  const { user, logout } = useSession();
+  const { user, logout, isPlatform } = useSession();
   const { theme, toggleTheme } = useTheme();
   const { isMobileOpen, toggleMobileSidebar, setIsMobileOpen } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -29,6 +34,14 @@ export function AppHeader() {
   const closeUserMenu = useCallback(() => setMenuOpen(false), []);
   useClickOutside(userMenuRef, closeUserMenu, menuOpen);
   const initials = user?.email.slice(0, 2).toUpperCase() ?? "FS";
+
+  const notifQuery = useQuery({
+    queryKey: ["org-notifications"],
+    queryFn: fetchNotifications,
+    enabled: Boolean(user) && !isPlatform,
+    refetchInterval: 60_000,
+  });
+  const unread = notifQuery.data?.unread_count ?? 0;
 
   function toggleUserMenu() {
     setMenuOpen((open) => {
@@ -40,7 +53,6 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 flex w-full border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900">
       <div className="flex grow items-center justify-between px-4 py-3 sm:px-6 lg:py-4">
-        {/* Desktop uses sidebar "Contraer menú"; header toggle is mobile-only. */}
         <button
           type="button"
           className="flex size-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 lg:hidden dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5"
@@ -51,6 +63,26 @@ export function AppHeader() {
         </button>
 
         <div className="ms-auto flex items-center gap-2 2xsm:gap-3">
+          {!isPlatform ? (
+            <Link
+              to="/app/notifications"
+              className="relative flex size-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 lg:size-11 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+              aria-label={
+                unread > 0
+                  ? `Notificaciones (${unread} sin leer)`
+                  : "Notificaciones"
+              }
+              data-testid="notif-bell"
+            >
+              <Bell className="size-5" />
+              {unread > 0 ? (
+                <span className="absolute -end-0.5 -top-0.5 flex min-w-4.5 items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-semibold text-white">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -93,11 +125,24 @@ export function AppHeader() {
                     Sesión protegida
                   </span>
                 </div>
-                <div className="border-t border-gray-200 py-2 dark:border-gray-800">
-                  <span className="block px-3 py-2 text-theme-xs text-gray-500 dark:text-gray-400">
-                    Plataforma ops
-                  </span>
-                </div>
+                {!isPlatform ? (
+                  <div className="border-t border-gray-200 py-2 dark:border-gray-800">
+                    <Link
+                      to="/app/security"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-theme-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <KeyRound className="size-4" />
+                      Seguridad
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="border-t border-gray-200 py-2 dark:border-gray-800">
+                    <span className="block px-3 py-2 text-theme-xs text-gray-500 dark:text-gray-400">
+                      Plataforma ops
+                    </span>
+                  </div>
+                )}
                 <Button
                   type="button"
                   variant="ghost"

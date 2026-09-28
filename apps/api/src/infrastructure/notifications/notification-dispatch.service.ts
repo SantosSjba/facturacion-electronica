@@ -148,6 +148,75 @@ export class NotificationDispatchService {
     inviteToken: string;
     expiresAt: Date;
   }): Promise<void> {
+    await this.enqueueInviteEmail({
+      templateCode: "invite.owner",
+      ...input,
+    });
+  }
+
+  /** Member invite with set-password link (S15-APP / FE-434). */
+  async memberInvite(input: {
+    inviteId: string;
+    userId: string;
+    contactName: string;
+    contactEmail: string;
+    organizationName: string;
+    organizationSlug: string;
+    inviteToken: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.enqueueInviteEmail({
+      templateCode: "invite.member",
+      ...input,
+    });
+  }
+
+  /** Ops email when a tenant requests a plan change (S15-APP / FE-439). */
+  async planChangeRequested(input: {
+    requestId: string;
+    organizationId: string;
+    organizationSlug: string;
+    organizationName: string;
+    currentPlanCode: string | null;
+    currentPlanName: string | null;
+    requestedPlanCode: string;
+    requestedPlanName: string;
+    message: string | null;
+    requestedByEmail: string;
+  }): Promise<void> {
+    const opsEmail = this.config.get("NOTIFICATIONS_OPS_EMAIL", {
+      infer: true,
+    });
+    await this.enqueueDelivery({
+      templateCode: "plan.change_requested",
+      toEmail: opsEmail,
+      eventKey: `plan.change_requested:${input.requestId}`,
+      payload: {
+        request_id: input.requestId,
+        organization_id: input.organizationId,
+        organization_slug: input.organizationSlug,
+        organization_name: input.organizationName,
+        current_plan_code: input.currentPlanCode ?? "",
+        current_plan_name: input.currentPlanName ?? "",
+        requested_plan_code: input.requestedPlanCode,
+        requested_plan_name: input.requestedPlanName,
+        message: input.message ?? "",
+        requested_by_email: input.requestedByEmail,
+      },
+    });
+  }
+
+  private async enqueueInviteEmail(input: {
+    templateCode: "invite.owner" | "invite.member";
+    inviteId: string;
+    userId: string;
+    contactName: string;
+    contactEmail: string;
+    organizationName: string;
+    organizationSlug: string;
+    inviteToken: string;
+    expiresAt: Date;
+  }): Promise<void> {
     const saasWebUrl = this.config
       .get("SAAS_WEB_PUBLIC_URL", { infer: true })
       .replace(/\/$/, "");
@@ -155,7 +224,7 @@ export class NotificationDispatchService {
     const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
 
     await this.enqueueDelivery({
-      templateCode: "invite.owner",
+      templateCode: input.templateCode,
       toEmail: input.contactEmail,
       eventKey: `invite:${input.userId}:${input.inviteId}`,
       payload: {

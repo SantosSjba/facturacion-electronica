@@ -2488,6 +2488,218 @@ describe("API e2e", () => {
       .send({ refresh_token: rotated.body.refresh_token })
       .expect(200);
   });
+
+  it("S15-APP: plan usage, invite member, plan change, inbox prefs", async () => {
+    const platformLogin = await request(server)
+      .post("/auth/login")
+      .send({
+        email: "platform@factosys.local",
+        password: "PlatformAdmin!2026",
+        organization_slug: "factosys-platform",
+      })
+      .expect(200);
+    const platformToken = platformLogin.body.access_token as string;
+
+    const orgs = await request(server)
+      .get("/saas/organizations")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const demoOrg = (
+      orgs.body.items as Array<{ id: string; slug: string }>
+    ).find((o) => o.slug === "demo");
+    expect(demoOrg).toBeTruthy();
+
+    const plans = await request(server)
+      .get("/saas/platform/plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    const starter = (
+      plans.body.items as Array<{ id: string; code: string }>
+    ).find((p) => p.code === "starter");
+    const growth = (
+      plans.body.items as Array<{ id: string; code: string }>
+    ).find((p) => p.code === "growth");
+    expect(starter).toBeTruthy();
+    expect(growth).toBeTruthy();
+
+    await request(server)
+      .post("/saas/org-plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .send({
+        organization_id: demoOrg!.id,
+        plan_id: starter!.id,
+        status: "active",
+      })
+      .expect(201);
+
+    const planMe = await request(server)
+      .get("/organizations/me/plan")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(planMe.body.plan?.code).toBe("starter");
+    expect(planMe.body.limits?.max_companies).toBeGreaterThanOrEqual(1);
+    expect(planMe.body.usage).toMatchObject({
+      companies: expect.any(Number),
+      users: expect.any(Number),
+      api_keys: expect.any(Number),
+      documents_this_month: expect.any(Number),
+    });
+
+    const inviteEmail = `member-e2e-${Date.now()}@example.com`;
+    const invited = await request(server)
+      .post("/organizations/me/users")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        email: inviteEmail,
+        name: "Member E2E",
+        invite: true,
+        roles: ["viewer"],
+      })
+      .expect(201);
+    expect(invited.body.status).toBe("disabled");
+    expect(invited.body.invited).toBe(true);
+
+    const { DB } = await import("../src/infrastructure/persistence/db.tokens");
+    const { notificationDeliveries } = await import("@factosys/db");
+    const { and, eq } = await import("drizzle-orm");
+    const db = app.get(DB);
+
+    let inviteToken: string | undefined;
+    let lastInviteRows: Array<{
+      status: string;
+      toEmail: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    for (let i = 0; i < 40; i++) {
+      const rows = await db
+        .select()
+        .from(notificationDeliveries)
+        .where(eq(notificationDeliveries.templateCode, "invite.member"))
+        .limit(10);
+      lastInviteRows = rows.map((r) => ({
+        status: r.status,
+        toEmail: r.toEmail,
+        payload: (r.payload ?? {}) as Record<string, unknown>,
+      }));
+      const match = rows.find((r) => r.toEmail === inviteEmail);
+      if (match) {
+        inviteToken = (match.payload as { invite_token?: string })?.invite_token;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(
+      inviteToken,
+      `invite.member missing for ${inviteEmail}; rows=${JSON.stringify(lastInviteRows)}`,
+    ).toBeTruthy();
+
+    await request(server)
+      .post("/auth/accept-invite")
+      .send({ token: inviteToken, password: "MemberPass!2026" })
+      .expect(200);
+
+    const existingPending = await request(server)
+      .get("/organizations/me/plan/change-requests")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    let changeBody = (
+      existingPending.body.items as Array<{
+        id: string;
+        status: string;
+        requested_plan_code: string;
+      }>
+    ).find((i) => i.status === "pending");
+
+    if (!changeBody) {
+      const change = await request(server)
+        .post("/organizations/me/plan/change-requests")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({
+          requested_plan_code: "growth",
+          message: "Necesitamos más documentos",
+        })
+        .expect(201);
+      changeBody = change.body;
+    }
+    expect(changeBody!.requested_plan_code).toBe("growth");
+    expect(changeBody!.status).toBe("pending");
+
+    let opsDeliveryOk = false;
+    for (let i = 0; i < 40; i++) {
+      const rows = await db
+        .select()
+        .from(notificationDeliveries)
+        .where(
+          eq(
+            notificationDeliveries.templateCode,
+            "plan.change_requested",
+          ),
+        )
+        .limit(10);
+      if (
+        rows.some(
+          (r) =>
+            (r.payload as { request_id?: string })?.request_id ===
+            changeBody!.id,
+        )
+      ) {
+        opsDeliveryOk = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    expect(opsDeliveryOk).toBe(true);
+
+    const inbox = await request(server)
+      .get("/organizations/me/notifications")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(inbox.body.unread_count).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(inbox.body.items)).toBe(true);
+    const first = inbox.body.items[0] as { id: string };
+    await request(server)
+      .post(`/organizations/me/notifications/${first.id}/read`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(201);
+
+    const prefs = await request(server)
+      .get("/organizations/me/notification-preferences")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    expect(prefs.body.items.length).toBeGreaterThanOrEqual(4);
+
+    await request(server)
+      .patch("/organizations/me/notification-preferences")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        items: [
+          {
+            event_code: "system",
+            email_enabled: false,
+            in_app_enabled: true,
+          },
+        ],
+      })
+      .expect(200);
+
+    await request(server)
+      .post("/auth/change-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        current_password: "DemoOwner!2026",
+        new_password: "DemoOwner!2026x",
+      })
+      .expect(204);
+
+    await request(server)
+      .post("/auth/change-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        current_password: "DemoOwner!2026x",
+        new_password: "DemoOwner!2026",
+      })
+      .expect(204);
+  }, 45_000);
 });
 
 /** Unique RUC with valid módulo-11 checksum (companies create requires it). */

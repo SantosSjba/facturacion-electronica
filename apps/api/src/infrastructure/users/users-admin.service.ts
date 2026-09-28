@@ -1,7 +1,12 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { createHash, randomBytes } from "node:crypto";
+
+import { Inject, Injectable, forwardRef } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
+  inviteTokens,
   newId,
+  organizations,
   permissions,
   rolePermissions,
   roles,
@@ -11,15 +16,27 @@ import {
 } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
+import type { Env } from "../config/env.schema";
 import { Argon2Hasher } from "../crypto/argon2-hasher";
+import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
+import { InAppNotificationsService } from "../notifications/in-app-notifications.service";
 import { DB } from "../persistence/db.tokens";
 import type { UserAuthContext } from "../../interfaces/http/auth/auth-context";
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 @Injectable()
 export class UsersAdminService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly hasher: Argon2Hasher,
+    private readonly config: ConfigService<Env, true>,
+    @Inject(forwardRef(() => NotificationDispatchService))
+    private readonly notifications: NotificationDispatchService,
+    @Inject(forwardRef(() => InAppNotificationsService))
+    private readonly inApp: InAppNotificationsService,
   ) {}
 
   async listRoles() {
@@ -83,13 +100,17 @@ export class UsersAdminService {
     input: {
       email: string;
       name: string;
-      password: string;
+      password?: string;
+      invite?: boolean;
       roleCodes: string[];
       status?: "active" | "disabled";
     },
   ) {
-    if (input.password.length < 8) {
-      throw AppError.validation("password must be at least 8 characters");
+    const invite = Boolean(input.invite);
+    if (!invite) {
+      if (!input.password || input.password.length < 8) {
+        throw AppError.validation("password must be at least 8 characters");
+      }
     }
     if (!input.roleCodes.length) {
       throw AppError.validation("roles must not be empty");
@@ -112,8 +133,81 @@ export class UsersAdminService {
     const roleRows = await this.resolveRoles(input.roleCodes);
     this.assertCanAssignRoles(actor, input.roleCodes);
 
+    const orgRows = await this.db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, actor.organizationId))
+      .limit(1);
+    const org = orgRows[0];
+    if (!org) {
+      throw AppError.notFound("Organization not found");
+    }
+
     const id = newId();
-    const passwordHash = await this.hasher.hash(input.password);
+    const now = new Date();
+
+    if (invite) {
+      const inviteId = newId();
+      const inviteRaw = randomBytes(32).toString("base64url");
+      const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
+      const inviteExpiresAt = new Date(now.getTime() + ttlHours * 3600_000);
+      const placeholderPassword = await this.hasher.hash(
+        randomBytes(32).toString("base64url"),
+      );
+
+      await this.db.insert(users).values({
+        id,
+        organizationId: actor.organizationId,
+        email: input.email,
+        name: input.name,
+        passwordHash: placeholderPassword,
+        status: "disabled",
+        createdAt: now,
+        updatedAt: now,
+      });
+      await this.db.insert(userRoles).values(
+        roleRows.map((r) => ({ userId: id, roleId: r.id })),
+      );
+      await this.db.insert(inviteTokens).values({
+        id: inviteId,
+        userId: id,
+        tokenHash: sha256Hex(inviteRaw),
+        expiresAt: inviteExpiresAt,
+        consumedAt: null,
+        createdAt: now,
+      });
+
+      await this.notifications.memberInvite({
+        inviteId,
+        userId: id,
+        contactName: input.name,
+        contactEmail: input.email,
+        organizationName: org.name,
+        organizationSlug: org.slug ?? "",
+        inviteToken: inviteRaw,
+        expiresAt: inviteExpiresAt,
+      });
+
+      await this.inApp.createForUser({
+        organizationId: actor.organizationId,
+        userId: actor.userId,
+        eventCode: "invite.member",
+        title: "Invitación enviada",
+        body: `Se envió una invitación a ${input.email}.`,
+        payload: { invited_user_id: id, invited_email: input.email },
+      });
+
+      return {
+        id,
+        email: input.email,
+        name: input.name,
+        status: "disabled" as const,
+        roles: input.roleCodes,
+        invited: true,
+      };
+    }
+
+    const passwordHash = await this.hasher.hash(input.password!);
     await this.db.insert(users).values({
       id,
       organizationId: actor.organizationId,
@@ -132,6 +226,7 @@ export class UsersAdminService {
       name: input.name,
       status: input.status ?? "active",
       roles: input.roleCodes,
+      invited: false,
     };
   }
 

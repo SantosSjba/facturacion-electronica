@@ -9,13 +9,24 @@ import { RequirePermissions } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-const createSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  password: z.string().min(8),
-  roles: z.array(z.string().min(1)).min(1),
-  status: z.enum(["active", "disabled"]).optional(),
-});
+const createSchema = z
+  .object({
+    email: z.string().email(),
+    name: z.string().min(1),
+    password: z.string().min(8).optional(),
+    invite: z.boolean().optional(),
+    roles: z.array(z.string().min(1)).min(1),
+    status: z.enum(["active", "disabled"]).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.invite && !data.password) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["password"],
+        message: "password is required unless invite is true",
+      });
+    }
+  });
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
@@ -57,7 +68,9 @@ export class UsersController {
 
   @Post("users")
   @RequirePermissions("users:write")
-  @ApiOperation({ summary: "Create organization user" })
+  @ApiOperation({
+    summary: "Create organization user (password) or invite (invite:true)",
+  })
   create(
     @CurrentAuth() auth: UserAuthContext,
     @Body(new ZodValidationPipe(createSchema)) body: CreateBody,
@@ -67,6 +80,7 @@ export class UsersController {
       email: body.email,
       name: body.name,
       password: body.password,
+      invite: body.invite,
       roleCodes: body.roles,
       status: body.status,
     });

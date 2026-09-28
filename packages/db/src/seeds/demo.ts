@@ -458,6 +458,19 @@ Slug: \`{{organization_slug}}\`
 — Equipo Factosys`,
     },
     {
+      code: "invite.member",
+      subject: "Te invitaron a {{organization_name}} — Factosys",
+      bodyMd: `Hola {{contact_name}},
+
+Te invitaron a unirte a **{{organization_name}}**. Crea tu contraseña en este enlace (válido {{ttl_hours}} h):
+
+{{invite_url}}
+
+Slug: \`{{organization_slug}}\`
+
+— Equipo Factosys`,
+    },
+    {
       code: "plan.assigned",
       subject: "[Factosys] Plan asignado: {{plan_name}} → {{organization_name}}",
       bodyMd: `Se asignó un plan a una organización.
@@ -466,6 +479,21 @@ Slug: \`{{organization_slug}}\`
 - Plan: {{plan_name}} (\`{{plan_code}}\`)
 - Estado: {{status}}
 - Org plan id: {{org_plan_id}}
+
+— Equipo Factosys`,
+    },
+    {
+      code: "plan.change_requested",
+      subject:
+        "[Factosys] Solicitud de cambio de plan: {{organization_name}} → {{requested_plan_name}}",
+      bodyMd: `Una organización solicitó cambio de plan.
+
+- Organización: {{organization_name}} ({{organization_slug}})
+- Plan actual: {{current_plan_name}} (\`{{current_plan_code}}\`)
+- Plan solicitado: {{requested_plan_name}} (\`{{requested_plan_code}}\`)
+- Solicitado por: {{requested_by_email}}
+- Mensaje: {{message}}
+- Request id: {{request_id}}
 
 — Equipo Factosys`,
     },

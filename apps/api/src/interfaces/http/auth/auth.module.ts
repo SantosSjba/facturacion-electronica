@@ -1,4 +1,4 @@
-import { Global, Module } from "@nestjs/common";
+import { Global, Module, forwardRef } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
@@ -14,12 +14,14 @@ import { ApiKeyGuard } from "../guards/api-key.guard";
 import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 import { PermissionsGuard } from "../guards/permissions.guard";
 import { PlatformGuard } from "../guards/platform.guard";
+import { SaasModule } from "../saas/saas.module";
 import { UsersController } from "../users/users.controller";
 import { WhoamiController } from "../v1/whoami.controller";
 
 @Global()
 @Module({
   imports: [
+    forwardRef(() => SaasModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

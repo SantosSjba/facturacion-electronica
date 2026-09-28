@@ -2,7 +2,12 @@ import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 
 import { AcceptInvitePage } from "@/modules/auth/pages/AcceptInvitePage";
 import { LoginPage } from "@/modules/auth/pages/LoginPage";
+import { AppCompaniesPage } from "@/modules/app/pages/AppCompaniesPage";
 import { AppHomePage } from "@/modules/app/pages/AppHomePage";
+import { AppNotificationsPage } from "@/modules/app/pages/AppNotificationsPage";
+import { AppPlanPage } from "@/modules/app/pages/AppPlanPage";
+import { AppSecurityPage } from "@/modules/app/pages/AppSecurityPage";
+import { AppUsersPage } from "@/modules/app/pages/AppUsersPage";
 import { OnboardingWizardPage } from "@/modules/app/pages/OnboardingWizardPage";
 import { DashboardPage } from "@/modules/platform/pages/DashboardPage";
 import { OrganizationDetailPage } from "@/modules/platform/pages/OrganizationDetailPage";
@@ -85,8 +90,18 @@ export function AppRouter() {
           }
         />
         <Route element={<RequireOnboarded />}>
-          <Route path="/app" element={<AppHomePage />} />
-          <Route path="/app/*" element={<Navigate to="/app" replace />} />
+          <Route element={<AppShell />}>
+            <Route path="/app" element={<AppHomePage />} />
+            <Route path="/app/users" element={<AppUsersPage />} />
+            <Route path="/app/companies" element={<AppCompaniesPage />} />
+            <Route path="/app/plan" element={<AppPlanPage />} />
+            <Route
+              path="/app/notifications"
+              element={<AppNotificationsPage />}
+            />
+            <Route path="/app/security" element={<AppSecurityPage />} />
+            <Route path="/app/*" element={<Navigate to="/app" replace />} />
+          </Route>
         </Route>
       </Route>
 

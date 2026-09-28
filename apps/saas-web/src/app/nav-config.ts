@@ -1,9 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Bell,
   Building2,
   ClipboardList,
-  LayoutDashboard,
+  Home,
+  KeyRound,
   Layers,
+  LayoutDashboard,
+  Users,
 } from "lucide-react";
 
 export interface NavItem {
@@ -15,7 +19,7 @@ export interface NavItem {
 }
 
 /** Platform panel nav (S14-PLAT). */
-export const NAV_ITEMS: NavItem[] = [
+export const PLATFORM_NAV_ITEMS: NavItem[] = [
   {
     id: "dashboard",
     label: "Dashboard",
@@ -42,6 +46,51 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+/** Org client panel nav (S15-APP). */
+export const ORG_NAV_ITEMS: NavItem[] = [
+  {
+    id: "home",
+    label: "Inicio",
+    to: "/app",
+    icon: Home,
+  },
+  {
+    id: "users",
+    label: "Usuarios",
+    to: "/app/users",
+    permission: "users:read",
+    icon: Users,
+  },
+  {
+    id: "companies",
+    label: "Empresas",
+    to: "/app/companies",
+    permission: "companies:read",
+    icon: Building2,
+  },
+  {
+    id: "plan",
+    label: "Plan",
+    to: "/app/plan",
+    icon: Layers,
+  },
+  {
+    id: "notifications",
+    label: "Notificaciones",
+    to: "/app/notifications",
+    icon: Bell,
+  },
+  {
+    id: "security",
+    label: "Seguridad",
+    to: "/app/security",
+    icon: KeyRound,
+  },
+];
+
+/** @deprecated Use PLATFORM_NAV_ITEMS */
+export const NAV_ITEMS = PLATFORM_NAV_ITEMS;
+
 export const PLATFORM_HOME = "/platform";
 export const APP_HOME = "/app";
 
@@ -50,4 +99,13 @@ export function resolveHomePath(
   ctx?: "platform" | "org",
 ): string {
   return ctx === "org" ? APP_HOME : PLATFORM_HOME;
+}
+
+export function consolePublicUrl(path = ""): string {
+  const base = (
+    (import.meta.env.VITE_CONSOLE_PUBLIC_URL as string | undefined) ||
+    "http://localhost:5173"
+  ).replace(/\/$/, "");
+  if (!path) return base;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }

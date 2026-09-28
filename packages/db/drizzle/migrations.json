@@ -61,5 +61,12 @@
     "tag": "signup_approve_invite",
     "up": "0009_signup_approve_invite.sql",
     "down": "0009_signup_approve_invite.down.sql"
+  },
+  {
+    "id": "0010_s15_app_panel",
+    "when": 10,
+    "tag": "s15_app_panel",
+    "up": "0010_s15_app_panel.sql",
+    "down": "0010_s15_app_panel.down.sql"
   }
 ]

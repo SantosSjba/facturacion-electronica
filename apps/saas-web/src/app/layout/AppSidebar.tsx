@@ -7,18 +7,21 @@ import { useSession } from "@/shared/auth/session-context";
 import { Button } from "@/shared/ui/components/button";
 import { cn } from "@/shared/ui/utils";
 
-import { NAV_ITEMS } from "../nav-config";
+import { ORG_NAV_ITEMS, PLATFORM_NAV_ITEMS } from "../nav-config";
 import { useSidebar } from "../sidebar-context";
 
 export function AppSidebar() {
-  const { user } = useSession();
+  const { user, isPlatform } = useSession();
   const location = useLocation();
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, setIsMobileOpen, toggleSidebar } =
     useSidebar();
   const showLabels = isExpanded || isHovered || isMobileOpen;
+  const navItems = isPlatform ? PLATFORM_NAV_ITEMS : ORG_NAV_ITEMS;
+  const homeTo = isPlatform ? "/platform" : "/app";
+  const subtitle = isPlatform ? "Panel plataforma" : "Panel cliente";
   const visibleNav = useMemo(
-    () => filterNavByPermissions(NAV_ITEMS, user?.perms ?? []),
-    [user?.perms],
+    () => filterNavByPermissions(navItems, user?.perms ?? []),
+    [navItems, user?.perms],
   );
 
   useEffect(() => setIsMobileOpen(false), [location.pathname, setIsMobileOpen]);
@@ -36,7 +39,7 @@ export function AppSidebar() {
       <div
         className={cn("flex h-24 items-center", showLabels ? "justify-start" : "justify-center")}
       >
-        <NavLink to="/platform" className="flex items-center gap-3">
+        <NavLink to={homeTo} className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-xl bg-brand-500 text-sm font-bold text-white shadow-theme-xs">
             FS
           </span>
@@ -46,7 +49,7 @@ export function AppSidebar() {
                 FACTOSYS
               </span>
               <span className="block text-xs text-gray-500 dark:text-gray-400">
-                Panel plataforma
+                {subtitle}
               </span>
             </span>
           ) : null}
@@ -80,7 +83,7 @@ export function AppSidebar() {
                 <li key={item.id}>
                   <NavLink
                     to={item.to}
-                    end={item.to === "/platform"}
+                    end={item.to === homeTo}
                     data-testid={`nav-${item.id}`}
                     title={showLabels ? undefined : item.label}
                     className={({ isActive }) =>

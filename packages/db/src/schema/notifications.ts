@@ -22,6 +22,8 @@ export const notifications = pgTable(
     }),
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     templateCode: text("template_code").notNull(),
+    title: text("title"),
+    body: text("body"),
     payload: jsonb("payload")
       .$type<Record<string, unknown>>()
       .notNull()
@@ -29,6 +31,7 @@ export const notifications = pgTable(
     status: text("status").notNull().default("pending"),
     createdAt: createdAt(),
     sentAt: timestamp("sent_at", { withTimezone: true, mode: "date" }),
+    readAt: timestamp("read_at", { withTimezone: true, mode: "date" }),
   },
   (t) => [
     index("notifications_org_idx").on(t.organizationId),
