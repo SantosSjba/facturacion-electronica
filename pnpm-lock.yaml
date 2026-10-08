@@ -208,6 +208,9 @@ importers:
 
   apps/saas-web:
     dependencies:
+      '@factosys/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@tanstack/react-query':
         specifier: ^5.90.2
         version: 5.103.2(react@19.3.0)

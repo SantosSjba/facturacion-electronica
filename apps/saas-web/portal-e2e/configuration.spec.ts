@@ -28,15 +28,19 @@ const ownerPermissions = [
   "webhooks:manage",
 ];
 
-async function preparePortal(page: Page, perms = ownerPermissions) {
+async function preparePortal(
+  page: Page,
+  perms = ownerPermissions,
+  ctx: "org" | "platform" = "org",
+) {
   const payload = Buffer.from(
     JSON.stringify({
       sub: "portal-owner",
       org: "portal-org",
       email: "owner@example.com",
       perms,
-      roles: ["owner"],
-      ctx: "org",
+      roles: [ctx === "platform" ? "platform_admin" : "owner"],
+      ctx,
       exp: Math.floor(Date.now() / 1000) + 3600,
     }),
   ).toString("base64url");
@@ -73,6 +77,7 @@ async function preparePortal(page: Page, perms = ownerPermissions) {
         has_company: true,
         requires_reaccept: false,
       };
+    else if (pathname === "/saas/platform/audit-events") json = { items: [], next_cursor: null };
     else if (pathname === "/companies") json = req.method() === "POST" ? company : [company];
     else if (pathname === `/companies/${companyId}`) json = company;
     else if (pathname.endsWith("/series")) json = [];
@@ -163,4 +168,85 @@ test("viewer cannot manage keys using a direct URL", async ({ page }) => {
   await page.goto(`/app/companies/${companyId}/certificate`);
   await expect(page.getByText("Estado del certificado")).toBeVisible();
   await expect(page.getByRole("button", { name: "Subir PFX" })).toHaveCount(0);
+});
+
+test("TailAdmin desktop shell collapses, searches and switches theme", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await preparePortal(page);
+  await page.goto("/app/companies");
+  const sidebar = page.locator("[data-admin-sidebar]");
+  const content = page.locator("[data-admin-content]");
+  await expect(sidebar).toHaveCSS("width", "290px");
+  await expect(content).toHaveCSS("margin-left", "290px");
+  await expect(page.getByTestId("nav-companies")).toHaveAttribute("aria-current", "page");
+  await page.screenshot({ path: testInfo.outputPath("client-desktop.png"), fullPage: true });
+  await page.getByRole("button", { name: "Alternar menú lateral" }).click();
+  await expect(sidebar).toHaveCSS("width", "90px");
+  await expect(content).toHaveCSS("margin-left", "90px");
+  await sidebar.hover();
+  await expect(sidebar).toHaveCSS("width", "290px");
+  await page.mouse.move(1000, 500);
+  await expect(sidebar).toHaveCSS("width", "90px");
+  await page.keyboard.press("Control+k");
+  await page.getByRole("searchbox", { name: "Buscar una sección…" }).fill("API keys");
+  await page
+    .locator("[data-admin-header]")
+    .getByRole("link", { name: "API keys", exact: true })
+    .click();
+  await expect(page).toHaveURL("/app/developers/api-keys");
+  await page.getByRole("button", { name: "Activar tema oscuro" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Abrir menú de usuario" }).click();
+  await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Cerrar sesión" })).toHaveCount(0);
+});
+
+test("TailAdmin drawer works below xl on tablet and mobile", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await preparePortal(page);
+  await page.goto("/app/companies");
+  await expect(page.locator("[data-admin-content]")).toHaveCSS("margin-left", "0px");
+  const toggle = page.getByRole("button", { name: "Alternar menú lateral" });
+  await toggle.click();
+  await expect(page.getByTestId("sidebar-backdrop")).toBeVisible();
+  await page.getByTestId("sidebar-backdrop").click({ position: { x: 900, y: 400 } });
+  await expect(page.getByTestId("sidebar-backdrop")).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await toggle.click();
+  await page.getByTestId("nav-api-keys").click();
+  await expect(page).toHaveURL("/app/developers/api-keys");
+  await expect(page.getByTestId("sidebar-backdrop")).toHaveCount(0);
+  await page.getByRole("button", { name: "Abrir acciones de cuenta" }).click();
+  await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toBeVisible();
+  await page.getByTestId("notif-bell").click();
+  await expect(page.getByText("No tienes notificaciones.")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar notificaciones" }).click();
+  await expect
+    .poll(() =>
+      page
+        .locator("[data-admin-sidebar]")
+        .evaluate((element) => element.getBoundingClientRect().right),
+    )
+    .toBeLessThanOrEqual(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: testInfo.outputPath("client-mobile.png"), fullPage: true });
+});
+
+test("owner platform uses the shared shell with administrative routes", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await preparePortal(page, ["platform:admin"], "platform");
+  await page.goto("/platform/audit");
+  await expect(page.locator("[data-admin-sidebar]")).toBeVisible();
+  await expect(page.getByTestId("nav-audit")).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTestId("nav-organizations")).toBeVisible();
+  await expect(page.getByTestId("nav-companies")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("platform-desktop.png"), fullPage: true });
 });
