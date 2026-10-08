@@ -415,6 +415,42 @@ test("TailAdmin desktop shell collapses, searches and switches theme", async ({
   await expect(page.getByRole("button", { name: "Cerrar sesión" })).toHaveCount(0);
 });
 
+test("notifications stay inside the viewport after switching from the sidebar and resizing", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 950, height: 680 });
+  await preparePortal(page);
+  await page.route("http://localhost:3000/organizations/me/notifications**", (route) => route.fulfill({
+    headers: { "access-control-allow-origin": "http://localhost:5184" },
+    json: { items: Array.from({ length: 8 }, (_, index) => ({
+      id: `notification-${index}`, title: "Invitación enviada", body: "La invitación al usuario se envió correctamente.",
+      created_at: company.created_at, read_at: null,
+    })), unread_count: 8 },
+  }));
+  await page.goto("/app/companies");
+  await page.getByRole("button", { name: "Alternar menú lateral" }).click();
+  await page.getByRole("button", { name: "Abrir acciones de cuenta" }).click();
+  await expect(page.getByTestId("sidebar-backdrop")).toHaveCount(0);
+  await page.getByTestId("notif-bell").click();
+  const panel = page.getByTestId("notification-panel");
+  await expect(panel).toBeVisible();
+  for (const viewport of [
+    { width: 950, height: 680 }, { width: 390, height: 844 },
+    { width: 768, height: 600 }, { width: 1100, height: 400 },
+    { width: 1440, height: 900 }, { width: 950, height: 680 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect.poll(() => panel.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.left >= 16 && bounds.top >= 16 && bounds.right <= innerWidth - 16 && bounds.bottom <= innerHeight - 16;
+    })).toBe(true);
+    await expect(panel.getByRole("button", { name: "Cerrar notificaciones" })).toBeVisible();
+    await expect(panel.getByRole("link", { name: "Ver todas las notificaciones" })).toBeVisible();
+  }
+  await page.screenshot({ path: testInfo.outputPath("notifications-tablet-sidebar.png"), animations: "disabled" });
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByTestId("notif-bell")).toBeFocused();
+});
+
 test("TailAdmin drawer works below xl on tablet and mobile", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1100, height: 800 });
   await preparePortal(page);
@@ -432,6 +468,17 @@ test("TailAdmin drawer works below xl on tablet and mobile", async ({ page }, te
   await expect(page.getByTestId("sidebar-backdrop")).toHaveCount(0);
   await page.getByRole("button", { name: "Abrir acciones de cuenta" }).click();
   await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toBeVisible();
+  await page.getByTestId("notif-bell").click();
+  await expect(page.getByText("No tienes notificaciones.")).toBeVisible();
+  await toggle.click();
+  await expect(page.getByTestId("sidebar-backdrop")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Abrir acciones de cuenta" })).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("notification-panel")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Abrir acciones de cuenta" }).click();
+  await expect(page.getByTestId("sidebar-backdrop")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toBeVisible();
+  await expect(page.getByTestId("notification-panel")).toHaveCount(0);
   await page.getByTestId("notif-bell").click();
   await expect(page.getByText("No tienes notificaciones.")).toBeVisible();
   await page.getByRole("button", { name: "Cerrar notificaciones" }).click();

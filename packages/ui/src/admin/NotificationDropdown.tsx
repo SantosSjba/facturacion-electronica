@@ -1,5 +1,5 @@
 import { BellIcon } from "./icons";
-import { useAdminDropdown } from "./dropdown";
+import { useAdminDropdown, useAdminDropdownPosition } from "./dropdown";
 import type { AdminLinkComponent } from "./types";
 import { ListSkeleton } from "../skeleton";
 
@@ -36,6 +36,7 @@ export function AdminNotificationDropdown({
   labels,
 }: AdminNotificationDropdownProps) {
   const { open, setOpen, ref } = useAdminDropdown();
+  const position = useAdminDropdownPosition(open, ref);
   return (
     <div className="relative" ref={ref}>
       <button
@@ -54,8 +55,12 @@ export function AdminNotificationDropdown({
         <BellIcon className="size-5" />
       </button>
       {open && (
-        <div className="absolute -end-60 mt-4 flex h-120 w-90 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg sm:end-0 sm:w-96 dark:border-gray-800 dark:bg-gray-dark">
-          <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
+        <div
+          data-testid="notification-panel"
+          style={position}
+          className="fixed z-50 flex flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
+        >
+          <div className="mb-3 flex shrink-0 items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
             <h5 className="text-lg font-semibold text-gray-800 dark:text-white/90">
               {labels.title}
             </h5>
@@ -68,7 +73,7 @@ export function AdminNotificationDropdown({
               ×
             </button>
           </div>
-          <ul className="custom-scrollbar flex h-auto flex-col overflow-y-auto">
+          <ul className="custom-scrollbar flex min-h-0 flex-col overflow-y-auto">
             {items.map((item) => (
               <li key={item.id}>
                 <LinkComponent
@@ -80,11 +85,11 @@ export function AdminNotificationDropdown({
                     <BellIcon className="size-5" />
                   </span>
                   <span className="min-w-0">
-                    <span className="mb-1.5 block text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                    <span className="mb-1.5 block break-words text-theme-sm font-medium text-gray-800 dark:text-white/90">
                       {item.title}
                     </span>
                     {item.body && (
-                      <span className="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
+                      <span className="mb-1.5 block break-words text-theme-sm text-gray-500 dark:text-gray-400">
                         {item.body}
                       </span>
                     )}
@@ -108,7 +113,7 @@ export function AdminNotificationDropdown({
           <LinkComponent
             href={href}
             onClick={() => setOpen(false)}
-            className="mt-auto flex justify-center rounded-lg border border-gray-300 bg-white p-3 text-theme-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+            className="mt-auto flex shrink-0 justify-center rounded-lg border border-gray-300 bg-white p-3 text-theme-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
           >
             {labels.all}
           </LinkComponent>

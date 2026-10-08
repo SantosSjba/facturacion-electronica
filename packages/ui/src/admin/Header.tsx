@@ -21,12 +21,23 @@ export function AdminHeader({
   labels,
 }: AdminHeaderProps) {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { isMobile, isExpanded, isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const {
+    isMobile,
+    isExpanded,
+    isMobileOpen,
+    toggleSidebar,
+    toggleMobileSidebar,
+    setIsMobileOpen,
+  } = useSidebar();
   const handleToggle = () => {
+    setApplicationMenuOpen(false);
     if (isMobile) toggleMobileSidebar();
     else toggleSidebar();
   };
-  const toggleApplicationMenu = () => setApplicationMenuOpen((current) => !current);
+  const toggleApplicationMenu = () => {
+    if (!isApplicationMenuOpen) setIsMobileOpen(false);
+    setApplicationMenuOpen((current) => !current);
+  };
   return (
     <header
       data-admin-header
@@ -69,7 +80,7 @@ export function AdminHeader({
             isApplicationMenuOpen ? "flex" : "hidden",
           )}
         >
-          {actions}
+          {(!isMobile || isApplicationMenuOpen) && actions}
         </div>
       </div>
     </header>
