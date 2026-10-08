@@ -11,13 +11,26 @@ import {
 } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import {
+  Badge,
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  MutedText,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  cn,
+} from "@factosys/ui";
+
 import { TextLink } from "@/shared/ui/components/text-link";
-import { cn } from "@/shared/ui/utils";
 
 import { patchCompany } from "../api";
 import type { Company, CompanyStatus } from "../types";

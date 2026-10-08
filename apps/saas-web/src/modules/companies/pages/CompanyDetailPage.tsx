@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { ArrowLeft, Pencil } from "lucide-react";
-import { Link, NavLink, Outlet, useParams } from "react-router-dom";
+import { Link, Outlet, useParams, useLocation } from "react-router-dom";
+import { TabNavigation } from "@factosys/ui";
+import { PortalLink } from "@/app/layout/branding";
 import { useQuery } from "@tanstack/react-query";
 
 import { useSession } from "@/shared/auth/session-context";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
 import {
+  ErrorState,
+  LoadingState,
+  PageHeader,
   Button,
   ButtonLabel,
   buttonIconClassName,
   buttonVariants,
-} from "@/shared/ui/components/button";
-import { cn } from "@/shared/ui/utils";
+  cn,
+} from "@factosys/ui";
 
 import { fetchCompany } from "../api";
 import { CompanyFormDialog } from "../components/CompanyFormDialog";
@@ -29,6 +31,7 @@ const TABS = [
 
 export function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { pathname } = useLocation();
   const { hasPermission } = useSession();
   const canWrite = hasPermission("companies:write");
   const [editOpen, setEditOpen] = useState(false);
@@ -81,24 +84,15 @@ export function CompanyDetailPage() {
         }
       />
 
-      <nav className="mb-6 flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
-        {TABS.map((tab) => (
-          <NavLink
-            key={tab.to}
-            to={`/app/companies/${company.id}/${tab.to}`}
-            className={({ isActive }) =>
-              cn(
-                "px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "border-b-2 border-brand-500 text-gray-800 dark:text-white/90"
-                  : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90",
-              )
-            }
-          >
-            {tab.label}
-          </NavLink>
-        ))}
-      </nav>
+      <TabNavigation
+        label="Configuración de empresa"
+        items={TABS.map((tab) => ({
+          href: `/app/companies/${company.id}/${tab.to}`,
+          label: tab.label,
+        }))}
+        pathname={pathname}
+        LinkComponent={PortalLink}
+      />
 
       <Outlet context={{ company, onEdit: () => setEditOpen(true) }} />
 

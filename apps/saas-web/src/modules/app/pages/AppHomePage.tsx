@@ -4,12 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchOrgPlan } from "@/modules/app/api/plan";
 import { useSession } from "@/shared/auth/session-context";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Badge } from "@/shared/ui/components/badge";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Card,
+  CardTitle,
+  Badge,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+} from "@factosys/ui";
 
 function UsageBar({ label, used, limit }: { label: string; used: number; limit: number | null }) {
   const max = limit ?? 0;

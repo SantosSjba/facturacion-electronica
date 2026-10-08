@@ -8,19 +8,17 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { FieldError } from "@/shared/ui/FieldError";
+  Input,
+  Label,
+  FieldError,
+  cn,
+} from "@factosys/ui";
+
 import { useTheme } from "@/shared/ui/theme-context";
-import { cn } from "@/shared/ui/utils";
 
 export function AcceptInvitePage() {
   const [searchParams] = useSearchParams();
-  const token = useMemo(
-    () => (searchParams.get("token") ?? "").trim(),
-    [searchParams],
-  );
+  const token = useMemo(() => (searchParams.get("token") ?? "").trim(), [searchParams]);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [password, setPassword] = useState("");
@@ -96,9 +94,7 @@ export function AcceptInvitePage() {
                 <span className="flex size-11 items-center justify-center rounded-xl bg-brand-500 font-bold text-white">
                   FS
                 </span>
-                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  FACTOSYS
-                </span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">FACTOSYS</span>
               </div>
               <h1 className="mb-2 text-title-sm font-semibold text-gray-800 sm:text-title-md dark:text-white/90">
                 Activar cuenta
@@ -131,26 +127,17 @@ export function AcceptInvitePage() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pr-11"
                     />
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400"
                       onClick={() => setShowPassword((v) => !v)}
-                      aria-label={
-                        showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
-                      {showPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
+                      {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                    </Button>
                   </div>
-                  {fieldErrors.password ? (
-                    <FieldError message={fieldErrors.password} />
-                  ) : null}
+                  {fieldErrors.password ? <FieldError message={fieldErrors.password} /> : null}
                 </div>
 
                 <div>
@@ -163,9 +150,7 @@ export function AcceptInvitePage() {
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                   />
-                  {fieldErrors.confirm ? (
-                    <FieldError message={fieldErrors.confirm} />
-                  ) : null}
+                  {fieldErrors.confirm ? <FieldError message={fieldErrors.confirm} /> : null}
                 </div>
 
                 <Button
@@ -175,21 +160,14 @@ export function AcceptInvitePage() {
                   disabled={submitting || !token}
                 >
                   {submitting ? (
-                    <Loader2
-                      className={cn(buttonIconClassName, "animate-spin")}
-                    />
+                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
                   ) : null}
-                  <ButtonLabel>
-                    {submitting ? "Activando…" : "Activar cuenta"}
-                  </ButtonLabel>
+                  <ButtonLabel>{submitting ? "Activando…" : "Activar cuenta"}</ButtonLabel>
                 </Button>
 
                 <p className="text-center text-sm text-gray-500">
                   ¿Ya tienes cuenta?{" "}
-                  <Link
-                    to="/auth/login"
-                    className="text-brand-500 hover:underline"
-                  >
+                  <Link to="/auth/login" className="text-brand-500 hover:underline">
                     Iniciar sesión
                   </Link>
                 </p>
@@ -204,26 +182,21 @@ export function AcceptInvitePage() {
             <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-white/10 text-2xl font-bold backdrop-blur">
               FS
             </div>
-            <h2 className="mb-3 text-3xl font-semibold tracking-tight">
-              Bienvenido a Factosys
-            </h2>
+            <h2 className="mb-3 text-3xl font-semibold tracking-tight">Bienvenido a Factosys</h2>
             <p className="text-sm leading-relaxed text-white/70">
-              Activa tu cuenta owner y completa el onboarding para entrar al
-              panel de tu organización.
+              Activa tu cuenta owner y completa el onboarding para entrar al panel de tu
+              organización.
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={toggleTheme}
             className="absolute right-6 bottom-6 rounded-full bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
             aria-label="Cambiar tema"
           >
-            {theme === "dark" ? (
-              <Sun className="size-5" />
-            ) : (
-              <Moon className="size-5" />
-            )}
-          </button>
+            {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+          </Button>
         </div>
       </div>
     </div>

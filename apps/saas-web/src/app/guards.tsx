@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchOnboardingStatus } from "@/modules/app/api/onboarding";
 import { useSession } from "@/shared/auth/session-context";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { PageSpinner } from "@/shared/ui/LoadingState";
+import { ErrorState, PageSpinner } from "@factosys/ui";
 
 import { resolveHomePath } from "./nav-config";
 

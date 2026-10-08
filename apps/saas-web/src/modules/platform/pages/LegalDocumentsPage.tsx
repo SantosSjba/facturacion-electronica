@@ -6,37 +6,35 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { DEFAULT_PAGE_SIZE, Pagination } from "@/shared/ui/Pagination";
-import { Badge } from "@/shared/ui/components/badge";
 import {
+  EmptyState,
+  ErrorState,
+  FieldError,
+  FilterPanel,
+  countActiveFilters,
+  LoadingState,
+  PageHeader,
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  Badge,
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { Textarea } from "@/shared/ui/components/textarea";
-import {
+  Input,
+  Label,
+  Select,
+  Textarea,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-} from "@/shared/ui/components/table";
+} from "@factosys/ui";
 
 import {
   createLegalDocument,
@@ -77,10 +75,7 @@ function shortHash(hash: string): string {
 
 export function LegalDocumentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusFilter = searchParams.get("status") as
-    | "draft"
-    | "published"
-    | null;
+  const statusFilter = searchParams.get("status") as "draft" | "published" | null;
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -88,9 +83,7 @@ export function LegalDocumentsPage() {
   const [editing, setEditing] = useState<LegalDocument | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
-  const [publishConfirm, setPublishConfirm] = useState<LegalDocument | null>(
-    null,
-  );
+  const [publishConfirm, setPublishConfirm] = useState<LegalDocument | null>(null);
 
   const query = useQuery({
     queryKey: ["platform", "legal"],
@@ -207,11 +200,7 @@ export function LegalDocumentsPage() {
       {query.isLoading ? <LoadingState label="Cargando documentos…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -243,10 +232,7 @@ export function LegalDocumentsPage() {
           </FilterPanel>
 
           {filtered.length === 0 ? (
-            <EmptyState
-              title="Sin documentos"
-              description="Crea un borrador o ajusta el filtro."
-            />
+            <EmptyState title="Sin documentos" description="Crea un borrador o ajusta el filtro." />
           ) : (
             <>
               <Table>
@@ -268,19 +254,13 @@ export function LegalDocumentsPage() {
                       <TD>{d.version}</TD>
                       <TD className="font-medium">{d.title}</TD>
                       <TD>
-                        <Badge
-                          color={d.status === "published" ? "success" : "muted"}
-                        >
+                        <Badge color={d.status === "published" ? "success" : "muted"}>
                           {d.status === "published" ? "Publicado" : "Borrador"}
                         </Badge>
                       </TD>
-                      <TD className="font-mono text-theme-xs text-gray-500">
-                        {shortHash(d.hash)}
-                      </TD>
+                      <TD className="font-mono text-theme-xs text-gray-500">{shortHash(d.hash)}</TD>
                       <TD className="text-theme-xs text-gray-500">
-                        {d.published_at
-                          ? new Date(d.published_at).toLocaleString()
-                          : "—"}
+                        {d.published_at ? new Date(d.published_at).toLocaleString() : "—"}
                       </TD>
                       <TD>
                         <div className="flex gap-2">
@@ -294,11 +274,7 @@ export function LegalDocumentsPage() {
                               >
                                 Editar
                               </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={() => setPublishConfirm(d)}
-                              >
+                              <Button type="button" size="sm" onClick={() => setPublishConfirm(d)}>
                                 Publicar
                               </Button>
                             </>
@@ -372,9 +348,7 @@ export function LegalDocumentsPage() {
                   id="legal-code"
                   value={form.code}
                   disabled={Boolean(editing)}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, code: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
                   placeholder="privacy.es-PE"
                 />
               </div>
@@ -401,9 +375,7 @@ export function LegalDocumentsPage() {
                 id="legal-title"
                 value={form.title}
                 disabled={editing?.status === "published"}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               />
             </div>
             <div>
@@ -412,9 +384,7 @@ export function LegalDocumentsPage() {
                 id="legal-body"
                 value={form.body_md}
                 disabled={editing?.status === "published"}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, body_md: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, body_md: e.target.value }))}
                 rows={14}
                 className="font-mono text-sm"
               />
@@ -423,11 +393,7 @@ export function LegalDocumentsPage() {
           {formError ? <FieldError message={formError} /> : null}
         </DialogBody>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setDialogOpen(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
             {editing?.status === "published" ? "Cerrar" : "Cancelar"}
           </Button>
           {editing?.status !== "published" ? (
@@ -458,11 +424,7 @@ export function LegalDocumentsPage() {
           onClose={() => setPublishConfirm(null)}
         />
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setPublishConfirm(null)}
-          >
+          <Button type="button" variant="outline" onClick={() => setPublishConfirm(null)}>
             Cancelar
           </Button>
           <Button

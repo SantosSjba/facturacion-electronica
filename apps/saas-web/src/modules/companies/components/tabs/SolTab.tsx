@@ -5,16 +5,25 @@ import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { ErrorState } from "@/shared/ui/ErrorState";
+import {
+  Badge,
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Card,
+  CardTitle,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Input,
+  Label,
+  MutedText,
+  ErrorState,
+  cn,
+} from "@factosys/ui";
+
 import { toast } from "@/shared/ui/toaster";
-import { cn } from "@/shared/ui/utils";
 
 import { putSolCredentials } from "../../api";
 import type { Company } from "../../types";

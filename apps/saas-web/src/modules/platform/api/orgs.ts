@@ -37,10 +37,7 @@ export function fetchOrganization(id: string): Promise<Organization> {
   return apiRequest(`/saas/organizations/${id}`);
 }
 
-export function patchOrganization(
-  id: string,
-  body: { status: OrgStatus },
-): Promise<Organization> {
+export function patchOrganization(id: string, body: { status: OrgStatus }): Promise<Organization> {
   return apiRequest(`/saas/organizations/${id}`, {
     method: "PATCH",
     body,
@@ -76,30 +73,19 @@ export function requestOrgExport(orgId: string): Promise<OrgExportTicket> {
   });
 }
 
-export function fetchOrgExport(
-  orgId: string,
-  exportId: string,
-): Promise<OrgExportTicket> {
+export function fetchOrgExport(orgId: string, exportId: string): Promise<OrgExportTicket> {
   return apiRequest(`/saas/organizations/${orgId}/exports/${exportId}`);
 }
 
 /** Poll until ready/failed then download JSON blob. */
-export async function downloadOrgExport(
-  orgId: string,
-  exportId: string,
-): Promise<Blob> {
+export async function downloadOrgExport(orgId: string, exportId: string): Promise<Blob> {
   const base =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
-      /\/$/,
-      "",
-    ) || "http://localhost:3000";
+    (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ||
+    "http://localhost:3000";
   const token = getAccessTokenMemory();
-  const res = await fetch(
-    `${base}/saas/organizations/${orgId}/exports/${exportId}/download`,
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    },
-  );
+  const res = await fetch(`${base}/saas/organizations/${orgId}/exports/${exportId}/download`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text.slice(0, 200) || `Download failed (${res.status})`);

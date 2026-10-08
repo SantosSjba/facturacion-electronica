@@ -17,12 +17,20 @@ import {
 import { useOutletContext } from "react-router-dom";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { cn } from "@/shared/ui/utils";
+import {
+  Badge,
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Card,
+  CardTitle,
+  MutedText,
+  cn,
+} from "@factosys/ui";
 
 import { patchCompany } from "../../api";
 import type { Company, CompanyStatus } from "../../types";

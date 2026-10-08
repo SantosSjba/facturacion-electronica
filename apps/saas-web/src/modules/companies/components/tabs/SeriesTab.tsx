@@ -5,20 +5,34 @@ import { useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import {
+  Badge,
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Card,
+  CardTitle,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Input,
+  Label,
+  Select,
+  EmptyState,
+  ErrorState,
+  FieldError,
+  LoadingState,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  cn,
+} from "@factosys/ui";
+
 import { toast } from "@/shared/ui/toaster";
-import { cn } from "@/shared/ui/utils";
 
 import { createSeries, fetchSeries, patchSeries } from "../../api";
 import { DEFAULT_COMPANY_SERIES } from "../../default-series";

@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
-import { Badge } from "@/shared/ui/components/badge";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
+import { Badge } from "@factosys/ui";
+import { Card, CardTitle } from "@factosys/ui";
+import { EmptyState } from "@factosys/ui";
+import { ErrorState } from "@factosys/ui";
+import { LoadingState } from "@factosys/ui";
+import { MutedText } from "@factosys/ui";
+import { Table, TBody, TD, TH, THead, TR } from "@factosys/ui";
 
 import { fetchWebhookDeliveries } from "../api";
 

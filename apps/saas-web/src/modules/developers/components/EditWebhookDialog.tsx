@@ -3,14 +3,21 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Checkbox } from "@/shared/ui/components/checkbox";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { cn } from "@/shared/ui/utils";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Checkbox,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Input,
+  Label,
+  ErrorState,
+  FieldError,
+  cn,
+} from "@factosys/ui";
 
 import { patchWebhook } from "../api";
 import type { WebhookEndpoint } from "../types";

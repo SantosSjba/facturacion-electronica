@@ -9,12 +9,13 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { FieldError } from "@/shared/ui/FieldError";
-import { PageHeader } from "@/shared/ui/PageHeader";
+  Card,
+  CardTitle,
+  Input,
+  Label,
+  FieldError,
+  PageHeader,
+} from "@factosys/ui";
 
 const passwordSchema = z
   .object({
@@ -49,9 +50,7 @@ export function AppSecurityPage() {
     ? {}
     : (Object.fromEntries(
         parsed.error.issues.map((i) => [String(i.path[0]), i.message]),
-      ) as Partial<
-        Record<"current_password" | "new_password" | "confirm", string>
-      >);
+      ) as Partial<Record<"current_password" | "new_password" | "confirm", string>>);
 
   const mutation = useMutation({
     mutationFn: changePassword,
@@ -134,9 +133,7 @@ export function AppSecurityPage() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
-            {touched && fieldErrors.confirm ? (
-              <FieldError message={fieldErrors.confirm} />
-            ) : null}
+            {touched && fieldErrors.confirm ? <FieldError message={fieldErrors.confirm} /> : null}
           </div>
           {formError ? <FieldError message={formError} /> : null}
           {success ? (
@@ -150,9 +147,7 @@ export function AppSecurityPage() {
             ) : (
               <KeyRound className={buttonIconClassName} />
             )}
-            <ButtonLabel>
-              {mutation.isPending ? "Guardando…" : "Guardar"}
-            </ButtonLabel>
+            <ButtonLabel>{mutation.isPending ? "Guardando…" : "Guardar"}</ButtonLabel>
           </Button>
         </form>
       </Card>

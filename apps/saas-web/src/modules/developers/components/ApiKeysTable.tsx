@@ -1,10 +1,19 @@
 import { Ban, KeyRound, Loader2 } from "lucide-react";
 
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Badge } from "@/shared/ui/components/badge";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
-import { cn } from "@/shared/ui/utils";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Badge,
+  MutedText,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  cn,
+} from "@factosys/ui";
 
 import type { ApiKey } from "../types";
 

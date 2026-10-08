@@ -1,7 +1,8 @@
 {
   "extends": "../tsconfig.node.json",
   "compilerOptions": {
-    "lib": ["ES2023", "DOM"]
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx"
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "fixtures/*.tsx", "../src/vite-env.d.ts"]
 }

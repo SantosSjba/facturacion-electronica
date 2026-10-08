@@ -4,7 +4,7 @@ import type { AnchorHTMLAttributes, ComponentType, ReactNode } from "react";
 export interface AdminLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
 }
-export type AdminLinkComponent = ComponentType<AdminLinkProps>;
+export type AdminLinkComponent = ComponentType<AdminLinkProps> | "a";
 
 export interface AdminNavItem {
   id: string;

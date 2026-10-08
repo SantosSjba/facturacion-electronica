@@ -6,37 +6,35 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { DEFAULT_PAGE_SIZE, Pagination } from "@/shared/ui/Pagination";
-import { Badge } from "@/shared/ui/components/badge";
 import {
+  EmptyState,
+  ErrorState,
+  FieldError,
+  FilterPanel,
+  countActiveFilters,
+  LoadingState,
+  PageHeader,
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  Badge,
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import {
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { Textarea } from "@/shared/ui/components/textarea";
-import {
+  Input,
+  Label,
+  Select,
+  Textarea,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-} from "@/shared/ui/components/table";
+} from "@factosys/ui";
 
 import {
   createPlan,
@@ -192,12 +190,7 @@ export function PlansListPage() {
         title="Planes"
         description="Catálogo SaaS (crear, editar, retirar)."
         actions={
-          <Button
-            type="button"
-            size="icon-label-sm"
-            aria-label="Crear plan"
-            onClick={openCreate}
-          >
+          <Button type="button" size="icon-label-sm" aria-label="Crear plan" onClick={openCreate}>
             <Plus className={buttonIconClassName} />
             <ButtonLabel>Crear plan</ButtonLabel>
           </Button>
@@ -207,11 +200,7 @@ export function PlansListPage() {
       {query.isLoading ? <LoadingState label="Cargando planes…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -243,10 +232,7 @@ export function PlansListPage() {
           </FilterPanel>
 
           {filtered.length === 0 ? (
-            <EmptyState
-              title="Sin planes"
-              description="Crea el primer plan o ajusta el filtro."
-            />
+            <EmptyState title="Sin planes" description="Crea el primer plan o ajusta el filtro." />
           ) : (
             <>
               <Table>
@@ -267,8 +253,8 @@ export function PlansListPage() {
                       <TD className="font-medium">{p.name}</TD>
                       <TD>{p.price_display}</TD>
                       <TD className="text-theme-xs text-gray-500">
-                        {p.max_companies} emp · {p.max_users} usr ·{" "}
-                        {p.max_documents_per_month} docs · {p.max_api_keys} keys
+                        {p.max_companies} emp · {p.max_users} usr · {p.max_documents_per_month} docs
+                        · {p.max_api_keys} keys
                       </TD>
                       <TD>
                         <Badge color={p.active ? "success" : "muted"}>
@@ -302,7 +288,11 @@ export function PlansListPage() {
                   ))}
                 </TBody>
               </Table>
-              <Pagination page={page} pageCount={pageCount} total={filtered.length} pageSize={pageSize}
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                total={filtered.length}
+                pageSize={pageSize}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />
@@ -365,9 +355,7 @@ export function PlansListPage() {
               <Select
                 id="active"
                 value={form.active ? "1" : "0"}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, active: e.target.value === "1" }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === "1" }))}
               >
                 <option value="1">Sí</option>
                 <option value="0">No</option>
@@ -378,18 +366,14 @@ export function PlansListPage() {
               id="max_companies"
               type="number"
               value={String(form.max_companies)}
-              onChange={(v) =>
-                setForm((f) => ({ ...f, max_companies: Number(v) || 0 }))
-              }
+              onChange={(v) => setForm((f) => ({ ...f, max_companies: Number(v) || 0 }))}
             />
             <Field
               label="Max usuarios"
               id="max_users"
               type="number"
               value={String(form.max_users)}
-              onChange={(v) =>
-                setForm((f) => ({ ...f, max_users: Number(v) || 0 }))
-              }
+              onChange={(v) => setForm((f) => ({ ...f, max_users: Number(v) || 0 }))}
             />
             <Field
               label="Max docs / mes"
@@ -408,18 +392,14 @@ export function PlansListPage() {
               id="max_api_keys"
               type="number"
               value={String(form.max_api_keys)}
-              onChange={(v) =>
-                setForm((f) => ({ ...f, max_api_keys: Number(v) || 0 }))
-              }
+              onChange={(v) => setForm((f) => ({ ...f, max_api_keys: Number(v) || 0 }))}
             />
             <div className="sm:col-span-2">
               <Label htmlFor="description">Descripción</Label>
               <Textarea
                 id="description"
                 value={form.description ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={3}
               />
             </div>
@@ -427,11 +407,7 @@ export function PlansListPage() {
           {formError ? <FieldError message={formError} /> : null}
         </DialogBody>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setDialogOpen(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
             Cancelar
           </Button>
           <Button

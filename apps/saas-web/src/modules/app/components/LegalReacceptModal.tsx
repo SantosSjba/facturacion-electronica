@@ -14,18 +14,16 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Checkbox } from "@/shared/ui/components/checkbox";
-import {
+  Checkbox,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { cn } from "@/shared/ui/utils";
+  ErrorState,
+  FieldError,
+  LoadingState,
+  cn,
+} from "@factosys/ui";
 
 /** Blocking modal when published legal docs bump and org must re-accept (S16-LEG). */
 export function LegalReacceptModal() {
@@ -122,9 +120,7 @@ export function LegalReacceptModal() {
               >
                 <p className="mb-1 font-medium">
                   {doc!.title}{" "}
-                  <span className="text-theme-xs font-normal text-gray-500">
-                    v{doc!.version}
-                  </span>
+                  <span className="text-theme-xs font-normal text-gray-500">v{doc!.version}</span>
                 </p>
                 {doc!.body_md}
               </div>
@@ -154,11 +150,7 @@ export function LegalReacceptModal() {
           type="button"
           data-testid="legal-reaccept-submit"
           disabled={
-            acceptMutation.isPending ||
-            !acceptPrivacy ||
-            !acceptTerms ||
-            !privacyDoc ||
-            !termsDoc
+            acceptMutation.isPending || !acceptPrivacy || !acceptTerms || !privacyDoc || !termsDoc
           }
           onClick={() => {
             setError(null);

@@ -13,17 +13,24 @@ import { useSession } from "@/shared/auth/session-context";
 import {
   Button,
   ButtonLabel,
-} from "@/shared/ui/components/button";
-import { Badge } from "@/shared/ui/components/badge";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Label } from "@/shared/ui/components/label";
-import { Textarea } from "@/shared/ui/components/textarea";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
+  Badge,
+  Card,
+  CardTitle,
+  Label,
+  Select,
+  Textarea,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  EmptyState,
+  ErrorState,
+  FieldError,
+  LoadingState,
+  PageHeader,
+} from "@factosys/ui";
 
 export function AppPlanPage() {
   const { user } = useSession();
@@ -64,9 +71,7 @@ export function AppPlanPage() {
   });
 
   const plan = planQuery.data;
-  const catalog = (catalogQuery.data?.items ?? []).filter(
-    (p) => p.code !== plan?.plan?.code,
-  );
+  const catalog = (catalogQuery.data?.items ?? []).filter((p) => p.code !== plan?.plan?.code);
   const requests = requestsQuery.data?.items ?? [];
 
   function submit() {
@@ -83,18 +88,13 @@ export function AppPlanPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Plan"
-        description="Consulta tu plan actual y solicita un cambio."
-      />
+      <PageHeader title="Plan" description="Consulta tu plan actual y solicita un cambio." />
 
       {planQuery.isLoading ? <LoadingState label="Cargando plan…" /> : null}
       {planQuery.error ? (
         <ErrorState
           message={
-            planQuery.error instanceof Error
-              ? planQuery.error.message
-              : "Error al cargar el plan"
+            planQuery.error instanceof Error ? planQuery.error.message : "Error al cargar el plan"
           }
         />
       ) : null}
@@ -103,9 +103,7 @@ export function AppPlanPage() {
         <Card className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle>Plan actual</CardTitle>
-            {plan.org_plan_status ? (
-              <Badge variant="muted">{plan.org_plan_status}</Badge>
-            ) : null}
+            {plan.org_plan_status ? <Badge variant="muted">{plan.org_plan_status}</Badge> : null}
           </div>
           {plan.plan ? (
             <>
@@ -119,17 +117,13 @@ export function AppPlanPage() {
                 <ul className="grid gap-1 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
                   <li>Empresas: hasta {plan.limits.max_companies}</li>
                   <li>Usuarios: hasta {plan.limits.max_users}</li>
-                  <li>
-                    Documentos/mes: hasta {plan.limits.max_documents_per_month}
-                  </li>
+                  <li>Documentos/mes: hasta {plan.limits.max_documents_per_month}</li>
                   <li>API keys: hasta {plan.limits.max_api_keys}</li>
                 </ul>
               ) : null}
             </>
           ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Sin plan asignado.
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Sin plan asignado.</p>
           )}
         </Card>
       ) : null}
@@ -137,14 +131,12 @@ export function AppPlanPage() {
       <Card className="space-y-4">
         <CardTitle>Solicitar cambio de plan</CardTitle>
         <p className="text-sm text-gray-600 dark:text-gray-300">
-          Enviaremos la solicitud al equipo de operaciones. No cambia el plan
-          automáticamente.
+          Enviaremos la solicitud al equipo de operaciones. No cambia el plan automáticamente.
         </p>
         <div className="space-y-2">
           <Label htmlFor="requested-plan">Plan deseado</Label>
-          <select
+          <Select
             id="requested-plan"
-            className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700"
             value={requestedCode}
             onChange={(e) => setRequestedCode(e.target.value)}
           >
@@ -154,7 +146,7 @@ export function AppPlanPage() {
                 {p.name} ({p.code}) — {p.price_display}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="plan-message">Mensaje (opcional)</Label>
@@ -172,9 +164,7 @@ export function AppPlanPage() {
           onClick={submit}
           disabled={mutation.isPending || catalog.length === 0}
         >
-          <ButtonLabel>
-            {mutation.isPending ? "Enviando…" : "Solicitar cambio"}
-          </ButtonLabel>
+          <ButtonLabel>{mutation.isPending ? "Enviando…" : "Solicitar cambio"}</ButtonLabel>
         </Button>
       </Card>
 
@@ -182,9 +172,7 @@ export function AppPlanPage() {
         <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
           Solicitudes recientes
         </h3>
-        {requestsQuery.isLoading ? (
-          <LoadingState label="Cargando solicitudes…" />
-        ) : null}
+        {requestsQuery.isLoading ? <LoadingState label="Cargando solicitudes…" /> : null}
         {!requestsQuery.isLoading && requests.length === 0 ? (
           <EmptyState
             title="Sin solicitudes"
@@ -207,15 +195,11 @@ export function AppPlanPage() {
                   <TD label="Solicitado">
                     {r.requested_plan_name} ({r.requested_plan_code})
                   </TD>
-                  <TD label="Actual">
-                    {r.current_plan_code ?? "—"}
-                  </TD>
+                  <TD label="Actual">{r.current_plan_code ?? "—"}</TD>
                   <TD label="Estado">
                     <Badge variant="outline">{r.status}</Badge>
                   </TD>
-                  <TD label="Fecha">
-                    {new Date(r.created_at).toLocaleString()}
-                  </TD>
+                  <TD label="Fecha">{new Date(r.created_at).toLocaleString()}</TD>
                 </TR>
               ))}
             </TBody>

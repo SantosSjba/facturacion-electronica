@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { useSession } from "@/shared/auth/session-context";
-import { Button } from "@/shared/ui/components/button";
+import { Button } from "@factosys/ui";
 
 /** Red blocking-style banner while a platform admin is impersonating a tenant. */
 export function ImpersonationBanner() {
@@ -10,10 +10,7 @@ export function ImpersonationBanner() {
   const imp = user?.impersonation;
   if (!imp) return null;
 
-  const endsAt =
-    imp.expiresAt != null
-      ? new Date(imp.expiresAt * 1000).toLocaleTimeString()
-      : null;
+  const endsAt = imp.expiresAt != null ? new Date(imp.expiresAt * 1000).toLocaleTimeString() : null;
 
   return (
     <div

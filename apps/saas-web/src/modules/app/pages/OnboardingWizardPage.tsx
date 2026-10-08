@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Building2,
-  Check,
-  Loader2,
-  Scale,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Check, Loader2, Scale, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { ApiError } from "@/shared/api/errors";
@@ -18,16 +10,17 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Checkbox } from "@/shared/ui/components/checkbox";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { cn } from "@/shared/ui/utils";
+  Card,
+  CardTitle,
+  Checkbox,
+  Input,
+  Label,
+  Select,
+  ErrorState,
+  FieldError,
+  LoadingState,
+  cn,
+} from "@factosys/ui";
 
 import {
   acceptOnboardingLegal,
@@ -46,9 +39,7 @@ export function OnboardingWizardPage() {
   const [error, setError] = useState<string | null>(null);
   const [ruc, setRuc] = useState("");
   const [legalName, setLegalName] = useState("");
-  const [environment, setEnvironment] = useState<"sandbox" | "production">(
-    "sandbox",
-  );
+  const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -147,11 +138,7 @@ export function OnboardingWizardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center p-6">
         <ErrorState
-          message={
-            statusQuery.error instanceof Error
-              ? statusQuery.error.message
-              : "Error"
-          }
+          message={statusQuery.error instanceof Error ? statusQuery.error.message : "Error"}
           onRetry={() => void statusQuery.refetch()}
         />
       </div>
@@ -175,12 +162,7 @@ export function OnboardingWizardPage() {
               Completa estos pasos para entrar al panel.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => void logout()}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={() => void logout()}>
             Salir
           </Button>
         </div>
@@ -213,15 +195,10 @@ export function OnboardingWizardPage() {
               </div>
               <CardTitle>Bienvenido a Factosys</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Tu organización <strong>{orgName}</strong> ya está creada. En
-                los siguientes pasos registrarás tu primera empresa (RUC) y
-                aceptarás los términos legales.
+                Tu organización <strong>{orgName}</strong> ya está creada. En los siguientes pasos
+                registrarás tu primera empresa (RUC) y aceptarás los términos legales.
               </p>
-              <Button
-                type="button"
-                data-testid="onb-welcome-next"
-                onClick={() => setStep(1)}
-              >
+              <Button type="button" data-testid="onb-welcome-next" onClick={() => setStep(1)}>
                 <ButtonLabel>Continuar</ButtonLabel>
                 <ArrowRight className={buttonIconClassName} />
               </Button>
@@ -246,9 +223,7 @@ export function OnboardingWizardPage() {
                       id="onb-ruc"
                       data-testid="onb-ruc"
                       value={ruc}
-                      onChange={(e) =>
-                        setRuc(e.target.value.replace(/\D/g, "").slice(0, 11))
-                      }
+                      onChange={(e) => setRuc(e.target.value.replace(/\D/g, "").slice(0, 11))}
                       inputMode="numeric"
                       placeholder="20123456789"
                     />
@@ -268,11 +243,7 @@ export function OnboardingWizardPage() {
                       id="onb-env"
                       data-testid="onb-env"
                       value={environment}
-                      onChange={(e) =>
-                        setEnvironment(
-                          e.target.value as "sandbox" | "production",
-                        )
-                      }
+                      onChange={(e) => setEnvironment(e.target.value as "sandbox" | "production")}
                     >
                       <option value="sandbox">Sandbox</option>
                       <option value="production">Producción</option>
@@ -281,11 +252,7 @@ export function OnboardingWizardPage() {
                 </>
               )}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(0)}
-                >
+                <Button type="button" variant="outline" onClick={() => setStep(0)}>
                   <ArrowLeft className={buttonIconClassName} />
                   <ButtonLabel>Atrás</ButtonLabel>
                 </Button>
@@ -298,25 +265,17 @@ export function OnboardingWizardPage() {
                   <Button
                     type="button"
                     data-testid="onb-create-company"
-                    disabled={
-                      companyMutation.isPending ||
-                      ruc.length !== 11 ||
-                      !legalName.trim()
-                    }
+                    disabled={companyMutation.isPending || ruc.length !== 11 || !legalName.trim()}
                     onClick={() => {
                       setError(null);
                       companyMutation.mutate();
                     }}
                   >
                     {companyMutation.isPending ? (
-                      <Loader2
-                        className={cn(buttonIconClassName, "animate-spin")}
-                      />
+                      <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
                     ) : null}
                     <ButtonLabel>
-                      {companyMutation.isPending
-                        ? "Creando…"
-                        : "Crear empresa"}
+                      {companyMutation.isPending ? "Creando…" : "Crear empresa"}
                     </ButtonLabel>
                   </Button>
                 )}
@@ -367,11 +326,7 @@ export function OnboardingWizardPage() {
                 </>
               )}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStep(1)}
-                >
+                <Button type="button" variant="outline" onClick={() => setStep(1)}>
                   <ArrowLeft className={buttonIconClassName} />
                   <ButtonLabel>Atrás</ButtonLabel>
                 </Button>
@@ -391,14 +346,10 @@ export function OnboardingWizardPage() {
                   }}
                 >
                   {legalMutation.isPending ? (
-                    <Loader2
-                      className={cn(buttonIconClassName, "animate-spin")}
-                    />
+                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
                   ) : null}
                   <ButtonLabel>
-                    {legalMutation.isPending
-                      ? "Guardando…"
-                      : "Aceptar y continuar"}
+                    {legalMutation.isPending ? "Guardando…" : "Aceptar y continuar"}
                   </ButtonLabel>
                 </Button>
               </div>

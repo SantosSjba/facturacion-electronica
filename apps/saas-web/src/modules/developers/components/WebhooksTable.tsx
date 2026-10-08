@@ -1,16 +1,21 @@
 import { History, Loader2, Pencil, Power, PowerOff, RefreshCw, Webhook } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { Badge } from "@/shared/ui/components/badge";
 import {
+  Badge,
   Button,
   ButtonLabel,
   buttonIconClassName,
   buttonVariants,
-} from "@/shared/ui/components/button";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
-import { cn } from "@/shared/ui/utils";
+  MutedText,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  cn,
+} from "@factosys/ui";
 
 import type { WebhookEndpoint } from "../types";
 

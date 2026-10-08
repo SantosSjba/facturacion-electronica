@@ -4,41 +4,33 @@ import { MailPlus } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 
-import {
-  fetchOrgRoles,
-  fetchOrgUsers,
-  inviteOrgUser,
-  type OrgUser,
-} from "@/modules/app/api/users";
+import { fetchOrgRoles, fetchOrgUsers, inviteOrgUser, type OrgUser } from "@/modules/app/api/users";
 import { useSession } from "@/shared/auth/session-context";
 import { ApiError } from "@/shared/api/errors";
 import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Badge } from "@/shared/ui/components/badge";
-import {
+  Badge,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import {
+  Input,
+  Label,
+  MultiSelect,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-} from "@/shared/ui/components/table";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
+  EmptyState,
+  ErrorState,
+  FieldError,
+  LoadingState,
+  PageHeader,
+} from "@factosys/ui";
 
 const inviteSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -48,8 +40,7 @@ const inviteSchema = z.object({
 
 function statusBadge(status: string) {
   if (status === "active") return <Badge variant="success">Activo</Badge>;
-  if (status === "disabled")
-    return <Badge variant="warning">Pendiente invite</Badge>;
+  if (status === "disabled") return <Badge variant="warning">Pendiente invite</Badge>;
   return <Badge variant="muted">{status}</Badge>;
 }
 
@@ -105,12 +96,6 @@ export function AppUsersPage() {
     },
   });
 
-  function toggleRole(code: string) {
-    setRoles((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-    );
-  }
-
   function submit() {
     setTouched(true);
     setFormError(null);
@@ -144,11 +129,7 @@ export function AppUsersPage() {
 
       {loading ? <LoadingState label="Cargando usuarios…" /> : null}
       {!loading && error ? (
-        <ErrorState
-          message={
-            error instanceof Error ? error.message : "Error al cargar usuarios"
-          }
-        />
+        <ErrorState message={error instanceof Error ? error.message : "Error al cargar usuarios"} />
       ) : null}
 
       {!loading && !error && users.length === 0 ? (
@@ -191,12 +172,7 @@ export function AppUsersPage() {
         </Table>
       ) : null}
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        ariaLabel="Invitar usuario"
-        size="md"
-      >
+      <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Invitar usuario" size="md">
         <DialogHeader title="Invitar usuario" onClose={() => setOpen(false)} />
         <DialogBody className="space-y-4">
           <div className="space-y-2">
@@ -208,68 +184,33 @@ export function AppUsersPage() {
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="off"
             />
-            {touched && fieldErrors.email ? (
-              <FieldError message={fieldErrors.email} />
-            ) : null}
+            {touched && fieldErrors.email ? <FieldError message={fieldErrors.email} /> : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="invite-name">Nombre</Label>
-            <Input
-              id="invite-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            {touched && fieldErrors.name ? (
-              <FieldError message={fieldErrors.name} />
-            ) : null}
+            <Input id="invite-name" value={name} onChange={(e) => setName(e.target.value)} />
+            {touched && fieldErrors.name ? <FieldError message={fieldErrors.name} /> : null}
           </div>
           <div className="space-y-2">
-            <Label>Roles</Label>
-            <div className="flex flex-wrap gap-2">
-              {assignableRoles.map((r) => {
-                const selected = roles.includes(r.code);
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => toggleRole(r.code)}
-                    className={
-                      selected
-                        ? "rounded-lg border border-brand-500 bg-brand-50 px-3 py-1.5 text-sm text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
-                        : "rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300"
-                    }
-                  >
-                    {r.name}
-                  </button>
-                );
-              })}
-            </div>
-            {touched && fieldErrors.roles ? (
-              <FieldError message={fieldErrors.roles} />
-            ) : null}
+            <MultiSelect
+              label="Roles"
+              options={assignableRoles.map((role) => ({ value: role.code, text: role.name }))}
+              value={roles}
+              onChange={setRoles}
+            />
+            {touched && fieldErrors.roles ? <FieldError message={fieldErrors.roles} /> : null}
           </div>
           {formError ? <FieldError message={formError} /> : null}
           <p className="text-theme-xs text-gray-500 dark:text-gray-400">
-            Se enviará un email con enlace para crear la contraseña (válido
-            temporalmente).
+            Se enviará un email con enlace para crear la contraseña (válido temporalmente).
           </p>
         </DialogBody>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setOpen(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             <ButtonLabel>Cancelar</ButtonLabel>
           </Button>
-          <Button
-            type="button"
-            onClick={submit}
-            disabled={inviteMutation.isPending}
-          >
-            <ButtonLabel>
-              {inviteMutation.isPending ? "Enviando…" : "Enviar invite"}
-            </ButtonLabel>
+          <Button type="button" onClick={submit} disabled={inviteMutation.isPending}>
+            <ButtonLabel>{inviteMutation.isPending ? "Enviando…" : "Enviar invite"}</ButtonLabel>
           </Button>
         </DialogFooter>
       </Dialog>

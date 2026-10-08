@@ -36,16 +36,11 @@ export function fetchLegalDocuments(status?: LegalDocumentStatus): Promise<{
   return apiRequest(`/saas/legal/documents${suffix}`);
 }
 
-export function createLegalDocument(
-  body: LegalWriteBody,
-): Promise<LegalDocument> {
+export function createLegalDocument(body: LegalWriteBody): Promise<LegalDocument> {
   return apiRequest("/saas/legal/documents", { method: "POST", body });
 }
 
-export function patchLegalDocument(
-  id: string,
-  body: LegalPatchBody,
-): Promise<LegalDocument> {
+export function patchLegalDocument(id: string, body: LegalPatchBody): Promise<LegalDocument> {
   return apiRequest(`/saas/legal/documents/${id}`, { method: "PATCH", body });
 }
 

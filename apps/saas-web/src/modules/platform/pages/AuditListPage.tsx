@@ -6,13 +6,13 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { DEFAULT_PAGE_SIZE } from "@/shared/ui/Pagination";
-import { cn } from "@/shared/ui/utils";
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  DEFAULT_PAGE_SIZE,
+  cn,
+} from "@factosys/ui";
 
 import { fetchPlatformAuditEvents, type AuditEvent } from "../api/audit";
 import { AuditDetailDrawer } from "../components/AuditDetailDrawer";
@@ -79,27 +79,18 @@ export function AuditListPage() {
         </Button>
       </div>
 
-      {query.isLoading && !cursor ? (
-        <LoadingState label="Cargando auditoría…" />
-      ) : null}
+      {query.isLoading && !cursor ? <LoadingState label="Cargando auditoría…" /> : null}
 
       {!query.isLoading && query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar auditoría"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar auditoría"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
 
       {!query.isLoading && !query.error ? (
         items.length === 0 ? (
-          <EmptyState
-            title="Sin eventos"
-            description="No hay eventos con los filtros actuales."
-          />
+          <EmptyState title="Sin eventos" description="No hay eventos con los filtros actuales." />
         ) : (
           <div className="space-y-4">
             <AuditTable events={items} onSelect={setSelected} />
@@ -113,15 +104,11 @@ export function AuditListPage() {
                 onClick={loadMore}
               >
                 {query.isFetching ? (
-                  <Loader2
-                    className={cn(buttonIconClassName, "animate-spin")}
-                  />
+                  <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
                 ) : (
                   <ChevronDown className={buttonIconClassName} />
                 )}
-                <ButtonLabel>
-                  {query.isFetching ? "Cargando…" : "Cargar más"}
-                </ButtonLabel>
+                <ButtonLabel>{query.isFetching ? "Cargando…" : "Cargar más"}</ButtonLabel>
               </Button>
             ) : null}
           </div>

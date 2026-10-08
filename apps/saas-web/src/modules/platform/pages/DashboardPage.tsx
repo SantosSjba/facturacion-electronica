@@ -1,11 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { MutedText } from "@/shared/ui/components/muted-text";
+import { ErrorState, LoadingState, PageHeader, Card, CardTitle, MutedText } from "@factosys/ui";
 
 import { fetchPlatformStats } from "../api/stats";
 
@@ -27,11 +23,7 @@ export function DashboardPage() {
       {query.isLoading ? <LoadingState label="Cargando KPIs…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar stats"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar stats"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -68,11 +60,7 @@ export function DashboardPage() {
             value={stats.organizations.suspended}
             to="/platform/organizations?status=suspended"
           />
-          <KpiCard
-            title="Planes activos"
-            value={stats.plans.active}
-            to="/platform/plans"
-          />
+          <KpiCard title="Planes activos" value={stats.plans.active} to="/platform/plans" />
           <KpiCard
             title="Planes retirados"
             value={stats.plans.retired}
@@ -84,22 +72,12 @@ export function DashboardPage() {
   );
 }
 
-function KpiCard({
-  title,
-  value,
-  to,
-}: {
-  title: string;
-  value: number;
-  to: string;
-}) {
+function KpiCard({ title, value, to }: { title: string; value: number; to: string }) {
   return (
     <Link to={to} className="block transition hover:opacity-90">
       <Card>
         <CardTitle className="mb-1">{title}</CardTitle>
-        <p className="text-3xl font-semibold text-gray-800 dark:text-white/90">
-          {value}
-        </p>
+        <p className="text-3xl font-semibold text-gray-800 dark:text-white/90">{value}</p>
         <MutedText className="mt-2">Ver listado →</MutedText>
       </Card>
     </Link>

@@ -1,11 +1,6 @@
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
+import { FilterPanel, countActiveFilters, Input, Label } from "@factosys/ui";
 
-import {
-  emptyAuditFilters,
-  type AuditFiltersState,
-} from "../lib/audit-filters";
+import { emptyAuditFilters, type AuditFiltersState } from "../lib/audit-filters";
 
 export function AuditFilters({
   value,
@@ -23,10 +18,7 @@ export function AuditFilters({
   });
 
   return (
-    <FilterPanel
-      activeCount={activeCount}
-      onClear={() => onChange(emptyAuditFilters())}
-    >
+    <FilterPanel activeCount={activeCount} onClear={() => onChange(emptyAuditFilters())}>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="space-y-1.5">
           <Label htmlFor="audit-action">Action</Label>
@@ -52,9 +44,7 @@ export function AuditFilters({
             id="audit-org"
             placeholder="uuid (opcional)"
             value={value.organization_id}
-            onChange={(e) =>
-              onChange({ ...value, organization_id: e.target.value })
-            }
+            onChange={(e) => onChange({ ...value, organization_id: e.target.value })}
           />
         </div>
         <div className="space-y-1.5">

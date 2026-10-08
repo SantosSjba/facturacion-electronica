@@ -3,12 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookMarked, FileCode2, Hash, Info, Layers, Pin } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 
-import { Badge } from "@/shared/ui/components/badge";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { cn } from "@/shared/ui/utils";
+import { Badge, Card, CardTitle, MutedText, ErrorState, LoadingState, cn } from "@factosys/ui";
 
 import { fetchRuleset } from "../../api";
 import type { Company } from "../../types";

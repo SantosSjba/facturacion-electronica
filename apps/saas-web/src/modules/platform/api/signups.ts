@@ -1,10 +1,6 @@
 import { apiRequest } from "@/shared/api/http-client";
 
-export type SignupStatus =
-  | "received"
-  | "under_review"
-  | "approved"
-  | "rejected";
+export type SignupStatus = "received" | "under_review" | "approved" | "rejected";
 
 export interface SignupRequest {
   id: string;

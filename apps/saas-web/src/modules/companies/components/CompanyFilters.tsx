@@ -1,8 +1,5 @@
 import type { CompanyFiltersState } from "../filters";
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
+import { FilterPanel, countActiveFilters, Input, Label, Select } from "@factosys/ui";
 
 const EMPTY: CompanyFiltersState = {
   ruc: "",

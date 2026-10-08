@@ -36,9 +36,7 @@ export function fetchOnboardingLegal(): Promise<{
   return apiRequest("/saas/onboarding/legal");
 }
 
-export function acceptOnboardingLegal(
-  documentIds: string[],
-): Promise<OnboardingStatus> {
+export function acceptOnboardingLegal(documentIds: string[]): Promise<OnboardingStatus> {
   return apiRequest("/saas/onboarding/accept-legal", {
     method: "POST",
     body: { document_ids: documentIds },

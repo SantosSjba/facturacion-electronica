@@ -8,22 +8,24 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
+        primary: "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
+        default: "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 disabled:bg-brand-300",
         secondary:
           "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700",
         outline:
           "bg-white text-gray-700 shadow-theme-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300",
-        ghost:
-          "text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5",
-        destructive:
-          "bg-error-500 text-white shadow-theme-xs hover:bg-error-600",
+        ghost: "text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5",
+        destructive: "bg-error-500 text-white shadow-theme-xs hover:bg-error-600",
       },
       size: {
+        md: "px-5 py-3.5 text-sm",
         default: "h-11 px-5 py-3",
         sm: "h-9 px-4 py-2 text-xs",
         lg: "h-12 px-6 py-3.5",
         icon: "size-10 p-0",
+        /** Icon always; label via ButtonLabel (hidden below sm). Square on mobile. */
+        "icon-label": "size-11 shrink-0 p-0 sm:h-11 sm:w-auto sm:px-5 sm:py-3",
+        "icon-label-sm": "size-9 shrink-0 p-0 text-xs sm:h-9 sm:w-auto sm:px-4 sm:py-2",
       },
     },
     defaultVariants: {
@@ -34,17 +36,30 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+  startIcon?: React.ReactNode;
+  endIcon?: React.ReactNode;
+}
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = "button", ...props }, ref) => (
+  ({ className, variant, size, type = "button", startIcon, endIcon, children, ...props }, ref) => (
     <button
       ref={ref}
       type={type}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {startIcon && <span className="flex items-center">{startIcon}</span>}
+      {children}
+      {endIcon && <span className="flex items-center">{endIcon}</span>}
+    </button>
   ),
 );
 Button.displayName = "Button";
+
+/** Visible from `sm` up; pair with an icon + `aria-label` for mobile. */
+export function ButtonLabel({ children }: { children: React.ReactNode }) {
+  return <span className="hidden sm:inline">{children}</span>;
+}
+
+export const buttonIconClassName = "size-4 shrink-0";

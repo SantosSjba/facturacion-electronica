@@ -5,18 +5,26 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Checkbox } from "@/shared/ui/components/checkbox";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Select } from "@/shared/ui/components/select";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Checkbox,
+  Input,
+  Label,
+  MutedText,
+  Select,
+  ErrorState,
+  FieldError,
+  LoadingState,
+  cn,
+} from "@factosys/ui";
+
 import { toast } from "@/shared/ui/toaster";
-import { cn } from "@/shared/ui/utils";
 
 import { createCompany, fetchCompany, patchCompany } from "../api";
 import { DEFAULT_COMPANY_SERIES } from "../default-series";

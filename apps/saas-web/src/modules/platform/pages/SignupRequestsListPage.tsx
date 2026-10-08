@@ -2,30 +2,30 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { DEFAULT_PAGE_SIZE, Pagination } from "@/shared/ui/Pagination";
-import { Badge } from "@/shared/ui/components/badge";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { TextLink } from "@/shared/ui/components/text-link";
 import {
+  EmptyState,
+  ErrorState,
+  FilterPanel,
+  countActiveFilters,
+  LoadingState,
+  PageHeader,
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  Badge,
+  Input,
+  Label,
+  Select,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-} from "@/shared/ui/components/table";
+} from "@factosys/ui";
 
-import {
-  fetchSignupRequests,
-  type SignupStatus,
-} from "../api/signups";
+import { TextLink } from "@/shared/ui/components/text-link";
+
+import { fetchSignupRequests, type SignupStatus } from "../api/signups";
 import { signupStatusBadge } from "../lib/status-badges";
 
 const STATUS_OPTIONS: Array<SignupStatus | ""> = [
@@ -80,19 +80,12 @@ export function SignupRequestsListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Solicitudes"
-        description="Signup requests de la landing."
-      />
+      <PageHeader title="Solicitudes" description="Signup requests de la landing." />
 
       {query.isLoading ? <LoadingState label="Cargando solicitudes…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -160,31 +153,29 @@ export function SignupRequestsListPage() {
                     const badge = signupStatusBadge(row.status);
                     return (
                       <TR key={row.id}>
-                        <TD className="font-medium">
-                          {row.company_name}
-                        </TD>
+                        <TD className="font-medium">{row.company_name}</TD>
                         <TD>{row.ruc}</TD>
                         <TD>
                           <div>{row.contact_name}</div>
-                          <div className="text-theme-xs text-gray-500">
-                            {row.contact_email}
-                          </div>
+                          <div className="text-theme-xs text-gray-500">{row.contact_email}</div>
                         </TD>
                         <TD>{row.plan_code ?? "—"}</TD>
                         <TD>
                           <Badge color={badge.color}>{badge.label}</Badge>
                         </TD>
                         <TD>
-                          <TextLink to={`/platform/signup-requests/${row.id}`}>
-                            Ver
-                          </TextLink>
+                          <TextLink to={`/platform/signup-requests/${row.id}`}>Ver</TextLink>
                         </TD>
                       </TR>
                     );
                   })}
                 </TBody>
               </Table>
-              <Pagination page={page} pageCount={pageCount} total={items.length} pageSize={pageSize}
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                total={items.length}
+                pageSize={pageSize}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />

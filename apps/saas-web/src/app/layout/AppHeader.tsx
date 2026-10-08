@@ -62,15 +62,13 @@ export function AppHeader() {
                 unreadCount={query.data?.unread_count ?? 0}
                 loading={query.isLoading}
                 error={Boolean(query.error)}
-                items={(query.data?.items ?? [])
-                  .slice(0, 8)
-                  .map((item) => ({
-                    id: item.id,
-                    title: item.title ?? "Notificación",
-                    body: item.body ?? undefined,
-                    time: new Date(item.created_at).toLocaleString("es-PE"),
-                    unread: !item.read_at,
-                  }))}
+                items={(query.data?.items ?? []).slice(0, 8).map((item) => ({
+                  id: item.id,
+                  title: item.title ?? "Notificación",
+                  body: item.body ?? undefined,
+                  time: new Date(item.created_at).toLocaleString("es-PE"),
+                  unread: !item.read_at,
+                }))}
                 labels={{
                   title: "Notificaciones",
                   all: "Ver todas las notificaciones",

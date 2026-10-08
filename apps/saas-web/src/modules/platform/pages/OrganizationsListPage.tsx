@@ -2,25 +2,28 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FilterPanel, countActiveFilters } from "@/shared/ui/FilterPanel";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { DEFAULT_PAGE_SIZE, Pagination } from "@/shared/ui/Pagination";
-import { Badge } from "@/shared/ui/components/badge";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
-import { TextLink } from "@/shared/ui/components/text-link";
 import {
+  EmptyState,
+  ErrorState,
+  FilterPanel,
+  countActiveFilters,
+  LoadingState,
+  PageHeader,
+  DEFAULT_PAGE_SIZE,
+  Pagination,
+  Badge,
+  Input,
+  Label,
+  Select,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-} from "@/shared/ui/components/table";
+} from "@factosys/ui";
+
+import { TextLink } from "@/shared/ui/components/text-link";
 
 import { fetchOrganizations, type OrgStatus } from "../api/orgs";
 import { orgStatusBadge } from "../lib/status-badges";
@@ -64,19 +67,12 @@ export function OrganizationsListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Organizaciones"
-        description="Tenants SaaS (excluye org plataforma)."
-      />
+      <PageHeader title="Organizaciones" description="Tenants SaaS (excluye org plataforma)." />
 
       {query.isLoading ? <LoadingState label="Cargando organizaciones…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "Error al cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "Error al cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -155,16 +151,18 @@ export function OrganizationsListPage() {
                           <Badge color={badge.color}>{badge.label}</Badge>
                         </TD>
                         <TD>
-                          <TextLink to={`/platform/organizations/${row.id}`}>
-                            Ver
-                          </TextLink>
+                          <TextLink to={`/platform/organizations/${row.id}`}>Ver</TextLink>
                         </TD>
                       </TR>
                     );
                   })}
                 </TBody>
               </Table>
-              <Pagination page={page} pageCount={pageCount} total={items.length} pageSize={pageSize}
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                total={items.length}
+                pageSize={pageSize}
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
               />

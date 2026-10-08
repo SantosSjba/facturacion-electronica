@@ -2,14 +2,19 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Webhook } from "lucide-react";
 
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { Badge } from "@/shared/ui/components/badge";
-import { ButtonLabel, buttonIconClassName, buttonVariants } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { cn } from "@/shared/ui/utils";
+import {
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  Badge,
+  ButtonLabel,
+  buttonIconClassName,
+  buttonVariants,
+  Card,
+  CardTitle,
+  MutedText,
+  cn,
+} from "@factosys/ui";
 
 import { fetchWebhooks } from "../api";
 import { DeliveriesPanel } from "../components/DeliveriesPanel";

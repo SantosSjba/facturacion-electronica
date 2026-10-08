@@ -23,9 +23,7 @@ export function fetchNotifications(): Promise<{
   return apiRequest("/organizations/me/notifications");
 }
 
-export function markNotificationRead(
-  id: string,
-): Promise<InAppNotification> {
+export function markNotificationRead(id: string): Promise<InAppNotification> {
   return apiRequest(`/organizations/me/notifications/${id}/read`, {
     method: "POST",
   });

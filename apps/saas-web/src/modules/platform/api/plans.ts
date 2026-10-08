@@ -39,10 +39,7 @@ export function createPlan(body: PlanWriteBody): Promise<Plan> {
   return apiRequest("/saas/plans", { method: "POST", body });
 }
 
-export function patchPlan(
-  id: string,
-  body: Partial<PlanWriteBody>,
-): Promise<Plan> {
+export function patchPlan(id: string, body: Partial<PlanWriteBody>): Promise<Plan> {
   return apiRequest(`/saas/plans/${id}`, { method: "PATCH", body });
 }
 

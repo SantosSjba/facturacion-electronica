@@ -5,14 +5,12 @@ import {
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Badge } from "@/shared/ui/components/badge";
-import { MutedText } from "@/shared/ui/components/muted-text";
+  Badge,
+  MutedText,
+} from "@factosys/ui";
 
 import type { AuditEvent } from "../api/audit";
 
@@ -24,12 +22,7 @@ export function AuditDetailDrawer({
   onClose: () => void;
 }) {
   return (
-    <Dialog
-      open={Boolean(event)}
-      onClose={onClose}
-      ariaLabel="Detalle de auditoría"
-      size="lg"
-    >
+    <Dialog open={Boolean(event)} onClose={onClose} ariaLabel="Detalle de auditoría" size="lg">
       {event ? (
         <>
           <DialogHeader
@@ -47,9 +40,7 @@ export function AuditDetailDrawer({
               </div>
               <div>
                 <MutedText as="dt">Actor id</MutedText>
-                <dd className="font-mono text-theme-sm break-all">
-                  {event.actor_id ?? "—"}
-                </dd>
+                <dd className="font-mono text-theme-sm break-all">{event.actor_id ?? "—"}</dd>
               </div>
               <div>
                 <MutedText as="dt">Resource</MutedText>
@@ -64,9 +55,7 @@ export function AuditDetailDrawer({
               </div>
               <div className="sm:col-span-2">
                 <MutedText as="dt">User-Agent</MutedText>
-                <dd className="text-theme-xs break-all">
-                  {event.user_agent ?? "—"}
-                </dd>
+                <dd className="text-theme-xs break-all">{event.user_agent ?? "—"}</dd>
               </div>
             </dl>
             <div className="space-y-2">
@@ -80,12 +69,7 @@ export function AuditDetailDrawer({
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Cerrar"
-              onClick={onClose}
-            >
+            <Button type="button" size="icon-label-sm" aria-label="Cerrar" onClick={onClose}>
               <X className={buttonIconClassName} />
               <ButtonLabel>Cerrar</ButtonLabel>
             </Button>

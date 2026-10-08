@@ -13,14 +13,15 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Checkbox } from "@/shared/ui/components/checkbox";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { cn } from "@/shared/ui/utils";
+  Card,
+  CardTitle,
+  Checkbox,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  cn,
+} from "@factosys/ui";
 
 const EVENT_LABELS: Record<string, string> = {
   "plan.change_requested": "Cambio de plan",
@@ -89,9 +90,7 @@ export function AppNotificationsPage() {
         }
       />
 
-      {inboxQuery.isLoading ? (
-        <LoadingState label="Cargando notificaciones…" />
-      ) : null}
+      {inboxQuery.isLoading ? <LoadingState label="Cargando notificaciones…" /> : null}
       {inboxQuery.error ? (
         <ErrorState
           message={
@@ -114,10 +113,11 @@ export function AppNotificationsPage() {
           const unreadItem = !n.read_at;
           return (
             <li key={n.id}>
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 className={cn(
-                  "w-full rounded-2xl border px-4 py-3 text-start transition-colors",
+                  "h-auto w-full justify-start whitespace-normal rounded-2xl border px-4 py-3 text-start transition-colors",
                   unreadItem
                     ? "border-brand-200 bg-brand-50/60 dark:border-brand-500/30 dark:bg-brand-500/10"
                     : "border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]",
@@ -132,9 +132,7 @@ export function AppNotificationsPage() {
                       {n.title ?? n.template_code}
                     </p>
                     {n.body ? (
-                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                        {n.body}
-                      </p>
+                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{n.body}</p>
                     ) : null}
                     <p className="mt-2 text-theme-xs text-gray-500">
                       {new Date(n.created_at).toLocaleString()}
@@ -144,7 +142,7 @@ export function AppNotificationsPage() {
                     <span className="mt-1 size-2 shrink-0 rounded-full bg-brand-500" />
                   ) : null}
                 </div>
-              </button>
+              </Button>
             </li>
           );
         })}
@@ -155,9 +153,7 @@ export function AppNotificationsPage() {
         <p className="text-sm text-gray-600 dark:text-gray-300">
           Activa o desactiva email e in-app por tipo de evento.
         </p>
-        {prefsQuery.isLoading ? (
-          <LoadingState label="Cargando preferencias…" />
-        ) : null}
+        {prefsQuery.isLoading ? <LoadingState label="Cargando preferencias…" /> : null}
         <div className="space-y-3">
           {prefs.map((p) => (
             <div

@@ -26,11 +26,7 @@ export function fetchOrgRoles(): Promise<OrgRole[]> {
   return apiRequest("/organizations/me/roles");
 }
 
-export function inviteOrgUser(input: {
-  email: string;
-  name: string;
-  roles: string[];
-}): Promise<{
+export function inviteOrgUser(input: { email: string; name: string; roles: string[] }): Promise<{
   id: string;
   email: string;
   name: string;

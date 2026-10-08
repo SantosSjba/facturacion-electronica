@@ -4,28 +4,26 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { ApiError } from "@/shared/api/errors";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
 import {
+  ErrorState,
+  FieldError,
+  LoadingState,
+  PageHeader,
+  Badge,
+  Button,
+  Card,
+  CardTitle,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
-} from "@/shared/ui/components/dialog";
-import { Label } from "@/shared/ui/components/label";
-import { Textarea } from "@/shared/ui/components/textarea";
+  Label,
+  Textarea,
+} from "@factosys/ui";
+
 import { TextLink } from "@/shared/ui/components/text-link";
 
-import {
-  fetchSignupRequest,
-  patchSignupRequest,
-  type SignupStatus,
-} from "../api/signups";
+import { fetchSignupRequest, patchSignupRequest, type SignupStatus } from "../api/signups";
 import { signupStatusBadge } from "../lib/status-badges";
 
 export function SignupRequestDetailPage() {
@@ -71,19 +69,13 @@ export function SignupRequestDetailPage() {
       <PageHeader
         title={item?.company_name ?? "Solicitud"}
         description="Detalle y acciones de aprobación / rechazo."
-        actions={
-          <TextLink to="/platform/signup-requests">← Volver al listado</TextLink>
-        }
+        actions={<TextLink to="/platform/signup-requests">← Volver al listado</TextLink>}
       />
 
       {query.isLoading ? <LoadingState label="Cargando…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "No se pudo cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "No se pudo cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -93,18 +85,13 @@ export function SignupRequestDetailPage() {
           <Card>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <Badge color={badge.color}>{badge.label}</Badge>
-              {item.plan_code ? (
-                <Badge color="muted">Plan: {item.plan_code}</Badge>
-              ) : null}
+              {item.plan_code ? <Badge color="muted">Plan: {item.plan_code}</Badge> : null}
             </div>
             <dl className="grid gap-3 sm:grid-cols-2">
               <Field label="RUC" value={item.ruc} />
               <Field label="Contacto" value={item.contact_name} />
               <Field label="Email" value={item.contact_email} />
-              <Field
-                label="Creada"
-                value={new Date(item.created_at).toLocaleString()}
-              />
+              <Field label="Creada" value={new Date(item.created_at).toLocaleString()} />
               <div className="sm:col-span-2">
                 <Field label="Notas" value={item.notes ?? "—"} />
               </div>
@@ -120,9 +107,7 @@ export function SignupRequestDetailPage() {
                   type="button"
                   data-testid="signup-mark-review"
                   disabled={mutation.isPending}
-                  onClick={() =>
-                    mutation.mutate({ status: "under_review" })
-                  }
+                  onClick={() => mutation.mutate({ status: "under_review" })}
                 >
                   Marcar en revisión
                 </Button>
@@ -182,10 +167,7 @@ export function SignupRequestDetailPage() {
                 ) : (
                   <>
                     .{" "}
-                    <Link
-                      className="text-brand-500 hover:underline"
-                      to="/platform/organizations"
-                    >
+                    <Link className="text-brand-500 hover:underline" to="/platform/organizations">
                       Ver organizaciones
                     </Link>
                   </>
@@ -214,11 +196,7 @@ export function SignupRequestDetailPage() {
           />
         </DialogBody>
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setRejectOpen(false)}
-          >
+          <Button type="button" variant="outline" onClick={() => setRejectOpen(false)}>
             Cancelar
           </Button>
           <Button
@@ -243,9 +221,7 @@ export function SignupRequestDetailPage() {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <CardTitle className="mb-1 text-theme-xs font-medium text-gray-500">
-        {label}
-      </CardTitle>
+      <CardTitle className="mb-1 text-theme-xs font-medium text-gray-500">{label}</CardTitle>
       <p className="text-sm text-gray-800 dark:text-white/90">{value}</p>
     </div>
   );

@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "description": "TailAdmin-aligned UI tokens and primitives (S12)",
   "exports": {
     ".": {
@@ -35,6 +38,8 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "flatpickr": "4.6.13",
+    "lucide-react": "0.544.0",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

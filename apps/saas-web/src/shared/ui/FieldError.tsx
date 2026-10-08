@@ -1,8 +1,1 @@
-export function FieldError({ id, message }: { id?: string; message?: string }) {
-  if (!message) return null;
-  return (
-    <p id={id} role="alert" className="mt-1.5 text-xs text-error-500">
-      {message}
-    </p>
-  );
-}
+export { FieldError } from "@factosys/ui";

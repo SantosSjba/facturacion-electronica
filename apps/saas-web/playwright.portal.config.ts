@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /** Portal regression tests with HTTP fixtures; no SUNAT or database required. */
 export default defineConfig({
   testDir: "./portal-e2e",
+  testMatch: "configuration.spec.ts",
   forbidOnly: !!process.env.CI,
   workers: 1,
   timeout: 30_000,

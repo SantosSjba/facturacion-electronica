@@ -4,14 +4,21 @@ import { Check, Copy, Plus } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from "@/shared/ui/components/dialog";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
+import {
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  Input,
+  Label,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+} from "@factosys/ui";
 
 import { fetchWebhooks, patchWebhook, rotateWebhookSecret } from "../api";
 import { CreateWebhookDialog } from "../components/CreateWebhookDialog";

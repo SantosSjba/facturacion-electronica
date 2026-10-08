@@ -3,12 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { Pagination, DEFAULT_PAGE_SIZE } from "@/shared/ui/Pagination";
-import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  Pagination,
+  DEFAULT_PAGE_SIZE,
+  Button,
+  ButtonLabel,
+  buttonIconClassName,
+} from "@factosys/ui";
 
 import { fetchCompanies } from "../api";
 import { CompanyFilters } from "../components/CompanyFilters";

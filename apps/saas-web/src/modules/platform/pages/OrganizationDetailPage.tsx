@@ -5,16 +5,20 @@ import { toast } from "sonner";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
-import { LoadingState } from "@/shared/ui/LoadingState";
-import { PageHeader } from "@/shared/ui/PageHeader";
-import { Badge } from "@/shared/ui/components/badge";
-import { Button } from "@/shared/ui/components/button";
-import { Card, CardTitle } from "@/shared/ui/components/card";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { Select } from "@/shared/ui/components/select";
+import {
+  ErrorState,
+  FieldError,
+  LoadingState,
+  PageHeader,
+  Badge,
+  Button,
+  Card,
+  CardTitle,
+  Input,
+  Label,
+  Select,
+} from "@factosys/ui";
+
 import { TextLink } from "@/shared/ui/components/text-link";
 
 import {
@@ -53,8 +57,7 @@ export function OrganizationDetailPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: (status: "active" | "suspended") =>
-      patchOrganization(id, { status }),
+    mutationFn: (status: "active" | "suspended") => patchOrganization(id, { status }),
     onSuccess: async () => {
       toast.success("Estado actualizado");
       setError(null);
@@ -64,11 +67,7 @@ export function OrganizationDetailPage() {
     },
     onError: (err) => {
       setError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Error",
+        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Error",
       );
     },
   });
@@ -169,19 +168,13 @@ export function OrganizationDetailPage() {
       <PageHeader
         title={org?.name ?? "Organización"}
         description="Detalle, suspensión y asignación de plan."
-        actions={
-          <TextLink to="/platform/organizations">← Volver al listado</TextLink>
-        }
+        actions={<TextLink to="/platform/organizations">← Volver al listado</TextLink>}
       />
 
       {query.isLoading ? <LoadingState label="Cargando…" /> : null}
       {query.error ? (
         <ErrorState
-          message={
-            query.error instanceof Error
-              ? query.error.message
-              : "No se pudo cargar"
-          }
+          message={query.error instanceof Error ? query.error.message : "No se pudo cargar"}
           onRetry={() => void query.refetch()}
         />
       ) : null}
@@ -193,8 +186,7 @@ export function OrganizationDetailPage() {
               role="alert"
               className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400"
             >
-              Organización suspendida — el acceso del tenant debe bloquearse en
-              producto.
+              Organización suspendida — el acceso del tenant debe bloquearse en producto.
             </div>
           ) : null}
 
@@ -205,9 +197,7 @@ export function OrganizationDetailPage() {
             </div>
             <dl className="grid gap-3 sm:grid-cols-2">
               <div>
-                <CardTitle className="mb-1 text-theme-xs text-gray-500">
-                  Plan actual
-                </CardTitle>
+                <CardTitle className="mb-1 text-theme-xs text-gray-500">Plan actual</CardTitle>
                 <p className="text-sm text-gray-800 dark:text-white/90">
                   {org.current_plan
                     ? `${org.current_plan.plan_name} (${org.current_plan.plan_code}) · ${org.current_plan.status}`
@@ -215,9 +205,7 @@ export function OrganizationDetailPage() {
                 </p>
               </div>
               <div>
-                <CardTitle className="mb-1 text-theme-xs text-gray-500">
-                  Creada
-                </CardTitle>
+                <CardTitle className="mb-1 text-theme-xs text-gray-500">Creada</CardTitle>
                 <p className="text-sm text-gray-800 dark:text-white/90">
                   {new Date(org.created_at).toLocaleString()}
                 </p>
@@ -256,11 +244,7 @@ export function OrganizationDetailPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex-1">
                 <Label htmlFor="plan">Plan activo</Label>
-                <Select
-                  id="plan"
-                  value={planId}
-                  onChange={(e) => setPlanId(e.target.value)}
-                >
+                <Select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
                   <option value="">Seleccionar…</option>
                   {activePlans.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -283,8 +267,8 @@ export function OrganizationDetailPage() {
             <Card>
               <CardTitle>Exportar JSON (stub)</CardTitle>
               <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                Genera un snapshot asíncrono (org, plan, empresas, usuarios sin
-                secretos) y descarga el archivo.
+                Genera un snapshot asíncrono (org, plan, empresas, usuarios sin secretos) y descarga
+                el archivo.
               </p>
               <Button
                 type="button"
@@ -301,8 +285,8 @@ export function OrganizationDetailPage() {
             <Card>
               <CardTitle>Suplantar (soporte)</CardTitle>
               <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                Emite un access token corto con permisos owner del tenant.
-                Requiere motivo (auditado).
+                Emite un access token corto con permisos owner del tenant. Requiere motivo
+                (auditado).
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="flex-1">
@@ -317,9 +301,7 @@ export function OrganizationDetailPage() {
                 <Button
                   type="button"
                   variant="destructive"
-                  disabled={
-                    impersonateMutation.isPending || impReason.trim().length < 3
-                  }
+                  disabled={impersonateMutation.isPending || impReason.trim().length < 3}
                   onClick={() => impersonateMutation.mutate()}
                 >
                   Suplantar

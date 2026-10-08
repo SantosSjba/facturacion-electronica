@@ -1,14 +1,19 @@
 import { Eye, ScrollText, UserRound } from "lucide-react";
 
-import { Badge } from "@/shared/ui/components/badge";
 import {
+  Badge,
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { MutedText } from "@/shared/ui/components/muted-text";
-import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/components/table";
-import { cn } from "@/shared/ui/utils";
+  MutedText,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  cn,
+} from "@factosys/ui";
 
 import type { AuditEvent } from "../api/audit";
 
@@ -71,10 +76,7 @@ export function AuditTable({
             </TD>
             <TD>
               <span className="inline-flex items-center gap-1.5 font-mono text-theme-xs text-gray-800 dark:text-white/90">
-                <ScrollText
-                  className="size-3.5 shrink-0 text-gray-400"
-                  aria-hidden
-                />
+                <ScrollText className="size-3.5 shrink-0 text-gray-400" aria-hidden />
                 {e.action}
               </span>
             </TD>

@@ -13,10 +13,7 @@ import {
 } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
-import {
-  getAccessTokenMemory,
-  type LoginOrganizationOption,
-} from "@/shared/api/http-client";
+import { getAccessTokenMemory, type LoginOrganizationOption } from "@/shared/api/http-client";
 import { decodeAccessToken } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session-context";
 import { resolveHomePath } from "@/app/nav-config";
@@ -24,13 +21,14 @@ import {
   Button,
   ButtonLabel,
   buttonIconClassName,
-} from "@/shared/ui/components/button";
-import { Input } from "@/shared/ui/components/input";
-import { Label } from "@/shared/ui/components/label";
-import { ErrorState } from "@/shared/ui/ErrorState";
-import { FieldError } from "@/shared/ui/FieldError";
+  Input,
+  Label,
+  ErrorState,
+  FieldError,
+  cn,
+} from "@factosys/ui";
+
 import { useTheme } from "@/shared/ui/theme-context";
-import { cn } from "@/shared/ui/utils";
 
 export function LoginPage() {
   const { login } = useSession();
@@ -50,9 +48,7 @@ export function LoginPage() {
     email?: string;
     password?: string;
   }>({});
-  const [orgChoices, setOrgChoices] = useState<LoginOrganizationOption[] | null>(
-    null,
-  );
+  const [orgChoices, setOrgChoices] = useState<LoginOrganizationOption[] | null>(null);
   const [selectingOrgId, setSelectingOrgId] = useState<string | null>(null);
 
   function homeAfterLogin(): string {
@@ -67,10 +63,7 @@ export function LoginPage() {
     return resolveHomePath(claims.perms, ctx);
   }
 
-  async function authenticate(org?: {
-    organizationId?: string;
-    organizationSlug?: string;
-  }) {
+  async function authenticate(org?: { organizationId?: string; organizationSlug?: string }) {
     setError(null);
     setSubmitting(true);
     try {
@@ -78,8 +71,7 @@ export function LoginPage() {
         email,
         password,
         organizationId: org?.organizationId,
-        organizationSlug:
-          org?.organizationSlug ?? prefill.organizationSlug ?? undefined,
+        organizationSlug: org?.organizationSlug ?? prefill.organizationSlug ?? undefined,
       });
       if (outcome.status === "org_selection_required") {
         setOrgChoices(outcome.organizations);
@@ -142,26 +134,24 @@ export function LoginPage() {
                 <span className="flex size-11 items-center justify-center rounded-xl bg-brand-500 font-bold text-white">
                   FS
                 </span>
-                <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  FACTOSYS
-                </span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">FACTOSYS</span>
               </div>
               {pickingOrg ? (
                 <>
-                  <button
+                  <Button
+                    variant="ghost"
                     type="button"
                     onClick={backToCredentials}
                     className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90"
                   >
                     <ArrowLeft className="size-4" />
                     Volver
-                  </button>
+                  </Button>
                   <h1 className="mb-2 text-title-sm font-semibold text-gray-800 sm:text-title-md dark:text-white/90">
                     Elige una organización
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Tu cuenta tiene acceso a varias organizaciones. Selecciona
-                    a cuál entrar.
+                    Tu cuenta tiene acceso a varias organizaciones. Selecciona a cuál entrar.
                   </p>
                 </>
               ) : (
@@ -188,7 +178,8 @@ export function LoginPage() {
                       .map((w) => w[0]?.toUpperCase() ?? "")
                       .join("");
                     return (
-                      <button
+                      <Button
+                        variant="ghost"
                         key={org.id}
                         type="button"
                         data-testid={`login-org-${org.slug ?? org.id}`}
@@ -219,20 +210,14 @@ export function LoginPage() {
                             {org.slug ?? org.id.slice(0, 8)}
                           </span>
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
-                {error ? (
-                  <ErrorState title="Error de acceso" message={error} />
-                ) : null}
+                {error ? <ErrorState title="Error de acceso" message={error} /> : null}
               </div>
             ) : (
-              <form
-                className="space-y-6"
-                noValidate
-                onSubmit={(e) => void onSubmit(e)}
-              >
+              <form className="space-y-6" noValidate onSubmit={(e) => void onSubmit(e)}>
                 <div className="space-y-2">
                   <Label htmlFor="email">
                     Email <span className="text-error-500">*</span>
@@ -269,29 +254,20 @@ export function LoginPage() {
                       required
                       className="pe-12"
                     />
-                    <button
+                    <Button
+                      variant="ghost"
                       type="button"
                       className="absolute end-4 top-1/2 z-10 -translate-y-1/2 text-gray-500 dark:text-gray-400"
                       onClick={() => setShowPassword((value) => !value)}
-                      aria-label={
-                        showPassword
-                          ? "Ocultar contraseña"
-                          : "Mostrar contraseña"
-                      }
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     >
-                      {showPassword ? (
-                        <Eye className="size-5" />
-                      ) : (
-                        <EyeOff className="size-5" />
-                      )}
-                    </button>
+                      {showPassword ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
+                    </Button>
                   </div>
                   <FieldError message={fieldErrors.password} />
                 </div>
 
-                {error ? (
-                  <ErrorState title="Error de acceso" message={error} />
-                ) : null}
+                {error ? <ErrorState title="Error de acceso" message={error} /> : null}
 
                 <Button
                   type="submit"
@@ -302,22 +278,15 @@ export function LoginPage() {
                   data-testid="login-submit"
                 >
                   {submitting ? (
-                    <Loader2
-                      className={cn(buttonIconClassName, "animate-spin")}
-                    />
+                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
                   ) : (
                     <LogIn className={buttonIconClassName} />
                   )}
-                  <ButtonLabel>
-                    {submitting ? "Entrando…" : "Entrar"}
-                  </ButtonLabel>
+                  <ButtonLabel>{submitting ? "Entrando…" : "Entrar"}</ButtonLabel>
                 </Button>
 
                 <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                  <span
-                    className="cursor-not-allowed opacity-50"
-                    title="Disponible en v2"
-                  >
+                  <span className="cursor-not-allowed opacity-50" title="Disponible en v2">
                     Olvidé contraseña
                   </span>
                 </p>
@@ -338,30 +307,23 @@ export function LoginPage() {
             </span>
             <h2 className="text-title-sm font-semibold text-white">FACTOSYS</h2>
             <p className="mt-3 text-gray-400">
-              Gestión de solicitudes, organizaciones, planes y KPIs de
-              plataforma Factosys.
+              Gestión de solicitudes, organizaciones, planes y KPIs de plataforma Factosys.
             </p>
             <div className="mt-8 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300">
-              <ShieldCheck className="size-4 text-success-400" /> Sesión y
-              permisos protegidos
+              <ShieldCheck className="size-4 text-success-400" /> Sesión y permisos protegidos
             </div>
           </div>
         </div>
 
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={toggleTheme}
           className="fixed end-6 bottom-6 z-50 flex size-14 items-center justify-center rounded-full bg-gray-900 text-white shadow-theme-lg dark:bg-white dark:text-gray-900"
-          aria-label={
-            theme === "dark" ? "Activar tema claro" : "Activar tema oscuro"
-          }
+          aria-label={theme === "dark" ? "Activar tema claro" : "Activar tema oscuro"}
         >
-          {theme === "dark" ? (
-            <Sun className="size-5" />
-          ) : (
-            <Moon className="size-5" />
-          )}
-        </button>
+          {theme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+        </Button>
       </div>
     </div>
   );
