@@ -514,3 +514,36 @@ test('API key creation is disabled at quota in list and empty-state actions', as
   for (const button of await page.getByRole('button', { name: 'Nueva API key' }).all()) await expect(button).toBeDisabled();
   await expect(page.getByText('Alcanzaste el límite de tu plan: 0 de 0 API keys.')).toBeVisible();
 });
+
+test('company labels are Spanish and editing switches environment without needing another company slot', async ({ page }) => {
+  await preparePortal(page);
+  const current = { ...company };
+  const headers = { 'access-control-allow-origin': 'http://localhost:5184', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,PATCH,OPTIONS' };
+  await page.route('http://localhost:3000/organizations/me/plan', route => route.fulfill({ headers, json: { limits: { max_companies: 1 }, usage: { companies: 1 } } }));
+  await page.route('http://localhost:3000/companies/' + companyId, async route => {
+    if (route.request().method() === 'OPTIONS') return route.fallback();
+    if (route.request().method() === 'PATCH') {
+      const body = route.request().postDataJSON();
+      expect(body.ruc).toBeUndefined();
+      Object.assign(current, body);
+    }
+    return route.fulfill({ headers, json: current });
+  });
+  await page.goto('/app/companies');
+  await expect(page.getByRole('cell', { name: 'Sin certificado', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Pruebas', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: company.legal_name, exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Resumen', exact: true })).toBeVisible();
+  await expect(page.getByText('missing', { exact: true })).toHaveCount(0);
+  for (const environment of ['production', 'sandbox']) {
+    await page.getByRole('button', { name: 'Editar', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('RUC', { exact: true })).toBeDisabled();
+    await expect(dialog.getByLabel('Ambiente', { exact: true })).toBeEnabled();
+    await dialog.getByLabel('Ambiente', { exact: true }).selectOption(environment);
+    await dialog.getByRole('button', { name: 'Guardar', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText(environment === 'production' ? 'Producción' : 'Pruebas', { exact: true })).toBeVisible();
+    expect(current.environment).toBe(environment);
+  }
+});

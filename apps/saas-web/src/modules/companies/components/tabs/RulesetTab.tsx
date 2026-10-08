@@ -16,17 +16,17 @@ export function RulesetTab() {
   });
 
   if (query.isLoading)
-    return <LoadingState variant="detail" showHeader={false} label="Cargando ruleset…" />;
+    return <LoadingState variant="detail" showHeader={false} label="Cargando reglas de validación…" />;
   if (query.error) {
     return (
       <ErrorState
-        message={query.error instanceof Error ? query.error.message : "Error al cargar ruleset"}
+        message={query.error instanceof Error ? query.error.message : "Error al cargar las reglas de validación"}
       />
     );
   }
 
   const meta = query.data;
-  if (!meta) return <ErrorState message="No se recibió información del ruleset" />;
+  if (!meta) return <ErrorState message="No se recibió información de las reglas de validación" />;
 
   const companyPin = company.catalog_pin?.ruleset;
   const usingDefault = !companyPin;
@@ -44,7 +44,7 @@ export function RulesetTab() {
               Vista de solo lectura
             </p>
             <MutedText className="mt-0.5">
-              El pin de la empresa no se edita en esta pantalla. Muestra la versión de reglas de
+              La versión de reglas de la empresa no se edita en esta pantalla. Muestra la versión de reglas de
               validación activa en la plataforma.
             </MutedText>
           </div>
@@ -54,23 +54,23 @@ export function RulesetTab() {
       <section className="grid gap-4 sm:grid-cols-2">
         <MetaCard
           icon={Layers}
-          label="Platform ruleset"
+          label="Reglas de la plataforma"
           value={meta.ruleset_version}
           badge={<Badge variant="primary">plataforma</Badge>}
           mono
         />
         <MetaCard
           icon={Pin}
-          label="Company catalog pin"
-          value={companyPin ?? "Platform default"}
+          label="Versión de reglas de la empresa"
+          value={companyPin ?? "Predeterminado de la plataforma"}
           badge={
             <Badge variant={usingDefault ? "muted" : "success"}>
-              {usingDefault ? "default" : "pinned"}
+              {usingDefault ? "Predeterminado" : "Fijado"}
             </Badge>
           }
           mono
         />
-        <MetaCard icon={BookMarked} label="Source" value={meta.source ?? "—"} />
+        <MetaCard icon={BookMarked} label="Fuente" value={meta.source ?? "—"} />
         <MetaCard
           icon={Hash}
           label="SHA-256"
@@ -90,9 +90,9 @@ export function RulesetTab() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {meta.default_for?.length ? (
-              <TagList label="Default for" items={meta.default_for} />
+              <TagList label="Predeterminado para" items={meta.default_for} />
             ) : null}
-            {meta.supported?.length ? <TagList label="Supported" items={meta.supported} /> : null}
+            {meta.supported?.length ? <TagList label="Tipos admitidos" items={meta.supported} /> : null}
           </div>
         </Card>
       ) : null}

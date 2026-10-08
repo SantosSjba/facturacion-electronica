@@ -1,3 +1,4 @@
+import { certificateLabel } from "@/shared/ui/display-labels";
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -89,7 +90,7 @@ export function CertificateTab() {
             </span>
             <div>
               <CardTitle className="mb-1">Estado del certificado</CardTitle>
-              <Badge variant={certOk ? "success" : "muted"}>{company.certificate_status}</Badge>
+              <Badge variant={certOk ? "success" : "muted"}>{certificateLabel(company.certificate_status)}</Badge>
             </div>
           </div>
           {canManage ? (
@@ -107,15 +108,15 @@ export function CertificateTab() {
 
         {summary ? (
           <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Row label="Status" value={summary.status} />
+            <Row label="Estado" value={certificateLabel(summary.status)} />
             <Row label="CN" value={summary.subject_cn ?? "—"} />
-            <Row label="Not before" value={summary.not_before ?? "—"} />
-            <Row label="Not after" value={summary.not_after ?? "—"} />
-            <Row label="Rotated" value={summary.rotated_at ?? "—"} />
+            <Row label="Vigente desde" value={summary.not_before ?? "—"} />
+            <Row label="Vigente hasta" value={summary.not_after ?? "—"} />
+            <Row label="Última renovación" value={summary.rotated_at ?? "—"} />
           </dl>
         ) : (
           <MutedText>
-            Sin certificado cargado. Aunque la empresa esté en sandbox, hace falta un .pfx / .p12
+            Sin certificado cargado. Aunque la empresa esté en el ambiente de pruebas, hace falta un .pfx / .p12
             para firmar el XML (certificado de prueba SUNAT o uno autogenerado en entorno Fake).
           </MutedText>
         )}

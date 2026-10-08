@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
@@ -28,6 +21,7 @@ const createSchema = z.object({
 });
 
 const patchSchema = z.object({
+  environment: z.enum(["sandbox", "production"]).optional(),
   legal_name: z.string().min(1).optional(),
   trade_name: z.string().nullable().optional(),
   address: z.record(z.string(), z.unknown()).nullable().optional(),
@@ -89,6 +83,7 @@ export class CompaniesController {
   ) {
     this.assertUser(auth);
     return this.companies.patch(auth.organizationId, id, {
+      environment: body.environment,
       legalName: body.legal_name,
       tradeName: body.trade_name,
       address: body.address,
@@ -97,9 +92,7 @@ export class CompaniesController {
     });
   }
 
-  private assertUser(
-    auth: UserAuthContext | { kind: string },
-  ): asserts auth is UserAuthContext {
+  private assertUser(auth: UserAuthContext | { kind: string }): asserts auth is UserAuthContext {
     if (auth.kind !== "user") {
       throw AppError.forbidden("Console JWT required");
     }

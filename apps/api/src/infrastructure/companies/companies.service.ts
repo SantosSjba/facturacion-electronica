@@ -1,7 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { isValidRuc } from "@factosys/domain";
-import { companies, credentials, documentSeries, newId, type Db } from "@factosys/db";
+import {
+  companies,
+  credentials,
+  documentSeries,
+  newId,
+  organizations,
+  type Db,
+} from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import { DB } from "../persistence/db.tokens";
@@ -149,6 +156,7 @@ export class CompaniesService {
     organizationId: string,
     companyId: string,
     input: {
+      environment?: CompanyEnvironment;
       legalName?: string;
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
@@ -158,6 +166,7 @@ export class CompaniesService {
   ): Promise<CompanyPublic> {
     await this.requireCompany(organizationId, companyId);
     const patch: {
+      environment?: CompanyEnvironment;
       legalName?: string;
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
@@ -170,8 +179,39 @@ export class CompaniesService {
     if (input.address !== undefined) patch.address = input.address;
     if (input.timezone !== undefined) patch.timezone = input.timezone;
     if (input.status !== undefined) patch.status = input.status;
+    if (input.environment !== undefined) patch.environment = input.environment;
 
-    await this.db.update(companies).set(patch).where(eq(companies.id, companyId));
+    await this.db.transaction(async (tx) => {
+      // Serialize with creation and other switches to prevent a duplicate RUC/ambiente.
+      await tx
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .for("update");
+      const [current] = await tx
+        .select()
+        .from(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.organizationId, organizationId)))
+        .for("update");
+      if (!current) throw AppError.notFound("Company not found");
+      if (input.environment !== undefined && input.environment !== current.environment) {
+        const [existing] = await tx
+          .select({ id: companies.id })
+          .from(companies)
+          .where(
+            and(
+              eq(companies.organizationId, organizationId),
+              eq(companies.ruc, current.ruc),
+              eq(companies.environment, input.environment),
+              ne(companies.id, companyId),
+            ),
+          )
+          .limit(1);
+        if (existing)
+          throw AppError.conflict("Company already exists for this RUC and environment");
+      }
+      await tx.update(companies).set(patch).where(eq(companies.id, companyId));
+    });
     return this.get(organizationId, companyId);
   }
 

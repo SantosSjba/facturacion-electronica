@@ -45,17 +45,15 @@ beforeAll(async () => {
   db = createDb(
     process.env.DATABASE_URL ?? "postgresql://factosys:factosys@localhost:5433/factosys",
   );
-  await db
-    .insert(plans)
-    .values({
-      id: planId,
-      code: `all-quota-${planId}`,
-      name: "All quota fixture",
-      maxCompanies: 1,
-      maxUsers: 2,
-      maxApiKeys: 1,
-      maxDocumentsPerMonth: 1,
-    });
+  await db.insert(plans).values({
+    id: planId,
+    code: `all-quota-${planId}`,
+    name: "All quota fixture",
+    maxCompanies: 1,
+    maxUsers: 2,
+    maxApiKeys: 1,
+    maxDocumentsPerMonth: 1,
+  });
   await db.insert(organizations).values([
     { id: orgId, name: "All quota fixture", slug: `quota-${orgId}` },
     { id: platformOrgId, name: "Quota platform fixture", slug: `quota-${platformOrgId}` },
@@ -290,4 +288,15 @@ it("monthly document quota ignores last month and serializes concurrent inserts"
     }),
   ).rejects.toMatchObject({ httpStatus: 403, message: "Monthly document plan limit reached" });
   expect(built).toBe(false);
+  const changed = await request(app.getHttpServer())
+    .patch(`/companies/${companyId}`)
+    .set("Authorization", `Bearer ${ownerToken}`)
+    .send({ environment: "production" })
+    .expect(200);
+  expect(changed.body.environment).toBe("production");
+  await request(app.getHttpServer())
+    .patch(`/companies/${companyId}`)
+    .set("Authorization", `Bearer ${ownerToken}`)
+    .send({ environment: "invalid" })
+    .expect(400);
 });

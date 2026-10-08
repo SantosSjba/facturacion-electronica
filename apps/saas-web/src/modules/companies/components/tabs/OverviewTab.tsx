@@ -1,3 +1,4 @@
+import { environmentLabel, certificateLabel } from "@/shared/ui/display-labels";
 import { Spinner } from "@factosys/ui";
 import type { ComponentType } from "react";
 import { useState } from "react";
@@ -66,7 +67,7 @@ export function OverviewTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={company.environment === "production" ? "warning" : "primary"}>
-            {company.environment}
+            {environmentLabel(company.environment)}
           </Badge>
           <Badge variant={active ? "success" : "muted"} className="gap-1">
             {active ? (
@@ -76,7 +77,7 @@ export function OverviewTab() {
             )}
             {active ? "Activa" : "Deshabilitada"}
           </Badge>
-          <Badge variant={certOk ? "success" : "muted"}>Cert: {company.certificate_status}</Badge>
+          <Badge variant={certOk ? "success" : "muted"}>Certificado: {certificateLabel(company.certificate_status)}</Badge>
           <Badge variant={company.sol_configured ? "success" : "muted"}>
             SOL {company.sol_configured ? "listo" : "pendiente"}
           </Badge>
@@ -102,11 +103,11 @@ export function OverviewTab() {
               type="button"
               variant="outline"
               size="icon-label-sm"
-              aria-label="Editar metadatos"
+              aria-label="Editar empresa"
               onClick={onEdit}
             >
               <Pencil className={buttonIconClassName} />
-              <ButtonLabel>Editar metadatos</ButtonLabel>
+              <ButtonLabel>Editar empresa</ButtonLabel>
             </Button>
           ) : null}
         </div>
@@ -166,7 +167,7 @@ export function OverviewTab() {
         <StatusCard
           icon={ShieldCheck}
           label="Certificado"
-          value={company.certificate_status}
+          value={certificateLabel(company.certificate_status)}
           ok={certOk}
         />
         <StatusCard
@@ -183,8 +184,8 @@ export function OverviewTab() {
         />
         <StatusCard
           icon={Fingerprint}
-          label="Ruleset pin"
-          value={company.catalog_pin?.ruleset ?? "Platform default"}
+          label="Reglas de validación"
+          value={company.catalog_pin?.ruleset ?? "Predeterminado de la plataforma"}
           ok={Boolean(company.catalog_pin?.ruleset)}
           mono
         />
@@ -202,7 +203,7 @@ export function OverviewTab() {
             <Field label="RUC" value={company.ruc} mono />
             <Field label="Razón social" value={company.legal_name} />
             <Field label="Nombre comercial" value={company.trade_name?.trim() || "—"} />
-            <Field label="Timezone" value={company.timezone || "—"} mono />
+            <Field label="Zona horaria" value={company.timezone || "—"} mono />
           </dl>
         </Card>
 

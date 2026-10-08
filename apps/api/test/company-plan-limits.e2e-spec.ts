@@ -8,6 +8,7 @@ import {
   organizations,
   orgPlans,
   plans,
+  documents,
   type Db,
 } from "@factosys/db";
 import { CompaniesService } from "../src/infrastructure/companies/companies.service";
@@ -91,4 +92,57 @@ it("zero quota blocks the first creation without inserting companies or series",
   expect(
     await db.select().from(documentSeries).where(eq(documentSeries.organizationId, orgIds[2])),
   ).toHaveLength(0);
+});
+
+it("switches environment at full quota while retaining series and document history", async () => {
+  const [company] = await service.list(orgIds[0]);
+  if (!company) throw new Error("Company fixture missing");
+  const series = await db
+    .select()
+    .from(documentSeries)
+    .where(eq(documentSeries.companyId, company.id));
+  const documentId = newId();
+  await db
+    .insert(documents)
+    .values({
+      id: documentId,
+      organizationId: orgIds[0],
+      companyId: company.id,
+      documentType: "01",
+      status: "draft",
+      environment: "sandbox",
+      payload: {},
+      payloadHash: "fixture",
+    });
+  await expect(
+    service.patch(orgIds[0], company.id, { environment: "production" }),
+  ).resolves.toMatchObject({ id: company.id, environment: "production" });
+  await expect(
+    service.patch(orgIds[0], company.id, { environment: "sandbox" }),
+  ).resolves.toMatchObject({ environment: "sandbox" });
+  expect(
+    await db.select().from(documentSeries).where(eq(documentSeries.companyId, company.id)),
+  ).toEqual(series);
+  const [document] = await db.select().from(documents).where(eq(documents.id, documentId));
+  expect(document?.environment).toBe("sandbox");
+  await expect(
+    service.patch(orgIds[1], company.id, { environment: "production" }),
+  ).rejects.toMatchObject({ httpStatus: 404 });
+});
+
+it("rejects an environment collision without applying other edits", async () => {
+  await db.update(plans).set({ maxCompanies: 3 }).where(eq(plans.id, planId));
+  const [company] = await service.list(orgIds[0]);
+  if (!company) throw new Error("Company fixture missing");
+  await service.create(orgIds[0], { ...input, environment: "production" });
+  await expect(
+    service.patch(orgIds[0], company.id, {
+      environment: "production",
+      legalName: "Must not change",
+    }),
+  ).rejects.toMatchObject({ httpStatus: 409 });
+  await expect(service.get(orgIds[0], company.id)).resolves.toMatchObject({
+    environment: "sandbox",
+    legal_name: company.legal_name,
+  });
 });

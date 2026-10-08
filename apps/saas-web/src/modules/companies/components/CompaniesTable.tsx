@@ -1,3 +1,4 @@
+import { environmentLabel, certificateLabel } from "@/shared/ui/display-labels";
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -116,7 +117,7 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
                 </TD>
                 <TD label="Ambiente">
                   <Badge variant={c.environment === "production" ? "warning" : "primary"}>
-                    {c.environment}
+                    {environmentLabel(c.environment)}
                   </Badge>
                 </TD>
                 <TD label="Estado">
@@ -136,7 +137,7 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
                     ) : (
                       <ShieldAlert className="size-3" aria-hidden />
                     )}
-                    {c.certificate_status}
+                    {certificateLabel(c.certificate_status)}
                   </Badge>
                 </TD>
                 <TD label="Credenciales">

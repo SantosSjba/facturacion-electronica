@@ -112,13 +112,13 @@ export function SolTab() {
         {summary ? (
           <dl className="grid gap-3 sm:grid-cols-2">
             <Row label="Usuario" value={summary.username ?? "—"} />
-            <Row label="Rotated" value={summary.rotated_at ?? "—"} />
+            <Row label="Última actualización" value={summary.rotated_at ?? "—"} />
           </dl>
         ) : (
           <MutedText>Credenciales del usuario secundario SUNAT (SOL) para envío de CPE.</MutedText>
         )}
 
-        {!canManage ? <MutedText className="mt-4">Requiere credentials:manage.</MutedText> : null}
+        {!canManage ? <MutedText className="mt-4">Necesitas permiso para administrar credenciales.</MutedText> : null}
       </Card>
 
       <Dialog

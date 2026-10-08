@@ -1,3 +1,4 @@
+import { environmentLabel, statusLabel } from "@/shared/ui/display-labels";
 import { Spinner } from "@factosys/ui";
 import { Ban, KeyRound } from "lucide-react";
 
@@ -43,8 +44,8 @@ export function ApiKeysTable({
       <THead>
         <TR>
           <TH>Nombre</TH>
-          <TH>Prefix</TH>
-          <TH>Scopes</TH>
+          <TH>Prefijo</TH>
+          <TH>Permisos</TH>
           <TH>Estado</TH>
           <TH>Último uso</TH>
           <TH />
@@ -70,16 +71,16 @@ export function ApiKeysTable({
                   <div className="font-medium text-gray-800 dark:text-white/90">{k.name}</div>
                   {k.environmentConstraint ? (
                     <MutedText as="span" className="text-theme-xs">
-                      {k.environmentConstraint}
+                      {environmentLabel(k.environmentConstraint)}
                     </MutedText>
                   ) : null}
                 </div>
               </div>
             </TD>
-            <TD label="Prefix">
+            <TD label="Prefijo">
               <code className="text-theme-xs">{k.keyPrefix}…</code>
             </TD>
-            <TD label="Scopes">
+            <TD label="Permisos">
               <div className="flex flex-wrap gap-1 max-md:justify-end">
                 {k.scopes.map((s) => (
                   <Badge key={s} variant="outline">
@@ -89,7 +90,7 @@ export function ApiKeysTable({
               </div>
             </TD>
             <TD label="Estado">
-              <Badge variant={k.status === "active" ? "success" : "muted"}>{k.status}</Badge>
+              <Badge variant={k.status === "active" ? "success" : "muted"}>{statusLabel(k.status)}</Badge>
             </TD>
             <TD label="Último uso">
               <MutedText as="span">{formatDate(k.lastUsedAt)}</MutedText>

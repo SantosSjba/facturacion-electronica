@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Webhook } from "lucide-react";
@@ -76,7 +77,7 @@ export function WebhookDeliveriesPage() {
         </CardTitle>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={endpoint.status === "active" ? "success" : "muted"}>
-            {endpoint.status}
+            {statusLabel(endpoint.status)}
           </Badge>
           {endpoint.events.map((ev) => (
             <Badge key={ev} variant="outline">

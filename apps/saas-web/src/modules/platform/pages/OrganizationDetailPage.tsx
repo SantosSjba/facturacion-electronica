@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { UsersManager } from "@/modules/app/components/UsersManager";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -205,7 +206,7 @@ export function OrganizationDetailPage() {
                 <CardTitle className="mb-1 text-theme-xs text-gray-500">Plan actual</CardTitle>
                 <p className="text-sm text-gray-800 dark:text-white/90">
                   {org.current_plan
-                    ? `${org.current_plan.plan_name} (${org.current_plan.plan_code}) · ${org.current_plan.status}`
+                    ? `${org.current_plan.plan_name} (${org.current_plan.plan_code}) · ${statusLabel(org.current_plan.status)}`
                     : "Sin plan asignado"}
                 </p>
               </div>

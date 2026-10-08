@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { KeyRound, Layers, Users, Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -85,7 +86,7 @@ export function AppHomePage() {
           <Card className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle>Plan actual</CardTitle>
-              {data.org_plan_status ? <Badge variant="muted">{data.org_plan_status}</Badge> : null}
+              {data.org_plan_status ? <Badge variant="muted">{statusLabel(data.org_plan_status)}</Badge> : null}
             </div>
             {data.plan ? (
               <div>

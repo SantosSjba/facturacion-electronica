@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { Spinner } from "@factosys/ui";
 import { History, Pencil, Power, PowerOff, RefreshCw, Webhook } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -100,7 +101,7 @@ export function WebhooksTable({
                 </div>
               </TD>
               <TD label="Estado">
-                <Badge variant={isActive ? "success" : "muted"}>{ep.status}</Badge>
+                <Badge variant={isActive ? "success" : "muted"}>{statusLabel(ep.status)}</Badge>
               </TD>
               <TD label="Secret">
                 <MutedText as="span">…{ep.secret_hint}</MutedText>

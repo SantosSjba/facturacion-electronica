@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
@@ -90,7 +91,7 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
                     ) : (
                       <AlertTriangle className="size-3" aria-hidden />
                     )}
-                    {d.status}
+                    {statusLabel(d.status)}
                   </Badge>
                 </TD>
                 <TD label="Intentos">{d.attempt_count}</TD>

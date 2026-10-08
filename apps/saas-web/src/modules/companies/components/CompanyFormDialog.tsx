@@ -153,6 +153,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
         });
       }
       return patchCompany(companyId ?? "", {
+        environment,
         legal_name: legalName,
         trade_name: tradeName || null,
         address,
@@ -232,8 +233,8 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
           title={mode === "create" ? "Crear empresa" : "Editar empresa"}
           description={
             mode === "create"
-              ? "RUC y ambiente no se pueden cambiar después."
-              : "RUC y ambiente son inmutables."
+              ? "El RUC no se puede cambiar después. Puedes cambiar el ambiente."
+              : "El cambio de ambiente se aplica a los nuevos documentos. El RUC no se puede cambiar."
           }
           onClose={handleClose}
         />
@@ -310,11 +311,10 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
                   <Select
                     id="company-environment"
                     value={environment}
-                    disabled={mode === "edit"}
                     onChange={(e) => setEnvironment(e.target.value as CompanyEnvironment)}
                   >
-                    <option value="sandbox">sandbox</option>
-                    <option value="production">production</option>
+                    <option value="sandbox">Pruebas</option>
+                    <option value="production">Producción</option>
                   </Select>
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -350,7 +350,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
                   <FieldError message={fieldErrors.ubigeo} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="company-timezone">Timezone</Label>
+                  <Label htmlFor="company-timezone">Zona horaria</Label>
                   <Input
                     id="company-timezone"
                     value={timezone}

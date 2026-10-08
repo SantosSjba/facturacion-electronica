@@ -47,8 +47,8 @@ export function CompanyFilters({
             }
           >
             <option value="">Todos</option>
-            <option value="sandbox">sandbox</option>
-            <option value="production">production</option>
+            <option value="sandbox">Pruebas</option>
+            <option value="production">Producción</option>
           </Select>
         </div>
         <div className="space-y-1.5">
@@ -81,10 +81,10 @@ export function CompanyFilters({
             }
           >
             <option value="">Todos</option>
-            <option value="missing">missing</option>
-            <option value="active">active</option>
-            <option value="expired">expired</option>
-            <option value="revoked">revoked</option>
+            <option value="missing">Sin certificado</option>
+            <option value="active">Vigente</option>
+            <option value="expired">Vencido</option>
+            <option value="revoked">Revocado</option>
           </Select>
         </div>
       </div>

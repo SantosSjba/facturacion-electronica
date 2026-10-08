@@ -1,3 +1,4 @@
+import { environmentLabel } from "@/shared/ui/display-labels";
 import { useState } from "react";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { Link, Outlet, useParams, useLocation } from "react-router-dom";
@@ -21,12 +22,12 @@ import { fetchCompany } from "../api";
 import { CompanyFormDialog } from "../components/CompanyFormDialog";
 
 const TABS = [
-  { to: "overview", label: "Overview" },
+  { to: "overview", label: "Resumen" },
   { to: "certificate", label: "Certificado" },
   { to: "sol", label: "SOL" },
   { to: "gre", label: "GRE" },
   { to: "series", label: "Series" },
-  { to: "ruleset", label: "Ruleset" },
+  { to: "ruleset", label: "Reglas de validación" },
 ] as const;
 
 export function CompanyDetailPage() {
@@ -57,7 +58,7 @@ export function CompanyDetailPage() {
     <div>
       <PageHeader
         title={company.legal_name}
-        description={`${company.ruc} · ${company.environment}`}
+        description={`${company.ruc} · ${environmentLabel(company.environment)}`}
         actions={
           <div className="flex gap-2">
             {canWrite ? (

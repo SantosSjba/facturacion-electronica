@@ -115,14 +115,14 @@ export function GreTab() {
 
         {summary ? (
           <dl className="grid gap-3 sm:grid-cols-2">
-            <Row label="Client ID" value={summary.client_id ?? "—"} />
-            <Row label="Rotated" value={summary.rotated_at ?? "—"} />
+            <Row label="Identificador de cliente" value={summary.client_id ?? "—"} />
+            <Row label="Última actualización" value={summary.rotated_at ?? "—"} />
           </dl>
         ) : (
           <MutedText>Credenciales OAuth de la API GRE / SUNAT para guías electrónicas.</MutedText>
         )}
 
-        {!canManage ? <MutedText className="mt-4">Requiere credentials:manage.</MutedText> : null}
+        {!canManage ? <MutedText className="mt-4">Necesitas permiso para administrar credenciales.</MutedText> : null}
       </Card>
 
       <Dialog
@@ -146,7 +146,7 @@ export function GreTab() {
           />
           <DialogBody className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="gre-id">Client ID</Label>
+              <Label htmlFor="gre-id">Identificador de cliente</Label>
               <Input
                 id="gre-id"
                 required
@@ -156,7 +156,7 @@ export function GreTab() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="gre-secret">Client secret (write-only)</Label>
+              <Label htmlFor="gre-secret">Clave secreta del cliente</Label>
               <Input
                 id="gre-secret"
                 type="password"

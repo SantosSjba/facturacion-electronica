@@ -53,6 +53,7 @@ export interface CreateCompanyInput {
 }
 
 export interface PatchCompanyInput {
+  environment?: CompanyEnvironment;
   legal_name?: string;
   trade_name?: string | null;
   address?: Record<string, unknown> | null;

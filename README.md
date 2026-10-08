@@ -162,3 +162,9 @@ Importar siempre por nombre de workspace (`@factosys/...`), no por path relativo
 - Cliente: **Usuarios → Crear usuario** solicita nombre, correo, contraseña y roles; **Editar** permite modificar nombre, contraseña, estado y roles. No se envía una invitación al crear colaboradores.
 - Plataforma: **Organizaciones → abrir organización → Usuarios de la organización** usa el mismo administrador. Requiere permiso platform:admin, respeta el cupo del cliente, audita los cambios y protege al último propietario activo.
 - Endpoints plataforma: GET/POST /saas/organizations/:organizationId/users; PATCH /users/:userId; PUT /users/:userId/roles; GET /roles y /plan-usage bajo la misma organización. No permiten asignar roles de plataforma a los clientes.
+
+### Ambiente de una empresa
+
+En Empresas → abrir empresa → Editar se puede cambiar entre **Pruebas** y **Producción**. PATCH /companies/:id acepta environment (sandbox o production) con permiso companies:write. El RUC permanece fijo. Cambiar el ambiente no crea otra empresa, no reinicia series y conserva el ambiente registrado en los documentos anteriores. Una empresa del mismo RUC en el ambiente destino produce un conflicto.
+
+La selección guarda la configuración para nuevos documentos; el transporte actual de SUNAT continúa limitado a fake/beta. La conexión real con SUNAT producción requiere completar el adaptador correspondiente. Los paneles muestran etiquetas en español sin cambiar los valores técnicos de la API.

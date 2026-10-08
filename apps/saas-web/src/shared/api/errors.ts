@@ -38,6 +38,7 @@ function spanishApiMessage(status: number, body: ApiErrorBody): string {
   if (body.message === "Invalid credentials") return "El correo o la contraseña son incorrectos.";
   if (body.message === "Company plan limit reached") return "Alcanzaste el límite de empresas de tu plan. Solicita un cambio de plan para crear otra empresa.";
   if (body.message === "Invalid RUC") return "El RUC ingresado no es válido. Revisa sus 11 dígitos.";
+  if (body.message === "Company already exists for this RUC and environment") return "Ya existe una empresa con este RUC en el ambiente seleccionado.";
   if (body.message === "Plan change request already resolved") return "Esta solicitud ya fue resuelta. Actualiza la lista para ver el resultado.";
   if (body.message === "Requested plan not found or inactive") return "El plan solicitado ya no está disponible. Revisa el catálogo antes de continuar.";
   if (body.message === "User plan limit reached") return "Alcanzaste el límite de usuarios de tu plan. Solicita un cambio de plan para crear otro usuario.";

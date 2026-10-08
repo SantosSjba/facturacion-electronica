@@ -105,7 +105,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
           />
           <DialogBody className="space-y-3">
             <div className="space-y-1.5">
-              <Label>Secret</Label>
+              <Label>Clave secreta</Label>
               <div className="flex gap-2">
                 <Input readOnly value={created.secret} className="font-mono text-theme-xs" />
                 <Button type="button" variant="outline" onClick={() => void copySecret()}>
@@ -152,7 +152,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
               <FieldError message={touched ? fieldErrors.name : undefined} />
             </div>
             <fieldset className="space-y-2">
-              <Label>Scopes</Label>
+              <Label>Permisos</Label>
               <div className="grid gap-2 rounded-md border border-gray-200 p-3 sm:grid-cols-2 dark:border-gray-800">
                 {MACHINE_SCOPES.map((scope) => (
                   <label key={scope} className="flex cursor-pointer items-center gap-2 text-sm">
@@ -177,8 +177,8 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
                 onChange={(e) => setEnv(e.target.value as "" | "sandbox" | "production")}
               >
                 <option value="">Sin restricción</option>
-                <option value="sandbox">sandbox</option>
-                <option value="production">production</option>
+                <option value="sandbox">Pruebas</option>
+                <option value="production">Producción</option>
               </Select>
             </div>
           </DialogBody>

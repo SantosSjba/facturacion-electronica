@@ -1,3 +1,4 @@
+import { statusLabel } from "@/shared/ui/display-labels";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@factosys/ui";
@@ -110,7 +111,7 @@ export function AppPlanPage() {
         <Card className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle>Plan actual</CardTitle>
-            {plan.org_plan_status ? <Badge variant="muted">{plan.org_plan_status}</Badge> : null}
+            {plan.org_plan_status ? <Badge variant="muted">{statusLabel(plan.org_plan_status)}</Badge> : null}
           </div>
           {plan.plan ? (
             <>
