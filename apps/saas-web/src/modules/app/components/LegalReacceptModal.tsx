@@ -2,7 +2,7 @@ import { Spinner } from "@factosys/ui";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Scale } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@factosys/ui";
 
 import {
   acceptOnboardingLegal,

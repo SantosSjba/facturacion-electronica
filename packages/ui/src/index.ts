@@ -104,6 +104,7 @@ export {
 } from "./admin/NotificationDropdown";
 export { AdminThemeToggle } from "./admin/ThemeToggle";
 export { SidebarProvider, useSidebar } from "./admin/sidebar-context";
+export { Toaster, toast, type ToasterProps, type ExternalToast } from "./toaster";
 export type {
   AdminLinkProps,
   AdminNavItem,

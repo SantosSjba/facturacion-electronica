@@ -1,4 +1,4 @@
-import { parseApiError, type ApiError } from "./errors";
+import { parseApiError, ApiError } from "./errors";
 
 const REFRESH_KEY = "factosys.refresh_token";
 
@@ -50,11 +50,20 @@ function apiBaseUrl(): string {
   ) || "http://localhost:3000";
 }
 
+async function fetchResponse(url: string, options: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw error;
+    throw new ApiError(0, { code: "FACTOSYS_NETWORK" });
+  }
+}
+
 async function refreshTokens(): Promise<TokenPair | null> {
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken) return null;
 
-  const res = await fetch(`${apiBaseUrl()}/auth/refresh`, {
+  const res = await fetchResponse(`${apiBaseUrl()}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -127,7 +136,7 @@ export async function apiRequest<T>(
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${apiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`, {
+  const res = await fetchResponse(`${apiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`, {
     ...rest,
     headers,
     body:

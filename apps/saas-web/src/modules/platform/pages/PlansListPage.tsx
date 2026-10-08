@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@factosys/ui";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";

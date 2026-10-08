@@ -1,9 +1,9 @@
 import { Spinner } from "@factosys/ui";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Eye, EyeOff, LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
 
-import { ApiError } from "@/shared/api/errors";
+import { ApiError, getErrorMessage } from "@/shared/api/errors";
 import { getAccessTokenMemory, type LoginOrganizationOption } from "@/shared/api/http-client";
 import { decodeAccessToken } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session-context";
@@ -14,9 +14,9 @@ import {
   buttonIconClassName,
   Input,
   Label,
-  ErrorState,
   FieldError,
   cn,
+  toast,
 } from "@factosys/ui";
 
 import { useTheme } from "@/shared/ui/theme-context";
@@ -32,7 +32,6 @@ export function LoginPage() {
   const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState(prefill.email ?? "");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
@@ -41,6 +40,7 @@ export function LoginPage() {
   }>({});
   const [orgChoices, setOrgChoices] = useState<LoginOrganizationOption[] | null>(null);
   const [selectingOrgId, setSelectingOrgId] = useState<string | null>(null);
+  const loginToast = useRef<string | number | undefined>(undefined);
 
   function homeAfterLogin(): string {
     const claims = decodeAccessToken(getAccessTokenMemory() ?? "");
@@ -55,7 +55,9 @@ export function LoginPage() {
   }
 
   async function authenticate(org?: { organizationId?: string; organizationSlug?: string }) {
-    setError(null);
+    if (loginToast.current !== undefined) toast.dismiss(loginToast.current);
+    const toastId = toast.loading("Iniciando sesión…");
+    loginToast.current = toastId;
     setSubmitting(true);
     try {
       const outcome = await login({
@@ -65,19 +67,22 @@ export function LoginPage() {
         organizationSlug: org?.organizationSlug ?? prefill.organizationSlug ?? undefined,
       });
       if (outcome.status === "org_selection_required") {
+        toast.dismiss(toastId);
         setOrgChoices(outcome.organizations);
         return;
       }
       setOrgChoices(null);
+      toast.success("Sesión iniciada", { id: toastId });
       navigate(homeAfterLogin(), { replace: true });
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message || "Credenciales inválidas");
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("No se pudo iniciar sesión");
-      }
+      const message = err instanceof ApiError && err.status === 401
+        ? "El correo o la contraseña son incorrectos."
+        : getErrorMessage(err, "No se pudo iniciar sesión. Inténtalo de nuevo.");
+      toast.error("No se pudo iniciar sesión", {
+        id: toastId,
+        description: message,
+        duration: 6000,
+      });
     } finally {
       setSubmitting(false);
       setSelectingOrgId(null);
@@ -86,7 +91,6 @@ export function LoginPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     const nextErrors: typeof fieldErrors = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       nextErrors.email = "Ingresa un correo válido";
@@ -109,7 +113,6 @@ export function LoginPage() {
 
   function backToCredentials() {
     setOrgChoices(null);
-    setError(null);
     setSelectingOrgId(null);
   }
 
@@ -160,7 +163,7 @@ export function LoginPage() {
             {pickingOrg ? (
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {orgChoices!.map((org) => {
+                  {orgChoices?.map((org) => {
                     const busy = selectingOrgId === org.id;
                     const initials = org.name
                       .split(/\s+/)
@@ -205,7 +208,6 @@ export function LoginPage() {
                     );
                   })}
                 </div>
-                {error ? <ErrorState title="Error de acceso" message={error} /> : null}
               </div>
             ) : (
               <form className="space-y-6" noValidate onSubmit={(e) => void onSubmit(e)}>
@@ -258,7 +260,6 @@ export function LoginPage() {
                   <FieldError message={fieldErrors.password} />
                 </div>
 
-                {error ? <ErrorState title="Error de acceso" message={error} /> : null}
 
                 <Button
                   type="submit"

@@ -38,6 +38,8 @@ import { Badge, Button, Input, Label, Select } from "@factosys/ui";
 
 ## Paneles administrativos
 
+Los avisos transitorios se comparten mediante **Sonner**: `import { Toaster, toast } from "@factosys/ui"`. Monta un solo `<Toaster theme={theme} />` en la raíz y usa `toast.success("Cambios guardados")` o `toast.error("No se pudo guardar", { description: mensaje })`. Incluye colores, fuente Outfit, botón «Cerrar notificación», hasta tres avisos visibles y tema claro/oscuro. Pasa un `id` estable para reemplazar un aviso repetido. Los errores que requieren corregir un formulario también deben mantenerse junto al formulario después de que desaparezca el toast.
+
 ```tsx
 import { AdminLayout, AdminSidebar, AdminHeader } from "@factosys/ui";
 ```

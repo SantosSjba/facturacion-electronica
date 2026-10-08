@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MailPlus } from "lucide-react";
 import { z } from "zod";
-import { toast } from "sonner";
+import { toast } from "@factosys/ui";
 
 import { fetchOrgRoles, fetchOrgUsers, inviteOrgUser, type OrgUser } from "@/modules/app/api/users";
 import { useSession } from "@/shared/auth/session-context";

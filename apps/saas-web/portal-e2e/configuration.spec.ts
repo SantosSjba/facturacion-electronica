@@ -28,6 +28,56 @@ const ownerPermissions = [
   "webhooks:manage",
 ];
 
+for (const scenario of [
+  { name: "credentials", status: 401, code: "FACTOSYS_UNAUTHORIZED", message: "Invalid credentials", expected: "El correo o la contraseña son incorrectos." },
+  { name: "rate limit", status: 429, code: "FACTOSYS_RATE_LIMITED", message: "Login rate limit exceeded", expected: "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo." },
+  { name: "server", status: 500, code: "FACTOSYS_INTERNAL", message: "Internal server error", expected: "Ocurrió un error en el servidor. Inténtalo de nuevo más tarde." },
+  { name: "network", status: 0, code: "", message: "", expected: "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo." },
+]) {
+  test(`login shows Spanish errors only in shared toasts: ${scenario.name}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route("http://localhost:3000/auth/login", async (route) => {
+      const headers = {
+        "access-control-allow-origin": "http://localhost:5184",
+        "access-control-allow-headers": "content-type,accept",
+        "access-control-allow-methods": "POST,OPTIONS",
+      };
+      if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+      if (!scenario.status) return route.abort("failed");
+      return route.fulfill({
+        status: scenario.status,
+        headers,
+        json: { code: scenario.code, message: scenario.message },
+      });
+    });
+    await page.goto("/auth/login");
+    await page.getByTestId("login-email").fill("platform@factosysperu.com");
+    await page.getByTestId("login-password").fill("WrongPassword!2026");
+    await page.getByTestId("login-submit").click();
+    const notice = page.locator("[data-sonner-toast]");
+    await expect(notice).toContainText(scenario.expected);
+    await expect(notice).toHaveCSS("opacity", "1");
+    await expect(page.getByText(scenario.expected, { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: "Error de acceso" })).toHaveCount(0);
+    await expect(page.getByTestId("login-submit")).toBeEnabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("login-toast-mobile.png"), animations: "disabled" });
+    await notice.getByRole("button", { name: "Cerrar notificación" }).click();
+    await expect(notice).toHaveCount(0);
+    await expect(page.getByText(scenario.expected, { exact: true })).toHaveCount(0);
+    if (scenario.name === "credentials") {
+      await page.getByRole("button", { name: "Activar tema oscuro" }).click();
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.getByTestId("login-submit").click();
+      await expect(notice).toHaveCount(1);
+      await expect(notice).toContainText(scenario.expected);
+      await expect(notice).toHaveCSS("opacity", "1");
+      await expect(page.locator("[data-sonner-toaster]")).toHaveAttribute("data-sonner-theme", "dark");
+      await page.screenshot({ path: testInfo.outputPath("login-toast-desktop-dark.png"), animations: "disabled" });
+    }
+  });
+}
+
 async function preparePortal(
   page: Page,
   perms = ownerPermissions,

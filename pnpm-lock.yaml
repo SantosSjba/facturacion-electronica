@@ -232,9 +232,6 @@ importers:
       react-router-dom:
         specifier: ^7.9.3
         version: 7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      sonner:
-        specifier: ^2.0.8
-        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.7.0
@@ -476,6 +473,9 @@ importers:
       lucide-react:
         specifier: 0.544.0
         version: 0.544.0(react@19.3.0)
+      sonner:
+        specifier: 2.0.8
+        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.7.0

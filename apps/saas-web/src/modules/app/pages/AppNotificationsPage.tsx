@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCheck } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@factosys/ui";
 
 import {
   fetchNotificationPreferences,
