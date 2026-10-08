@@ -4,6 +4,28 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/portal-e2e/fixtures/ui.html");
 });
 
+test("admin typography loads Outfit locally under the panel CSP", async ({ page }) => {
+  const loadedFonts = await page.evaluate(async () => {
+    const fonts = await document.fonts.load('600 16px "Outfit Variable"', "Facturación Perú ñ");
+    return fonts.map((font) => ({ family: font.family, status: font.status }));
+  });
+  expect(loadedFonts.length).toBeGreaterThan(0);
+  for (const font of loadedFonts) {
+    expect(font.family).toContain("Outfit Variable");
+    expect(font.status).toBe("loaded");
+  }
+  await expect(page.locator("body")).toHaveCSS("font-family", /Outfit Variable/);
+  const fontUrls = await page.evaluate(() =>
+    performance.getEntriesByType("resource")
+      .map((resource) => resource.name)
+      .filter((url) => url.includes(".woff2")),
+  );
+  expect(fontUrls.length).toBeGreaterThan(0);
+  for (const url of fontUrls) {
+    expect(new URL(url).origin).toBe("http://127.0.0.1:5187");
+  }
+});
+
 test("loading scenarios announce status, hide fake controls, respect reduced motion and fit mobile", async ({
   page,
 }, testInfo) => {

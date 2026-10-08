@@ -3,7 +3,7 @@ export const API_BASE =
 
 export const PLATFORM = {
   orgSlug: "factosys-platform",
-  email: "platform@factosys.local",
+  email: "platform@factosysperu.com",
   password: "PlatformAdmin!2026",
 } as const;
 

@@ -60,6 +60,8 @@ En el CSS del consumidor:
 
 La ruta de `@source` se ajusta a la ubicación del CSS consumidor. `admin.css` contiene los tokens y utilidades centrales de la plantilla; las pantallas funcionales siguen perteneciendo a la aplicación.
 
+La tipografía administrativa es **Outfit Variable** (pesos 100–900), distribuida localmente con `@fontsource-variable/outfit` desde este paquete. Importar `admin.css` carga la fuente y la aplica al panel mediante `font-outfit`, sin peticiones a Google Fonts y compatible con la política `font-src 'self'`. Incluye los caracteres del español y `font-display: swap`.
+
 El paquete es interno al monorepo y exporta directamente `src/index.ts`. Vite procesa sus componentes y refleja los cambios en desarrollo sin compilar previamente `packages/ui` ni mantener un proceso de watch separado. El comando `pnpm --filter @factosys/ui build` sigue disponible para comprobar sus tipos y generar declaraciones.
 
 ## Skeletons y cargas

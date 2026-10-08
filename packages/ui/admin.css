@@ -1,10 +1,11 @@
 /* TailAdmin core theme and utilities. MIT: see TAILADMIN-LICENSE.md. */
+@import "@fontsource-variable/outfit";
 @import "flatpickr/dist/flatpickr.css";
 
 @custom-variant dark (&:is(.dark *));
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-outfit: "Outfit Variable", sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;

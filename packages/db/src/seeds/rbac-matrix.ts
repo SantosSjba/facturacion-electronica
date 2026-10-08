@@ -106,7 +106,7 @@ export function isPlatformRole(code: string): boolean {
 /**
  * Idempotent seed of global roles, permissions and role_permissions.
  */
-export async function seedRbacMatrix(db: Db): Promise<{
+export async function seedRbacMatrix(db: Pick<Db, "select" | "insert" | "update">): Promise<{
   roleIds: Record<RoleCode, string>;
   permissionIds: Record<PermissionCode, string>;
 }> {

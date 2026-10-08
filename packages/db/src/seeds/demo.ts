@@ -26,30 +26,25 @@ export const RULESET_ARTIFACT =
   "docs/sunat-oficial/04-esquemas-validacion/reglas-validacion-cpe-2026-08-26.xlsx";
 
 export const DEMO_ORG_SLUG = "demo";
-export const DEMO_OWNER_EMAIL = "owner@demo.local";
+export const DEMO_OWNER_EMAIL = "cliente@factosysperu.com";
 /** Dev-only password for demo owner — never use in production. */
 export const DEMO_OWNER_PASSWORD = "DemoOwner!2026";
 
-export const DEMO_VIEWER_EMAIL = "viewer@demo.local";
-/** Dev-only password for demo viewer — never use in production. */
-export const DEMO_VIEWER_PASSWORD = "DemoViewer!2026";
-
 /** Platform org shell for seed-only platform operators (S12). */
 export const PLATFORM_ORG_SLUG = "factosys-platform";
-export const PLATFORM_ADMIN_EMAIL = "platform@factosys.local";
+export const PLATFORM_ADMIN_EMAIL = "platform@factosysperu.com";
 /** Dev-only password for platform admin — never use in production. */
 export const PLATFORM_ADMIN_PASSWORD = "PlatformAdmin!2026";
 
 /**
- * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner + viewer.
+ * Idempotent demo seed: organization `demo`, catalog ruleset, RBAC matrix, owner.
  * Also seeds platform org + platform_superadmin user (dev only).
  * No API key secrets.
  */
-export async function seedDemo(db: Db): Promise<{
+export async function seedDemo(db: Pick<Db, "select" | "insert" | "update">): Promise<{
   organizationId: string;
   catalogVersionId: string;
   ownerUserId: string;
-  viewerUserId: string;
   platformOrgId: string;
   platformUserId: string;
 }> {
@@ -148,49 +143,6 @@ export async function seedDemo(db: Db): Promise<{
     await db.insert(userRoles).values({ userId: ownerUserId, roleId: ownerRoleId });
   }
 
-  const existingViewer = await db
-    .select()
-    .from(users)
-    .where(
-      and(
-        eq(users.organizationId, organizationId),
-        eq(users.email, DEMO_VIEWER_EMAIL),
-      ),
-    )
-    .limit(1);
-
-  let viewerUserId = existingViewer[0]?.id;
-  if (!viewerUserId) {
-    viewerUserId = uuidv7();
-    const passwordHash = await hash(DEMO_VIEWER_PASSWORD);
-    await db.insert(users).values({
-      id: viewerUserId,
-      organizationId,
-      email: DEMO_VIEWER_EMAIL,
-      name: "Demo Viewer",
-      passwordHash,
-      status: "active",
-    });
-  }
-
-  const viewerRoleId = roleIds.viewer;
-  const hasViewerRole = await db
-    .select()
-    .from(userRoles)
-    .where(
-      and(
-        eq(userRoles.userId, viewerUserId),
-        eq(userRoles.roleId, viewerRoleId),
-      ),
-    )
-    .limit(1);
-  if (hasViewerRole.length === 0) {
-    await db.insert(userRoles).values({
-      userId: viewerUserId,
-      roleId: viewerRoleId,
-    });
-  }
-
   const existingPlatformOrg = await db
     .select()
     .from(organizations)
@@ -259,7 +211,6 @@ export async function seedDemo(db: Db): Promise<{
     organizationId,
     catalogVersionId,
     ownerUserId,
-    viewerUserId,
     platformOrgId,
     platformUserId,
   };
@@ -317,13 +268,13 @@ Estos términos regulan el acceso y uso de la plataforma SaaS Factosys para emis
  * Idempotent legal documents for locale es-PE (S12-LEGAL / S15-ONB).
  * Seeded as published so onboarding gate can accept them (S16 adds admin publish UI).
  */
-async function seedLegalDraftsEsPe(db: Db): Promise<void> {
-  const drafts: Array<{
+async function seedLegalDraftsEsPe(db: Pick<Db, "select" | "insert" | "update">): Promise<void> {
+  const drafts: {
     code: string;
     version: number;
     title: string;
     bodyMd: string;
-  }> = [
+  }[] = [
     {
       code: "privacy.es-PE",
       version: 1,
@@ -381,12 +332,12 @@ async function seedLegalDraftsEsPe(db: Db): Promise<void> {
  * Signup placeholders: {{company_name}}, {{ruc}}, {{contact_name}}, {{contact_email}}.
  * Plan placeholders: {{organization_name}}, {{plan_name}}, {{plan_code}}, {{status}}.
  */
-async function seedSignupNotificationTemplates(db: Db): Promise<void> {
-  const templates: Array<{
+async function seedSignupNotificationTemplates(db: Pick<Db, "select" | "insert" | "update">): Promise<void> {
+  const templates: {
     code: string;
     subject: string;
     bodyMd: string;
-  }> = [
+  }[] = [
     {
       code: "signup.acuse",
       subject: "Recibimos tu solicitud — Factosys",
@@ -518,9 +469,9 @@ Slug: \`{{organization_slug}}\`
   }
 }
 
-/** Idempotent Starter / Growth / Business catalog (S14-PLAN / FE-409–410). */
-async function seedSaasPlans(db: Db): Promise<void> {
-  const catalog: Array<{
+/** Idempotent Minimal Starter catalog (S14-PLAN / FE-409–410). */
+async function seedSaasPlans(db: Pick<Db, "select" | "insert" | "update">): Promise<void> {
+  const catalog: {
     code: string;
     name: string;
     description: string;
@@ -530,7 +481,7 @@ async function seedSaasPlans(db: Db): Promise<void> {
     maxUsers: number;
     maxDocumentsPerMonth: number;
     maxApiKeys: number;
-  }> = [
+  }[] = [
     {
       code: "starter",
       name: "Starter",
@@ -541,28 +492,6 @@ async function seedSaasPlans(db: Db): Promise<void> {
       maxUsers: 2,
       maxDocumentsPerMonth: 100,
       maxApiKeys: 1,
-    },
-    {
-      code: "growth",
-      name: "Growth",
-      description: "Más empresas, usuarios y volumen mensual.",
-      priceMonthlyCents: 14900,
-      priceDisplay: "S/ 149",
-      maxCompanies: 3,
-      maxUsers: 10,
-      maxDocumentsPerMonth: 1000,
-      maxApiKeys: 5,
-    },
-    {
-      code: "business",
-      name: "Business",
-      description: "Escalas operativas para equipos y alto volumen.",
-      priceMonthlyCents: 39900,
-      priceDisplay: "S/ 399",
-      maxCompanies: 10,
-      maxUsers: 50,
-      maxDocumentsPerMonth: 10000,
-      maxApiKeys: 20,
     },
   ];
 

@@ -70,7 +70,7 @@ export const envSchema = z.object({
   /** S13-NOTIF: log (sandbox) | resend | smtp */
   EMAIL_DRIVER: z.enum(["log", "resend", "smtp"]).default("log"),
   EMAIL_FROM: z.string().min(1).default("Factosys <noreply@factosys.local>"),
-  NOTIFICATIONS_OPS_EMAIL: z.string().email().default("platform@factosys.local"),
+  NOTIFICATIONS_OPS_EMAIL: z.string().email().default("platform@factosysperu.com"),
   /** S15-ONB: saas-web invite accept-invite base. */
   SAAS_WEB_PUBLIC_URL: z.string().url().default("http://localhost:5174"),
   INVITE_TOKEN_TTL_HOURS: z.coerce.number().int().positive().default(72),

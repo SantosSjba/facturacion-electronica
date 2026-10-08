@@ -34,7 +34,7 @@ async function main(): Promise<void> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      email: "owner@demo.local",
+      email: "cliente@factosysperu.com",
       password: "DemoOwner!2026",
       organization_slug: "demo",
     }),

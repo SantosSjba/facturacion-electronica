@@ -47,7 +47,7 @@ describe("API e2e", () => {
     const login = await request(server)
       .post("/auth/login")
       .send({
-        email: "owner@demo.local",
+        email: "cliente@factosysperu.com",
         password: "DemoOwner!2026",
         organization_slug: "demo",
       });
@@ -1663,7 +1663,7 @@ describe("API e2e", () => {
       (p) => p.code,
     );
     expect(codes).toEqual(
-      expect.arrayContaining(["starter", "growth", "business"]),
+      expect.arrayContaining(["starter"]),
     );
     const starter = (
       catalog.body.items as Array<{ id: string; code: string; active: boolean }>
@@ -1689,7 +1689,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -1851,7 +1851,7 @@ describe("API e2e", () => {
       const platformLogin = await request(server)
         .post("/auth/login")
         .send({
-          email: "platform@factosys.local",
+          email: "platform@factosysperu.com",
           password: "PlatformAdmin!2026",
           organization_slug: "factosys-platform",
         })
@@ -1924,7 +1924,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2126,7 +2126,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2257,7 +2257,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2444,7 +2444,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2519,7 +2519,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2542,7 +2542,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2607,7 +2607,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2700,7 +2700,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -2787,7 +2787,7 @@ describe("API e2e", () => {
     const login = await request(server)
       .post("/auth/login")
       .send({
-        email: "owner@demo.local",
+        email: "cliente@factosysperu.com",
         password: "DemoOwner!2026",
         organization_slug: "demo",
       })
@@ -2818,12 +2818,35 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
       .expect(200);
     const platformToken = platformLogin.body.access_token as string;
+
+    // Extra catalog entries belong to this scenario, not the minimal development seed.
+    const catalog = await request(server)
+      .get("/saas/platform/plans")
+      .set("Authorization", `Bearer ${platformToken}`)
+      .expect(200);
+    if (!(catalog.body.items as Array<{ code: string }>).some((plan) => plan.code === "growth")) {
+      await request(server)
+        .post("/saas/plans")
+        .set("Authorization", `Bearer ${platformToken}`)
+        .send({
+          code: "growth",
+          name: "Growth",
+          price_monthly_cents: 14900,
+          price_display: "S/ 149",
+          currency: "PEN",
+          max_companies: 3,
+          max_users: 10,
+          max_documents_per_month: 1000,
+          max_api_keys: 5,
+        })
+        .expect(201);
+    }
 
     const orgs = await request(server)
       .get("/saas/organizations")
@@ -3041,7 +3064,7 @@ describe("API e2e", () => {
       const platformLogin = await request(server)
         .post("/auth/login")
         .send({
-          email: "platform@factosys.local",
+          email: "platform@factosysperu.com",
           password: "PlatformAdmin!2026",
           organization_slug: "factosys-platform",
         })
@@ -3212,7 +3235,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })
@@ -3319,7 +3342,7 @@ describe("API e2e", () => {
       .get("/auth/me")
       .set("Authorization", `Bearer ${imp.body.access_token}`)
       .expect(200);
-    expect(me.body.email).toBe("platform@factosys.local");
+    expect(me.body.email).toBe("platform@factosysperu.com");
 
     const companies = await request(server)
       .get("/companies")
@@ -3426,7 +3449,7 @@ describe("API e2e", () => {
     const platformLogin = await request(server)
       .post("/auth/login")
       .send({
-        email: "platform@factosys.local",
+        email: "platform@factosysperu.com",
         password: "PlatformAdmin!2026",
         organization_slug: "factosys-platform",
       })

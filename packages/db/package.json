@@ -23,7 +23,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "node ./scripts/migrate.mjs",
     "migrate:down": "node ./scripts/migrate-down.mjs",
-    "seed": "node ./scripts/seed.mjs",
+    "seed": "pnpm build && node ./scripts/seed.mjs",
+    "reset": "pnpm build && node ./scripts/reset.mjs",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
   "dependencies": {
