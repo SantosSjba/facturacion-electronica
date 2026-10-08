@@ -28,7 +28,7 @@ import {
 } from "../dto/daily-summary-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("DailySummaries")
+@ApiTags("Resúmenes diarios")
 @ApiBearerAuth()
 @Controller("v1")
 export class DailySummariesController {
@@ -40,8 +40,16 @@ export class DailySummariesController {
   @Post("daily-summaries")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Resumen diario RC (auto-pool + SendSummary + poll)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Resumen diario RC (auto-pool + SendSummary + poll)",
+    description:
+      "Emite un resumen diario de boletas. Scope `documents:write`. Requiere `Idempotency-Key`.",
+  })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,

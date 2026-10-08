@@ -28,7 +28,7 @@ import {
 } from "../dto/voided-document-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("VoidedDocuments")
+@ApiTags("Comunicaciones de baja")
 @ApiBearerAuth()
 @Controller("v1")
 export class VoidedDocumentsController {
@@ -40,8 +40,16 @@ export class VoidedDocumentsController {
   @Post("voided-documents")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Comunicación de baja RA (SendSummary + poll)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Comunicación de baja RA (SendSummary + poll)",
+    description:
+      "Registra una comunicación de baja. Scope `documents:write`. Requiere `Idempotency-Key`. El envío a SUNAT sigue el flujo SendSummary + consulta de ticket.",
+  })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,

@@ -305,7 +305,7 @@ async function main() {
   }
 
   console.log(
-    "\nNote: items 3–6 (boleta/RC, NC/ND, RA, GRE) covered by API e2e + console wizards; see docs/dod-producto-mvp.md",
+    "\nNote: items 3–6 (boleta/RC, NC/ND, RA, GRE) covered by API e2e; see docs/dod-producto-mvp.md",
   );
   summarize();
   if (results.some((r) => !r.ok)) process.exit(1);

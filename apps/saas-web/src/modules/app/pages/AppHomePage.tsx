@@ -1,33 +1,19 @@
-import { ExternalLink, Layers, Users, Building2 } from "lucide-react";
+import { KeyRound, Layers, Users, Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchOrgPlan } from "@/modules/app/api/plan";
-import { consolePublicUrl } from "@/app/nav-config";
 import { useSession } from "@/shared/auth/session-context";
-import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
-} from "@/shared/ui/components/button";
+import { Button, ButtonLabel, buttonIconClassName } from "@/shared/ui/components/button";
 import { Card, CardTitle } from "@/shared/ui/components/card";
 import { Badge } from "@/shared/ui/components/badge";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { LoadingState } from "@/shared/ui/LoadingState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
-function UsageBar({
-  label,
-  used,
-  limit,
-}: {
-  label: string;
-  used: number;
-  limit: number | null;
-}) {
+function UsageBar({ label, used, limit }: { label: string; used: number; limit: number | null }) {
   const max = limit ?? 0;
-  const pct =
-    max <= 0 ? 0 : Math.min(100, Math.round((used / max) * 100));
+  const pct = max <= 0 ? 0 : Math.min(100, Math.round((used / max) * 100));
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
@@ -50,7 +36,7 @@ function UsageBar({
 }
 
 export function AppHomePage() {
-  const { user } = useSession();
+  const { user, hasPermission } = useSession();
   const planQuery = useQuery({
     queryKey: ["org-plan", user?.organizationId],
     queryFn: fetchOrgPlan,
@@ -68,28 +54,13 @@ export function AppHomePage() {
             ? `${data.organization_name} · ${data.organization_slug}`
             : "Resumen de plan, uso y accesos rápidos."
         }
-        actions={
-          <a
-            href={consolePublicUrl("/")}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex"
-          >
-            <Button type="button" variant="outline" size="sm">
-              <ExternalLink className={buttonIconClassName} />
-              <ButtonLabel>Abrir consola</ButtonLabel>
-            </Button>
-          </a>
-        }
       />
 
       {planQuery.isLoading ? <LoadingState label="Cargando plan…" /> : null}
       {planQuery.error ? (
         <ErrorState
           message={
-            planQuery.error instanceof Error
-              ? planQuery.error.message
-              : "No se pudo cargar el plan"
+            planQuery.error instanceof Error ? planQuery.error.message : "No se pudo cargar el plan"
           }
         />
       ) : null}
@@ -99,9 +70,7 @@ export function AppHomePage() {
           <Card className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle>Plan actual</CardTitle>
-              {data.org_plan_status ? (
-                <Badge variant="muted">{data.org_plan_status}</Badge>
-              ) : null}
+              {data.org_plan_status ? <Badge variant="muted">{data.org_plan_status}</Badge> : null}
             </div>
             {data.plan ? (
               <div>
@@ -169,25 +138,27 @@ export function AppHomePage() {
               <Building2 className="size-6 text-brand-500" />
               <CardTitle>Empresas</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Consulta empresas; edita en la consola.
+                Configura tus empresas, certificados, credenciales y series.
               </p>
               <Link to="/app/companies">
                 <Button type="button" size="sm">
-                  <ButtonLabel>Ver listado</ButtonLabel>
+                  <ButtonLabel>Gestionar empresas</ButtonLabel>
                 </Button>
               </Link>
             </Card>
             <Card className="space-y-3">
-              <ExternalLink className="size-6 text-brand-500" />
-              <CardTitle>Consola</CardTitle>
+              <KeyRound className="size-6 text-brand-500" />
+              <CardTitle>Acceso a la API</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Emisión, series y credenciales SUNAT.
+                Administra las claves para conectar tus sistemas con la API.
               </p>
-              <a href={consolePublicUrl("/companies")} target="_blank" rel="noreferrer">
-                <Button type="button" size="sm" variant="outline">
-                  <ButtonLabel>Abrir empresas</ButtonLabel>
-                </Button>
-              </a>
+              {hasPermission("apikeys:manage") ? (
+                <Link to="/app/developers/api-keys">
+                  <Button type="button" size="sm" variant="outline">
+                    <ButtonLabel>Gestionar API keys</ButtonLabel>
+                  </Button>
+                </Link>
+              ) : null}
             </Card>
           </div>
         </>

@@ -28,7 +28,7 @@ import {
 } from "../dto/despatch-advice-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("DespatchAdvices")
+@ApiTags("Guías de remisión")
 @ApiBearerAuth()
 @Controller("v1")
 export class DespatchAdvicesController {
@@ -40,9 +40,15 @@ export class DespatchAdvicesController {
   @Post("despatch-advices")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
   @ApiOperation({
     summary: "Emitir GRE 09/31 (OAuth + sendDespatch + poll)",
+    description:
+      "Emite una guía de remisión electrónica. Scope `documents:write`. Requiere `Idempotency-Key`. Flujo GRE: OAuth SUNAT → sendDespatch → poll.",
   })
   async create(
     @CurrentAuth() auth: AuthContext,

@@ -9,6 +9,7 @@ import {
   ApiBearerAuth,
   ApiHeader,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import type { Response } from "express";
@@ -28,7 +29,7 @@ import {
 } from "../dto/receipt-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("Receipts")
+@ApiTags("Boletas")
 @ApiBearerAuth()
 @Controller("v1")
 export class ReceiptsController {
@@ -40,8 +41,27 @@ export class ReceiptsController {
   @Post("receipts")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Emitir boleta electrónica (03)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Emitir boleta electrónica (03)",
+    description: [
+      "Crea y encola una boleta electrónica (tipo 03).",
+      "",
+      "**Scope:** `documents:write` · **Header:** `Idempotency-Key`",
+      "",
+      "Tras la emisión puedes agrupar boletas en un resumen diario (RC) según reglas del plan.",
+    ].join("\n"),
+  })
+  @ApiResponse({ status: 201, description: "Boleta creada." })
+  @ApiResponse({ status: 401, description: "API key ausente o inválida." })
+  @ApiResponse({
+    status: 422,
+    description: "Validación fallida o falta Idempotency-Key.",
+  })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,

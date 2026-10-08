@@ -27,7 +27,7 @@ const schema = z.object({
 
 type BodyDto = z.infer<typeof schema>;
 
-@ApiTags("Validations")
+@ApiTags("Validaciones")
 @ApiBearerAuth()
 @Controller("v1/validations")
 export class ValidationsController {
@@ -40,7 +40,11 @@ export class ValidationsController {
   @HttpCode(200)
   @ApiKeyAuth()
   @RequireScopes("validations:cpe")
-  @ApiOperation({ summary: "Consult CPE validez (Fake/SUNAT + cache)" })
+  @ApiOperation({
+    summary: "Consultar validez de CPE (Fake/SUNAT + caché)",
+    description:
+      "Consulta si un CPE es válido. Scope `validations:cpe`. En sandbox usa Fake; en producción consulta SUNAT con caché.",
+  })
   async validate(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodValidationPipe(schema)) body: BodyDto,

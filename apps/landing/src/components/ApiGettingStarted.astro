@@ -1,0 +1,118 @@
+---
+import { docsUrl } from "../lib/site";
+
+const steps = [
+  {
+    n: "1",
+    title: "Solicita acceso y recibe credenciales",
+    body: "Aún no hay checkout ni compra en línea. Completa la solicitud; al aprobarte te entregamos URL del entorno, API key y acceso al panel para rotar keys.",
+  },
+  {
+    n: "2",
+    title: "Configura URL + Bearer en tu sistema",
+    body: "En tu backend (no en el browser del cliente): FACTOSYS_BASE_URL y FACTOSYS_API_KEY. Cada request: Authorization: Bearer <api_key>. Emisiones: también Idempotency-Key.",
+  },
+  {
+    n: "3",
+    title: "Emite tu primera factura",
+    body: "POST /v1/invoices con curl, Postman o el HTTP client de tu lenguaje. JSON con cliente y líneas → 201 con id del documento. Sin instalar paquetes nuestros.",
+  },
+  {
+    n: "4",
+    title: "Poll, PDF y webhook secret",
+    body: "Consulta estado/PDF por id, o registra un webhook: te devolvemos un secret una sola vez; valida HMAC en tu sistema web para no confiar en callbacks abiertos.",
+  },
+];
+
+const envBlock = `# .env de tu sistema web / backend
+FACTOSYS_BASE_URL=https://api.ejemplo.factosys.pe
+FACTOSYS_API_KEY=fs_live_••••••••
+FACTOSYS_WEBHOOK_SECRET=whsec_••••••••   # solo si usas webhooks`;
+
+const snippet = `curl -X POST "$FACTOSYS_BASE_URL/v1/invoices" \\
+  -H "Authorization: Bearer $FACTOSYS_API_KEY" \\
+  -H "Idempotency-Key: inv-$(date +%s)" \\
+  -H "Content-Type: application/json" \\
+  -d @factura.json`;
+---
+
+<section id="empezar" class="bg-white">
+  <div class="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+    <div class="mx-auto mb-10 max-w-3xl text-center lg:mb-14">
+      <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-600">
+        Guía rápida
+      </p>
+      <h2 class="mb-4 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+        De tu sistema web a SUNAT
+      </h2>
+      <p class="font-light text-gray-500 sm:text-xl">
+        Integración típica: link de la API + token (API key) + secret de webhook.
+        Solo REST + OpenAPI: no hay SDK público en npm todavía.
+      </p>
+    </div>
+
+    <ol class="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+      {
+        steps.map((s) => (
+          <li class="relative rounded-2xl border border-gray-200 bg-gray-50 p-5 sm:p-6">
+            <span class="mb-3 inline-flex size-8 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+              {s.n}
+            </span>
+            <h3 class="mb-2 text-lg font-bold text-gray-900">{s.title}</h3>
+            <p class="text-sm leading-relaxed text-gray-600">{s.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    <div class="mb-6 grid gap-6 lg:grid-cols-2">
+      <div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-lg">
+        <div class="border-b border-gray-700 px-4 py-2.5">
+          <span class="text-xs font-medium text-gray-400">Credenciales · .env</span>
+        </div>
+        <pre
+          class="overflow-x-auto p-4 text-left text-sm leading-relaxed text-gray-100"
+        ><code>{envBlock}</code></pre>
+      </div>
+      <div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-lg">
+        <div
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-700 px-4 py-2.5"
+        >
+          <span class="text-xs font-medium text-gray-400">Ejemplo · curl</span>
+          <a
+            href={docsUrl}
+            class="text-xs font-medium text-brand-400 hover:text-brand-300"
+          >
+            Ver referencia completa →
+          </a>
+        </div>
+        <pre
+          class="overflow-x-auto p-4 text-left text-sm leading-relaxed text-gray-100"
+        ><code>{snippet}</code></pre>
+      </div>
+    </div>
+
+    <p class="mb-8 text-center text-sm text-gray-500">
+      Comparado con APIs tipo ApisPerú: mismo flujo mental (URL + token + secret).
+      La diferencia comercial hoy es que Factosys habilita el acceso por solicitud,
+      no por compra automática en la web.
+    </p>
+
+    <div
+      class="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center"
+    >
+      <a
+        href={docsUrl}
+        class="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-3 text-center text-sm font-medium text-white hover:bg-brand-600 focus:ring-4 focus:ring-brand-300"
+      >
+        Abrir documentación API
+      </a>
+      <a
+        href="#solicitud"
+        class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-5 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50 focus:ring-4 focus:ring-gray-100"
+      >
+        Solicitar acceso
+      </a>
+    </div>
+  </div>
+</section>

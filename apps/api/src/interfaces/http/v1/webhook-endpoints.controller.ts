@@ -51,7 +51,7 @@ export class WebhookEndpointsController {
   @Get()
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "List webhook endpoints" })
+  @ApiOperation({ summary: "Listar endpoints de webhook" })
   list(@CurrentAuth() auth: AuthContext) {
     return this.webhooks.list(this.orgId(auth));
   }
@@ -60,7 +60,9 @@ export class WebhookEndpointsController {
   @HttpCode(201)
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "Create webhook endpoint — secret returned once" })
+  @ApiOperation({
+    summary: "Crear endpoint de webhook — el secreto se devuelve una sola vez",
+  })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodValidationPipe(createSchema)) body: CreateBody,
@@ -93,7 +95,7 @@ export class WebhookEndpointsController {
   @Get(":id")
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "Get webhook endpoint" })
+  @ApiOperation({ summary: "Obtener endpoint de webhook" })
   get(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
     return this.webhooks.get(this.orgId(auth), id);
   }
@@ -101,7 +103,9 @@ export class WebhookEndpointsController {
   @Patch(":id")
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "Update webhook endpoint (events/status/url)" })
+  @ApiOperation({
+    summary: "Actualizar endpoint de webhook (eventos / estado / url)",
+  })
   async patch(
     @CurrentAuth() auth: AuthContext,
     @Param("id") id: string,
@@ -135,7 +139,9 @@ export class WebhookEndpointsController {
   @HttpCode(200)
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "Rotate webhook secret — returned once" })
+  @ApiOperation({
+    summary: "Rotar secreto del webhook — se devuelve una sola vez",
+  })
   async rotate(
     @CurrentAuth() auth: AuthContext,
     @Param("id") id: string,
@@ -159,7 +165,7 @@ export class WebhookEndpointsController {
   @Get(":id/deliveries")
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
-  @ApiOperation({ summary: "List recent deliveries for endpoint" })
+  @ApiOperation({ summary: "Listar entregas recientes del endpoint" })
   async deliveries(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
     const rows = await this.webhooks.listDeliveries(this.orgId(auth), id);
     return rows.map((r) => ({

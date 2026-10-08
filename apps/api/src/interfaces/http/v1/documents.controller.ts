@@ -6,7 +6,7 @@ import {
   Query,
   StreamableFile,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
@@ -65,7 +65,7 @@ function parseDocumentTypes(
   return { documentTypes: types };
 }
 
-@ApiTags("Documents")
+@ApiTags("Documentos")
 @ApiBearerAuth()
 @Controller("v1/documents")
 export class DocumentsController {
@@ -77,7 +77,12 @@ export class DocumentsController {
   @Get()
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "List documents (filters + cursor)" })
+  @ApiOperation({
+    summary: "Listar documentos (filtros + cursor)",
+    description:
+      "Lista documentos de la organización. Filtros: `company_id`, `document_type` (uno o CSV), `status`, fechas, `serie_number`, paginación por `cursor`. Scope `documents:read`.",
+  })
+  @ApiResponse({ status: 200, description: "Página de documentos." })
   async list(
     @CurrentAuth() auth: AuthContext,
     @Query(new ZodValidationPipe(listQuerySchema)) query: ListQuery,
@@ -99,7 +104,13 @@ export class DocumentsController {
   @Get(":id")
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "Get document" })
+  @ApiOperation({
+    summary: "Obtener documento",
+    description:
+      "Detalle del documento por id (estado SUNAT, serie-número, enlaces). Scope `documents:read`.",
+  })
+  @ApiResponse({ status: 200, description: "Documento encontrado." })
+  @ApiResponse({ status: 404, description: "No existe o no pertenece al tenant." })
   async get(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
     const orgId = this.orgId(auth);
     const row = await this.documents.getById(orgId, id);
@@ -109,7 +120,10 @@ export class DocumentsController {
   @Get(":id/trace")
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "Document timeline / events" })
+  @ApiOperation({
+    summary: "Línea de tiempo / eventos del documento",
+    description: "Eventos de auditoría del ciclo de vida (emisión, envío, CDR, errores).",
+  })
   async trace(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
     const orgId = this.orgId(auth);
     const events = await this.documents.listEvents(orgId, id);
@@ -126,7 +140,10 @@ export class DocumentsController {
   @Get(":id/xml")
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "Download signed XML" })
+  @ApiOperation({
+    summary: "Descargar XML firmado",
+    description: "Descarga el XML firmado cuando está disponible en almacenamiento.",
+  })
   @Header("Content-Type", "application/xml")
   async xml(
     @CurrentAuth() auth: AuthContext,
@@ -143,7 +160,10 @@ export class DocumentsController {
   @Get(":id/cdr")
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "Download CDR ZIP" })
+  @ApiOperation({
+    summary: "Descargar CDR (ZIP)",
+    description: "Descarga el CDR de SUNAT (ZIP) cuando el documento fue aceptado/rechazado.",
+  })
   async cdr(
     @CurrentAuth() auth: AuthContext,
     @Param("id") id: string,
@@ -159,7 +179,11 @@ export class DocumentsController {
   @Get(":id/pdf")
   @ApiKeyAuth()
   @RequireScopes("documents:read")
-  @ApiOperation({ summary: "Download RI PDF (lazy render)" })
+  @ApiOperation({
+    summary: "Descargar PDF de representación impresa (render diferido)",
+    description:
+      "Obtiene el PDF RI. Si aún no existe, puede disparar render asíncrono y requerir reintento.",
+  })
   async pdfDownload(
     @CurrentAuth() auth: AuthContext,
     @Param("id") id: string,

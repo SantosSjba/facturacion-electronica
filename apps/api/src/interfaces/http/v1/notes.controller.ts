@@ -9,6 +9,7 @@ import {
   ApiBearerAuth,
   ApiHeader,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import type { Response } from "express";
@@ -35,7 +36,7 @@ import {
 } from "../dto/debit-note-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("CreditNotes")
+@ApiTags("Notas de crédito")
 @ApiBearerAuth()
 @Controller("v1")
 export class CreditNotesController {
@@ -47,8 +48,18 @@ export class CreditNotesController {
   @Post("credit-notes")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Emitir nota de crédito (07)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Emitir nota de crédito (07)",
+    description:
+      "Emite una nota de crédito electrónica. Scope `documents:write`. Requiere `Idempotency-Key` y referencia al CPE afectado.",
+  })
+  @ApiResponse({ status: 201, description: "Nota de crédito creada." })
+  @ApiResponse({ status: 422, description: "Validación fallida." })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,
@@ -107,7 +118,7 @@ export class CreditNotesController {
   }
 }
 
-@ApiTags("DebitNotes")
+@ApiTags("Notas de débito")
 @ApiBearerAuth()
 @Controller("v1")
 export class DebitNotesController {
@@ -119,8 +130,18 @@ export class DebitNotesController {
   @Post("debit-notes")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Emitir nota de débito (08)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Emitir nota de débito (08)",
+    description:
+      "Emite una nota de débito electrónica. Scope `documents:write`. Requiere `Idempotency-Key` y referencia al CPE afectado.",
+  })
+  @ApiResponse({ status: 201, description: "Nota de débito creada." })
+  @ApiResponse({ status: 422, description: "Validación fallida." })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,

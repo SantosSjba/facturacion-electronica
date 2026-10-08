@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-const DEFAULT_DATABASE_URL =
-  "postgresql://factosys:factosys@localhost:5433/factosys";
+const DEFAULT_DATABASE_URL = "postgresql://factosys:factosys@localhost:5433/factosys";
 const DEFAULT_REDIS_URL = "redis://localhost:6379";
 const DEFAULT_JWT_SECRET = "dev-only-change-me-jwt-access-secret-32b";
 /** 32 zero bytes, base64 — DEV/TEST ONLY. */
@@ -41,32 +40,19 @@ export const envSchema = z.object({
   SUNAT_VALIDEZ_MODE: z.enum(["fake", "beta"]).default("fake"),
   PDF_RI_MODE: z.enum(["fake", "playwright"]).default("fake"),
   WEBHOOK_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
-  CPE_VALIDATION_CACHE_TTL_SEC: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(3600),
+  CPE_VALIDATION_CACHE_TTL_SEC: z.coerce.number().int().positive().default(3600),
   SUNAT_GRE_TOKEN_URL: z
     .string()
     .min(1)
-    .default(
-      "https://api-seguridad.sunat.gob.pe/v1/clientessol/{client_id}/oauth2/token/",
-    ),
-  SUNAT_GRE_API_BASE: z
-    .string()
-    .url()
-    .default("https://api-cpe.sunat.gob.pe"),
+    .default("https://api-seguridad.sunat.gob.pe/v1/clientessol/{client_id}/oauth2/token/"),
+  SUNAT_GRE_API_BASE: z.string().url().default("https://api-cpe.sunat.gob.pe"),
   OTEL_ENABLED: z.enum(["0", "1"]).default("0"),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
-  /** Comma-separated browser origins (console, landing, saas-web). */
+  /** Comma-separated browser origins (landing, saas-web). */
   CORS_ORIGINS: z
     .string()
     .default(
       [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
         "http://localhost:4321",
         "http://127.0.0.1:4321",
         "http://localhost:5174",
@@ -84,20 +70,9 @@ export const envSchema = z.object({
   /** S13-NOTIF: log (sandbox) | resend | smtp */
   EMAIL_DRIVER: z.enum(["log", "resend", "smtp"]).default("log"),
   EMAIL_FROM: z.string().min(1).default("Factosys <noreply@factosys.local>"),
-  NOTIFICATIONS_OPS_EMAIL: z
-    .string()
-    .email()
-    .default("platform@factosys.local"),
-  /** S14-APR: ops console public URL (optional redirects). */
-  CONSOLE_PUBLIC_URL: z
-    .string()
-    .url()
-    .default("http://localhost:5173"),
+  NOTIFICATIONS_OPS_EMAIL: z.string().email().default("platform@factosys.local"),
   /** S15-ONB: saas-web invite accept-invite base. */
-  SAAS_WEB_PUBLIC_URL: z
-    .string()
-    .url()
-    .default("http://localhost:5174"),
+  SAAS_WEB_PUBLIC_URL: z.string().url().default("http://localhost:5174"),
   INVITE_TOKEN_TTL_HOURS: z.coerce.number().int().positive().default(72),
   RESEND_API_KEY: z.string().min(1).optional(),
   SMTP_HOST: z.string().min(1).optional(),

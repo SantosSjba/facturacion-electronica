@@ -10,6 +10,7 @@ import {
   Scale,
   ScrollText,
   Users,
+  Webhook,
 } from "lucide-react";
 
 export interface NavItem {
@@ -83,6 +84,20 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     icon: Building2,
   },
   {
+    id: "api-keys",
+    label: "API keys",
+    to: "/app/developers/api-keys",
+    permission: "apikeys:manage",
+    icon: KeyRound,
+  },
+  {
+    id: "webhooks",
+    label: "Webhooks",
+    to: "/app/developers/webhooks",
+    permission: "webhooks:manage",
+    icon: Webhook,
+  },
+  {
     id: "plan",
     label: "Plan",
     to: "/app/plan",
@@ -108,18 +123,6 @@ export const NAV_ITEMS = PLATFORM_NAV_ITEMS;
 export const PLATFORM_HOME = "/platform";
 export const APP_HOME = "/app";
 
-export function resolveHomePath(
-  _perms: readonly string[],
-  ctx?: "platform" | "org",
-): string {
+export function resolveHomePath(_perms: readonly string[], ctx?: "platform" | "org"): string {
   return ctx === "org" ? APP_HOME : PLATFORM_HOME;
-}
-
-export function consolePublicUrl(path = ""): string {
-  const base = (
-    (import.meta.env.VITE_CONSOLE_PUBLIC_URL as string | undefined) ||
-    "http://localhost:5173"
-  ).replace(/\/$/, "");
-  if (!path) return base;
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }

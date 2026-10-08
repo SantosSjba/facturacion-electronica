@@ -1,0 +1,106 @@
+---
+const plans = [
+  {
+    name: "Starter",
+    blurb: "Para conectar tu primera empresa a la API.",
+    points: [
+      "Emisión CPE vía API",
+      "Una empresa",
+      "Documentación y sandbox",
+    ],
+    highlighted: false,
+  },
+  {
+    name: "Growth",
+    blurb: "Para equipos que integran y crecen el volumen.",
+    points: [
+      "Más capacidad de emisión",
+      "Multi-empresa",
+      "Webhooks y soporte estándar",
+    ],
+    highlighted: true,
+  },
+  {
+    name: "Business",
+    blurb: "Para operación a medida y requisitos avanzados.",
+    points: [
+      "Límites ampliados",
+      "Prioridad de soporte",
+      "Acompañamiento de integración",
+    ],
+    highlighted: false,
+  },
+];
+---
+
+<section id="planes" class="bg-white">
+  <div class="mx-auto max-w-screen-xl px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
+    <div class="mx-auto mb-10 max-w-3xl text-center lg:mb-14">
+      <p class="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-600">
+        Planes
+      </p>
+      <h2 class="mb-4 text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+        Elige el encaje para tu operación
+      </h2>
+      <p class="font-light text-gray-500 sm:text-xl">
+        Todavía no hay compra self‑serve. Indica el perfil; precios, cupos y
+        credenciales (URL + API key) se confirman al aprobar tu solicitud.
+      </p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3 lg:gap-8">
+      {
+        plans.map((plan) => (
+          <div
+            class:list={[
+              "flex flex-col rounded-2xl border bg-white p-6 shadow-sm",
+              plan.highlighted
+                ? "border-brand-500 ring-2 ring-brand-500"
+                : "border-gray-200",
+            ]}
+          >
+            {plan.highlighted ? (
+              <span class="mb-3 w-fit rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+                Recomendado
+              </span>
+            ) : (
+              <span class="mb-3 h-6" aria-hidden="true" />
+            )}
+            <h3 class="text-2xl font-bold text-gray-900">{plan.name}</h3>
+            <p class="mt-2 text-sm text-gray-500">{plan.blurb}</p>
+            <ul class="my-6 flex-1 space-y-3 border-t border-gray-100 pt-6">
+              {plan.points.map((p) => (
+                <li class="flex gap-2 text-sm text-gray-700">
+                  <svg
+                    class="mt-0.5 h-5 w-5 shrink-0 text-brand-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  {p}
+                </li>
+              ))}
+            </ul>
+            <a
+              href="#solicitud"
+              class:list={[
+                "inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-center text-sm font-medium focus:ring-4",
+                plan.highlighted
+                  ? "bg-brand-500 text-white hover:bg-brand-600 focus:ring-brand-300"
+                  : "border border-gray-200 text-gray-900 hover:bg-gray-50 focus:ring-gray-100",
+              ]}
+            >
+              Solicitar acceso
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

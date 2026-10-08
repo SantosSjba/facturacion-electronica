@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview --host localhost --port 5174",
     "test:e2e": "playwright test",
+    "test:portal": "playwright test --config playwright.portal.config.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {

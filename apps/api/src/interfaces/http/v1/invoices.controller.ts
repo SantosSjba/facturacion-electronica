@@ -9,6 +9,7 @@ import {
   ApiBearerAuth,
   ApiHeader,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import type { Response } from "express";
@@ -28,7 +29,7 @@ import {
 } from "../dto/invoice-create.schema";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-@ApiTags("Invoices")
+@ApiTags("Facturas")
 @ApiBearerAuth()
 @Controller("v1")
 export class InvoicesController {
@@ -40,8 +41,32 @@ export class InvoicesController {
   @Post("invoices")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiHeader({ name: "Idempotency-Key", required: true })
-  @ApiOperation({ summary: "Emitir factura electrónica (01)" })
+  @ApiHeader({
+    name: "Idempotency-Key",
+    required: true,
+    description: "Clave única de idempotencia por solicitud de emisión",
+  })
+  @ApiOperation({
+    summary: "Emitir factura electrónica (01)",
+    description: [
+      "Crea y encola una factura electrónica (tipo 01).",
+      "",
+      "**Scope:** `documents:write`",
+      "**Header obligatorio:** `Idempotency-Key`",
+      "",
+      "Flujo: validación → UBL → firma → envío SUNAT (o Fake) → estados hasta CDR.",
+      "Consulta el resultado con `GET /v1/documents/{id}` o un webhook.",
+    ].join("\n"),
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Documento creado (puede seguir en proceso SUNAT).",
+  })
+  @ApiResponse({ status: 401, description: "API key ausente o inválida." })
+  @ApiResponse({
+    status: 422,
+    description: "Validación fallida o falta Idempotency-Key.",
+  })
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,

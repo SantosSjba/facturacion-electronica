@@ -19,7 +19,7 @@ Fuente de producto: [22-sandbox-setup](https://github.com/SantosSjba/planificaci
 - [ ] `pnpm dev:api` → `GET /health` y `GET /ready` OK
 - [ ] `GET /meta/ruleset` → `ruleset_version: 2026-08-26`
 
-## Onboarding company (JWT consola)
+## Onboarding company (JWT panel cliente)
 
 1. [ ] Login demo (`owner@demo.local` / seed) o usuario org
 2. [ ] `POST /companies` (sandbox)

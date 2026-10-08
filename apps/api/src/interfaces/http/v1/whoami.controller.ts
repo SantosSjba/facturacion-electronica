@@ -6,13 +6,13 @@ import type { ApiKeyAuthContext } from "../auth/auth-context";
 import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 
-@ApiTags("v1")
+@ApiTags("Identidad")
 @ApiBearerAuth()
 @Controller("v1")
 export class WhoamiController {
   @Get("whoami")
   @ApiKeyAuth()
-  @ApiOperation({ summary: "Machine identity (API key)" })
+  @ApiOperation({ summary: "Identidad de máquina (API key)" })
   whoami(@CurrentAuth() auth: ApiKeyAuthContext) {
     this.assertApiKey(auth);
     return {
@@ -25,7 +25,9 @@ export class WhoamiController {
   @Get("whoami/documents-write")
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiOperation({ summary: "Smoke scope check → 403 without documents:write" })
+  @ApiOperation({
+    summary: "Verificación de alcance → 403 sin documents:write",
+  })
   whoamiWrite(@CurrentAuth() auth: ApiKeyAuthContext) {
     this.assertApiKey(auth);
     return { ok: true, organization_id: auth.organizationId };

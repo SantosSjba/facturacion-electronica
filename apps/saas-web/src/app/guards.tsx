@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchOnboardingStatus } from "@/modules/app/api/onboarding";
 import { useSession } from "@/shared/auth/session-context";
+import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageSpinner } from "@/shared/ui/LoadingState";
 
 import { resolveHomePath } from "./nav-config";
@@ -13,9 +14,7 @@ export function RequirePlatform() {
 
   if (bootstrapping) return <PageSpinner />;
   if (!user) {
-    return (
-      <Navigate to="/auth/login" replace state={{ from: location.pathname }} />
-    );
+    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
   if (!isPlatform) {
     return <Navigate to="/app" replace />;
@@ -29,9 +28,7 @@ export function RequireOrg() {
 
   if (bootstrapping) return <PageSpinner />;
   if (!user) {
-    return (
-      <Navigate to="/auth/login" replace state={{ from: location.pathname }} />
-    );
+    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
   if (isPlatform) {
     return <Navigate to="/platform" replace />;
@@ -58,9 +55,7 @@ export function RequireOnboarded() {
     return <PageSpinner />;
   }
   if (!user) {
-    return (
-      <Navigate to="/auth/login" replace state={{ from: location.pathname }} />
-    );
+    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
   if (statusQuery.data && !statusQuery.data.has_company) {
     return <Navigate to="/app/onboarding" replace />;
@@ -69,11 +64,7 @@ export function RequireOnboarded() {
 }
 
 /** Onboarding route: if company exists (even with re-accept pending), send to /app. */
-export function RedirectIfOnboarded({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function RedirectIfOnboarded({ children }: { children: React.ReactNode }) {
   const { user, bootstrapping } = useSession();
   const statusQuery = useQuery({
     queryKey: ["onboarding-status", user?.organizationId],
@@ -95,12 +86,17 @@ export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, bootstrapping, isPlatform } = useSession();
   if (bootstrapping) return <PageSpinner />;
   if (user) {
-    return (
-      <Navigate
-        to={resolveHomePath(user.perms, isPlatform ? "platform" : "org")}
-        replace
-      />
-    );
+    return <Navigate to={resolveHomePath(user.perms, isPlatform ? "platform" : "org")} replace />;
   }
   return children;
+}
+
+/** Enforce the same permission for navigation and direct portal URLs. */
+export function RequirePermission({ permission }: { permission: string }) {
+  const { hasPermission } = useSession();
+  return hasPermission(permission) ? (
+    <Outlet />
+  ) : (
+    <ErrorState message="No tienes permiso para acceder a esta sección." />
+  );
 }

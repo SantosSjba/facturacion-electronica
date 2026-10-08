@@ -13,7 +13,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:api": "pnpm --filter @factosys/api start:dev",
-    "dev:console": "pnpm --filter @factosys/console dev",
     "dev:saas-web": "pnpm --filter saas-web dev",
     "dev:landing": "pnpm --filter landing dev",
     "spike:sign": "pnpm --filter @factosys/sunat-sign exec tsx ./scripts/spike-sign.ts",

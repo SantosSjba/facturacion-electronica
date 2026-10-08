@@ -1,0 +1,209 @@
+---
+/**
+ * Documentación API — Scalar (sin Redoc/Redocly).
+ * Spec: PUBLIC_API_URL/docs-json (solo facturación electrónica).
+ */
+import { apiBaseUrl, openApiJsonUrl, saasLoginUrl } from "../lib/site";
+
+const title = "API Facturación electrónica — Factosys";
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Documentación de la API de facturación electrónica Factosys (SUNAT CPE y GRE)."
+    />
+    <title>{title}</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        color-scheme: light;
+        background: #f8fafc;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+          Arial, sans-serif;
+      }
+      #topnav {
+        position: sticky;
+        top: 0;
+        z-index: 200;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 clamp(12px, 3vw, 28px);
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid #e4e7ec;
+        backdrop-filter: blur(8px);
+      }
+      #topnav a {
+        text-decoration: none;
+        color: #344054;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      #topnav .brand {
+        color: #101828;
+        font-weight: 700;
+        font-size: 16px;
+        white-space: nowrap;
+      }
+      #topnav .brand span {
+        color: #667085;
+        font-weight: 500;
+        margin-left: 8px;
+        font-size: 13px;
+      }
+      #topnav .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      #topnav .btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      #topnav .btn-primary {
+        background: #465fff;
+        color: #fff !important;
+      }
+      #topnav .btn-primary:hover {
+        background: #3641f5;
+      }
+      #docs-shell {
+        min-height: calc(100vh - 56px);
+      }
+      #docs-fallback {
+        max-width: 520px;
+        margin: 48px auto;
+        padding: 24px;
+        text-align: center;
+      }
+      #docs-fallback:not([hidden]) {
+        display: block;
+      }
+      #docs-fallback h1 {
+        font-size: 22px;
+        margin: 0 0 12px;
+        color: #101828;
+      }
+      #docs-fallback p {
+        color: #667085;
+        margin: 0 0 16px;
+        line-height: 1.5;
+      }
+      #docs-fallback code {
+        background: #f2f4f7;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      #docs-fallback a {
+        color: #465fff;
+      }
+      /* Scalar brand tweaks */
+      .scalar-app,
+      #scalar-root {
+        --scalar-color-1: #101828;
+        --scalar-color-accent: #465fff;
+      }
+      @media (max-width: 640px) {
+        #topnav .brand span {
+          display: none;
+        }
+        #topnav .link-quiet {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header id="topnav">
+      <a class="brand" href="/"
+        >Factosys<span>API facturación electrónica</span></a
+      >
+      <div class="actions">
+        <a class="link-quiet" href="/">Inicio</a>
+        <a class="link-quiet" href="/#empezar">Empezar</a>
+        <a class="link-quiet" href={saasLoginUrl}>Ingresar</a>
+        <a class="btn btn-primary" href="/#solicitud">Solicitar acceso</a>
+      </div>
+    </header>
+
+    <div id="docs-fallback" role="alert" hidden>
+      <h1>No se pudo cargar la documentación</h1>
+      <p>
+        Arranca la API y verifica
+        <code>PUBLIC_API_URL</code> ({apiBaseUrl}).
+      </p>
+      <a href={openApiJsonUrl} rel="noopener noreferrer" target="_blank"
+        >Abrir {openApiJsonUrl}</a
+      >
+    </div>
+
+    <div id="docs-shell">
+      <div id="scalar-root"></div>
+    </div>
+
+    <script
+      is:inline
+      src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.72.1/dist/browser/standalone.js"
+    ></script>
+    <script is:inline define:vars={{ openApiJsonUrl, apiBaseUrl }}>
+      (function () {
+        var root = document.getElementById("scalar-root");
+        var fallback = document.getElementById("docs-fallback");
+        if (!root || typeof Scalar === "undefined" || !Scalar.createApiReference) {
+          if (fallback) fallback.hidden = false;
+          return;
+        }
+
+        try {
+          Scalar.createApiReference("#scalar-root", {
+            url: openApiJsonUrl,
+            servers: [
+              {
+                url: apiBaseUrl,
+                description: "API Factosys",
+              },
+            ],
+            theme: "default",
+            layout: "modern",
+            darkMode: false,
+            forceDarkModeState: "light",
+            hideDarkModeToggle: true,
+            hideModels: false,
+            defaultOpenAllTags: false,
+            showSidebar: true,
+            withDefaultFonts: true,
+            metaData: {
+              title: "API Facturación electrónica — Factosys",
+            },
+            customCss: [
+              ".scalar-app { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important; }",
+            ].join("\n"),
+          });
+        } catch (e) {
+          console.error(e);
+          if (fallback) fallback.hidden = false;
+        }
+      })();
+    </script>
+  </body>
+</html>

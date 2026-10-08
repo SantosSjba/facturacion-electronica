@@ -1,4 +1,6 @@
 ---
+import { docsUrl } from "../lib/site";
+
 const year = new Date().getFullYear();
 ---
 
@@ -13,10 +15,10 @@ const year = new Date().getFullYear();
         </a>
         <p class="mt-3 max-w-sm text-sm text-gray-500">
           Facturación electrónica SUNAT para equipos que necesitan emitir con
-          confianza.
+          confianza — API para integradores y panel de configuración.
         </p>
       </div>
-      <div class="grid grid-cols-2 gap-8 sm:gap-12">
+      <div class="grid grid-cols-2 gap-8 sm:grid-cols-3 sm:gap-12">
         <div>
           <h2
             class="mb-6 text-sm font-semibold uppercase text-gray-900"
@@ -27,8 +29,29 @@ const year = new Date().getFullYear();
             <li class="mb-4">
               <a href="/#valor" class="hover:underline">Valor</a>
             </li>
+            <li class="mb-4">
+              <a href="/#planes" class="hover:underline">Planes</a>
+            </li>
             <li>
               <a href="/#solicitud" class="hover:underline">Solicitud</a>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h2
+            class="mb-6 text-sm font-semibold uppercase text-gray-900"
+          >
+            Desarrolladores
+          </h2>
+          <ul class="text-gray-600">
+            <li class="mb-4">
+              <a href="/#api" class="hover:underline">API</a>
+            </li>
+            <li class="mb-4">
+              <a href="/#empezar" class="hover:underline">Empezar</a>
+            </li>
+            <li>
+              <a href={docsUrl} class="hover:underline">Documentación</a>
             </li>
           </ul>
         </div>
