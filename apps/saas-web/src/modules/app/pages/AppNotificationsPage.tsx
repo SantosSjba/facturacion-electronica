@@ -1,5 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  BellRing,
+  CheckCheck,
+  Clock,
+  Layers,
+  Mail,
+  Settings2,
+  SlidersHorizontal,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "@factosys/ui";
 
 import {
@@ -9,17 +21,17 @@ import {
   markNotificationRead,
   updateNotificationPreferences,
 } from "@/modules/app/api/notifications";
+import { formatDateTime } from "@/shared/ui/display-labels";
 import {
+  ActionButton,
   Button,
-  ButtonLabel,
-  buttonIconClassName,
-  Card,
-  CardTitle,
   Checkbox,
   EmptyState,
   ErrorState,
+  IconTile,
   LoadingState,
   PageHeader,
+  SectionCard,
   cn,
 } from "@factosys/ui";
 
@@ -29,6 +41,13 @@ const EVENT_LABELS: Record<string, string> = {
   "invite.member": "Invitaciones",
   system: "Sistema",
 };
+
+function eventIcon(code: string): LucideIcon {
+  if (code.startsWith("plan.")) return Layers;
+  if (code.startsWith("invite.")) return UserPlus;
+  if (code === "system") return Settings2;
+  return Bell;
+}
 
 export function AppNotificationsPage() {
   const queryClient = useQueryClient();
@@ -70,22 +89,19 @@ export function AppNotificationsPage() {
   const prefs = prefsQuery.data?.items ?? [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
+        icon={Bell}
         title="Notificaciones"
         description="Centro de avisos in-app y preferencias de canal."
         actions={
           unread > 0 ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
+            <ActionButton
+              icon={CheckCheck}
+              label="Marcar todas leídas"
+              pending={markAll.isPending}
               onClick={() => markAll.mutate()}
-              disabled={markAll.isPending}
-            >
-              <CheckCheck className={buttonIconClassName} />
-              <ButtonLabel>Marcar todas leídas</ButtonLabel>
-            </Button>
+            />
           ) : null
         }
       />
@@ -105,6 +121,7 @@ export function AppNotificationsPage() {
 
       {!inboxQuery.isLoading && !inboxQuery.error && items.length === 0 ? (
         <EmptyState
+          icon={BellOff}
           title="Sin notificaciones"
           description="Cuando haya avisos de plan, invites u otros eventos aparecerán aquí."
         />
@@ -128,20 +145,31 @@ export function AppNotificationsPage() {
                   if (unreadItem) markOne.mutate(n.id);
                 }}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
+                <div className="flex w-full items-start gap-3">
+                  <IconTile
+                    icon={eventIcon(n.template_code)}
+                    tone={unreadItem ? "brand" : "neutral"}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                       {n.title ?? n.template_code}
                     </p>
                     {n.body ? (
-                      <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{n.body}</p>
+                      <p className="mt-1 text-sm font-normal text-gray-600 dark:text-gray-300">
+                        {n.body}
+                      </p>
                     ) : null}
-                    <p className="mt-2 text-theme-xs text-gray-500">
-                      {new Date(n.created_at).toLocaleString()}
+                    <p className="mt-2 flex items-center gap-1 text-theme-xs font-normal text-gray-500">
+                      <Clock className="size-3 shrink-0" aria-hidden />
+                      {formatDateTime(n.created_at)}
                     </p>
                   </div>
                   {unreadItem ? (
-                    <span className="mt-1 size-2 shrink-0 rounded-full bg-brand-500" />
+                    <span
+                      className="mt-1 size-2 shrink-0 rounded-full bg-brand-500"
+                      aria-label="No leída"
+                    />
                   ) : null}
                 </div>
               </Button>
@@ -150,59 +178,66 @@ export function AppNotificationsPage() {
         })}
       </ul>
 
-      <Card className="space-y-4">
-        <CardTitle>Preferencias</CardTitle>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Activa o desactiva email e in-app por tipo de evento.
-        </p>
+      <SectionCard
+        icon={SlidersHorizontal}
+        tone="neutral"
+        title="Preferencias"
+        description="Activa o desactiva email e in-app por tipo de evento."
+      >
         {prefsQuery.isLoading ? (
           <LoadingState variant="form" fields={4} label="Cargando preferencias…" />
         ) : null}
         <div className="space-y-3">
-          {prefs.map((p) => (
-            <div
-              key={p.event_code}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 px-3 py-3 dark:border-gray-800"
-            >
-              <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {EVENT_LABELS[p.event_code] ?? p.event_code}
-              </span>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <Checkbox
-                    checked={p.email_enabled}
-                    onChange={(e) => {
-                      prefsMutation.mutate([
-                        {
-                          event_code: p.event_code,
-                          email_enabled: e.target.checked,
-                          in_app_enabled: p.in_app_enabled,
-                        },
-                      ]);
-                    }}
-                  />
-                  Email
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                  <Checkbox
-                    checked={p.in_app_enabled}
-                    onChange={(e) => {
-                      prefsMutation.mutate([
-                        {
-                          event_code: p.event_code,
-                          email_enabled: p.email_enabled,
-                          in_app_enabled: e.target.checked,
-                        },
-                      ]);
-                    }}
-                  />
-                  In-app
-                </label>
+          {prefs.map((p) => {
+            const EventIcon = eventIcon(p.event_code);
+            return (
+              <div
+                key={p.event_code}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-100 px-3 py-3 dark:border-gray-800"
+              >
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-white/90">
+                  <EventIcon className="size-4 shrink-0 text-gray-400" aria-hidden />
+                  {EVENT_LABELS[p.event_code] ?? p.event_code}
+                </span>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <Checkbox
+                      checked={p.email_enabled}
+                      onChange={(e) => {
+                        prefsMutation.mutate([
+                          {
+                            event_code: p.event_code,
+                            email_enabled: e.target.checked,
+                            in_app_enabled: p.in_app_enabled,
+                          },
+                        ]);
+                      }}
+                    />
+                    <Mail className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                    Email
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <Checkbox
+                      checked={p.in_app_enabled}
+                      onChange={(e) => {
+                        prefsMutation.mutate([
+                          {
+                            event_code: p.event_code,
+                            email_enabled: p.email_enabled,
+                            in_app_enabled: e.target.checked,
+                          },
+                        ]);
+                      }}
+                    />
+                    <BellRing className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                    In-app
+                  </label>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

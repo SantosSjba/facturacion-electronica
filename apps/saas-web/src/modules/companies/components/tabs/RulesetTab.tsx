@@ -1,9 +1,17 @@
-import type { ComponentType, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookMarked, FileCode2, Hash, Info, Layers, Pin } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 
-import { Badge, Card, CardTitle, MutedText, ErrorState, LoadingState, cn } from "@factosys/ui";
+import {
+  Badge,
+  Card,
+  IconTile,
+  MutedText,
+  ErrorState,
+  LoadingState,
+  SectionCard,
+  StatCard,
+} from "@factosys/ui";
 
 import { fetchRuleset } from "../../api";
 import type { Company } from "../../types";
@@ -16,11 +24,17 @@ export function RulesetTab() {
   });
 
   if (query.isLoading)
-    return <LoadingState variant="detail" showHeader={false} label="Cargando reglas de validación…" />;
+    return (
+      <LoadingState variant="detail" showHeader={false} label="Cargando reglas de validación…" />
+    );
   if (query.error) {
     return (
       <ErrorState
-        message={query.error instanceof Error ? query.error.message : "Error al cargar las reglas de validación"}
+        message={
+          query.error instanceof Error
+            ? query.error.message
+            : "Error al cargar las reglas de validación"
+        }
       />
     );
   }
@@ -36,31 +50,32 @@ export function RulesetTab() {
     <div className="space-y-4">
       <Card className="border-brand-100 bg-brand-25/40 dark:border-brand-500/20 dark:bg-brand-500/5">
         <div className="flex gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
-            <Info className="size-4" />
-          </span>
+          <IconTile icon={Info} size="sm" />
           <div>
             <p className="text-sm font-medium text-gray-800 dark:text-white/90">
               Vista de solo lectura
             </p>
             <MutedText className="mt-0.5">
-              La versión de reglas de la empresa no se edita en esta pantalla. Muestra la versión de reglas de
-              validación activa en la plataforma.
+              La versión de reglas de la empresa no se edita en esta pantalla. Muestra la versión de
+              reglas de validación activa en la plataforma.
             </MutedText>
           </div>
         </div>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <MetaCard
+        <StatCard
           icon={Layers}
+          tone="brand"
           label="Reglas de la plataforma"
           value={meta.ruleset_version}
           badge={<Badge variant="primary">plataforma</Badge>}
           mono
+          wrap
         />
-        <MetaCard
+        <StatCard
           icon={Pin}
+          tone={usingDefault ? "muted" : "success"}
           label="Versión de reglas de la empresa"
           value={companyPin ?? "Predeterminado de la plataforma"}
           badge={
@@ -69,75 +84,32 @@ export function RulesetTab() {
             </Badge>
           }
           mono
+          wrap
         />
-        <MetaCard icon={BookMarked} label="Fuente" value={meta.source ?? "—"} />
-        <MetaCard
+        <StatCard icon={BookMarked} label="Fuente" value={meta.source ?? "—"} wrap />
+        <StatCard
           icon={Hash}
           label="SHA-256"
           value={shaPreview ?? "—"}
           title={meta.source_sha256 ?? undefined}
           mono
+          wrap
         />
       </section>
 
       {meta.default_for?.length || meta.supported?.length ? (
-        <Card>
-          <div className="mb-4 flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300">
-              <FileCode2 className="size-4" />
-            </span>
-            <CardTitle className="mb-0">Cobertura</CardTitle>
-          </div>
+        <SectionCard icon={FileCode2} tone="neutral" title="Cobertura">
           <div className="grid gap-4 sm:grid-cols-2">
             {meta.default_for?.length ? (
               <TagList label="Predeterminado para" items={meta.default_for} />
             ) : null}
-            {meta.supported?.length ? <TagList label="Tipos admitidos" items={meta.supported} /> : null}
+            {meta.supported?.length ? (
+              <TagList label="Tipos admitidos" items={meta.supported} />
+            ) : null}
           </div>
-        </Card>
+        </SectionCard>
       ) : null}
     </div>
-  );
-}
-
-function MetaCard({
-  icon: Icon,
-  label,
-  value,
-  badge,
-  mono,
-  title,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  badge?: ReactNode;
-  mono?: boolean;
-  title?: string;
-}) {
-  return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-300">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <MutedText className="text-xs uppercase tracking-wide">{label}</MutedText>
-            {badge}
-          </div>
-          <p
-            className={cn(
-              "break-all text-sm font-semibold text-gray-800 dark:text-white/90",
-              mono && "font-mono text-xs",
-            )}
-            title={title}
-          >
-            {value}
-          </p>
-        </div>
-      </div>
-    </Card>
   );
 }
 

@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Eye, FileText, Hash, Pencil, Plus, Save, Scale, SearchX, Send, X } from "lucide-react";
 import { toast } from "@factosys/ui";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
+  ActionButton,
+  EntityCell,
+  MutedText,
+  RowActions,
   EmptyState,
   ErrorState,
   FieldError,
@@ -17,9 +23,6 @@ import {
   DEFAULT_PAGE_SIZE,
   Pagination,
   Badge,
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -182,18 +185,11 @@ export function LegalDocumentsPage() {
   return (
     <div>
       <PageHeader
+        icon={Scale}
         title="Legal"
         description="Documentos legales (borrador → publicar). Publicados son inmutables."
         actions={
-          <Button
-            type="button"
-            size="icon-label-sm"
-            aria-label="Crear borrador"
-            onClick={openCreate}
-          >
-            <Plus className={buttonIconClassName} />
-            <ButtonLabel>Crear borrador</ButtonLabel>
-          </Button>
+          <ActionButton variant="primary" icon={Plus} label="Crear borrador" onClick={openCreate} />
         }
       />
 
@@ -232,68 +228,93 @@ export function LegalDocumentsPage() {
           </FilterPanel>
 
           {filtered.length === 0 ? (
-            <EmptyState title="Sin documentos" description="Crea un borrador o ajusta el filtro." />
+            <EmptyState
+              icon={statusFilter ? SearchX : FileText}
+              title="Sin documentos"
+              description="Crea un borrador o ajusta el filtro."
+            />
           ) : (
             <>
               <Table>
                 <THead>
                   <TR>
-                    <TH>Código</TH>
+                    <TH>Documento</TH>
                     <TH>Versión</TH>
-                    <TH>Título</TH>
                     <TH>Estado</TH>
                     <TH>Hash</TH>
                     <TH>Publicado</TH>
-                    <TH />
+                    <TH className="text-end">Acciones</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {visible.map((d) => (
                     <TR key={d.id}>
-                      <TD className="font-mono text-sm">{d.code}</TD>
-                      <TD>{d.version}</TD>
-                      <TD className="font-medium">{d.title}</TD>
-                      <TD>
-                        <Badge color={d.status === "published" ? "success" : "muted"}>
-                          {d.status === "published" ? "Publicado" : "Borrador"}
+                      <TD label="Documento">
+                        <EntityCell
+                          icon={FileText}
+                          tone={d.status === "published" ? "brand" : "muted"}
+                          title={d.title}
+                          subtitle={<span className="font-mono">{d.code}</span>}
+                        />
+                      </TD>
+                      <TD label="Versión">
+                        <Badge color="outline" className="font-mono">
+                          v{d.version}
                         </Badge>
                       </TD>
-                      <TD className="font-mono text-theme-xs text-gray-500">{shortHash(d.hash)}</TD>
-                      <TD className="text-theme-xs text-gray-500">
-                        {d.published_at ? new Date(d.published_at).toLocaleString() : "—"}
+                      <TD label="Estado">
+                        <StatusBadge
+                          status={d.status}
+                          label={d.status === "published" ? "Publicado" : "Borrador"}
+                        />
                       </TD>
-                      <TD>
-                        <div className="flex gap-2">
+                      <TD label="Hash">
+                        <MutedText
+                          as="span"
+                          className="inline-flex items-center gap-1 font-mono text-theme-xs"
+                          title={d.hash}
+                        >
+                          <Hash className="size-3 shrink-0" aria-hidden />
+                          {shortHash(d.hash)}
+                        </MutedText>
+                      </TD>
+                      <TD label="Publicado">
+                        <MutedText as="span" className="whitespace-nowrap">
+                          {formatDateTime(d.published_at)}
+                        </MutedText>
+                      </TD>
+                      <TD actions>
+                        <RowActions>
                           {d.status === "draft" ? (
                             <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
+                              <ActionButton
+                                size="icon-sm"
+                                icon={Pencil}
+                                label="Editar"
                                 onClick={() => openEdit(d)}
-                              >
-                                Editar
-                              </Button>
-                              <Button type="button" size="sm" onClick={() => setPublishConfirm(d)}>
-                                Publicar
-                              </Button>
+                              />
+                              <ActionButton
+                                size="icon-sm"
+                                variant="primary"
+                                icon={Send}
+                                label="Publicar"
+                                onClick={() => setPublishConfirm(d)}
+                              />
                             </>
                           ) : (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
+                            <ActionButton
+                              size="icon-sm"
+                              icon={Eye}
+                              label="Ver"
                               onClick={() => {
                                 setEditing(d);
                                 setForm(fromDoc(d));
                                 setFormError(null);
                                 setDialogOpen(true);
                               }}
-                            >
-                              Ver
-                            </Button>
+                            />
                           )}
-                        </div>
+                        </RowActions>
                       </TD>
                     </TR>
                   ))}
@@ -393,17 +414,21 @@ export function LegalDocumentsPage() {
           {formError ? <FieldError message={formError} /> : null}
         </DialogBody>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-            {editing?.status === "published" ? "Cerrar" : "Cancelar"}
-          </Button>
+          <ActionButton
+            size="default"
+            icon={X}
+            label={editing?.status === "published" ? "Cerrar" : "Cancelar"}
+            onClick={() => setDialogOpen(false)}
+          />
           {editing?.status !== "published" ? (
-            <Button
-              type="button"
-              disabled={saveMutation.isPending}
+            <ActionButton
+              size="default"
+              variant="primary"
+              icon={Save}
+              label="Guardar"
+              pending={saveMutation.isPending}
               onClick={() => saveMutation.mutate()}
-            >
-              Guardar
-            </Button>
+            />
           ) : null}
         </DialogFooter>
       </Dialog>
@@ -424,18 +449,23 @@ export function LegalDocumentsPage() {
           onClose={() => setPublishConfirm(null)}
         />
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setPublishConfirm(null)}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={publishMutation.isPending || !publishConfirm}
+          <ActionButton
+            size="default"
+            icon={X}
+            label="Cancelar"
+            onClick={() => setPublishConfirm(null)}
+          />
+          <ActionButton
+            size="default"
+            variant="primary"
+            icon={Send}
+            label={publishMutation.isPending ? "Publicando…" : "Publicar"}
+            pending={publishMutation.isPending}
+            disabled={!publishConfirm}
             onClick={() => {
               if (publishConfirm) publishMutation.mutate(publishConfirm.id);
             }}
-          >
-            {publishMutation.isPending ? "Publicando…" : "Publicar"}
-          </Button>
+          />
         </DialogFooter>
       </Dialog>
     </div>

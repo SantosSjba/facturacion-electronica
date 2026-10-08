@@ -24,6 +24,8 @@ export const buttonVariants = cva(
         sm: "h-9 px-4 py-2 text-xs",
         lg: "h-12 px-6 py-3.5",
         icon: "size-10 p-0",
+        /** Compact square for table row actions. */
+        "icon-sm": "size-9 shrink-0 p-0",
         /** Icon always; label via ButtonLabel (hidden below sm). Square on mobile. */
         "icon-label": "size-11 shrink-0 p-0 sm:h-11 sm:w-auto sm:px-5 sm:py-3",
         "icon-label-sm": "size-9 shrink-0 p-0 text-xs sm:h-9 sm:w-auto sm:px-4 sm:py-2",

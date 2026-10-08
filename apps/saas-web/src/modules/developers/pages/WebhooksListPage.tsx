@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Plus } from "lucide-react";
+import { Check, Copy, Plus, RefreshCw, Webhook } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
 import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
+  ActionButton,
+  ConfirmDialog,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -23,7 +22,7 @@ import {
 import { fetchWebhooks, patchWebhook, rotateWebhookSecret } from "../api";
 import { CreateWebhookDialog } from "../components/CreateWebhookDialog";
 import { EditWebhookDialog } from "../components/EditWebhookDialog";
-import { WebhooksTable } from "../components/WebhooksTable";
+import { WebhooksTable, type WebhookPendingAction } from "../components/WebhooksTable";
 import type { WebhookEndpoint } from "../types";
 
 export function WebhooksListPage() {
@@ -31,6 +30,7 @@ export function WebhooksListPage() {
   const canManage = hasPermission("webhooks:manage");
   const [createOpen, setCreateOpen] = useState(false);
   const [editEndpoint, setEditEndpoint] = useState<WebhookEndpoint | null>(null);
+  const [rotateTarget, setRotateTarget] = useState<WebhookEndpoint | null>(null);
   const [rotatedSecret, setRotatedSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -63,6 +63,7 @@ export function WebhooksListPage() {
     mutationFn: rotateWebhookSecret,
     onSuccess: async (result) => {
       await qc.invalidateQueries({ queryKey: ["webhooks"] });
+      setRotateTarget(null);
       setRotatedSecret(result.secret);
       setCopied(false);
       setActionError(null);
@@ -78,11 +79,21 @@ export function WebhooksListPage() {
     },
   });
 
-  const pendingId = patchMutation.isPending
-    ? patchMutation.variables?.id
-    : rotateMutation.isPending
-      ? (rotateMutation.variables as string | undefined)
-      : null;
+  const pending: WebhookPendingAction =
+    patchMutation.isPending && patchMutation.variables
+      ? { id: patchMutation.variables.id, action: "toggle" }
+      : rotateMutation.isPending && rotateMutation.variables
+        ? { id: rotateMutation.variables, action: "rotate" }
+        : null;
+
+  const createButton = canManage ? (
+    <ActionButton
+      variant="primary"
+      icon={Plus}
+      label="Nuevo webhook"
+      onClick={() => setCreateOpen(true)}
+    />
+  ) : null;
 
   function onToggleStatus(ep: WebhookEndpoint) {
     const next = ep.status === "active" ? "disabled" : "active";
@@ -92,21 +103,10 @@ export function WebhooksListPage() {
   return (
     <div>
       <PageHeader
+        icon={Webhook}
         title="Webhooks"
         description="Suscripciones a eventos. Desactiva con PATCH; no hay DELETE."
-        actions={
-          canManage ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Nuevo webhook"
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus className={buttonIconClassName} />
-              <ButtonLabel>Nuevo webhook</ButtonLabel>
-            </Button>
-          ) : null
-        }
+        actions={createButton}
       />
 
       {actionError ? (
@@ -127,42 +127,44 @@ export function WebhooksListPage() {
       {!query.isLoading && !query.error ? (
         (query.data?.length ?? 0) === 0 ? (
           <EmptyState
+            icon={Webhook}
             title="Sin webhooks"
             description="Crea un endpoint HTTPS para recibir document.status_changed."
-            action={
-              canManage ? (
-                <Button
-                  type="button"
-                  size="icon-label-sm"
-                  aria-label="Nuevo webhook"
-                  onClick={() => setCreateOpen(true)}
-                >
-                  <Plus className={buttonIconClassName} />
-                  <ButtonLabel>Nuevo webhook</ButtonLabel>
-                </Button>
-              ) : undefined
-            }
+            action={createButton ?? undefined}
           />
         ) : (
-          <div>
-            <WebhooksTable
-              endpoints={query.data ?? []}
-              canManage={canManage}
-              onRotate={(id) => {
-                if (window.confirm("¿Rotar el secret de este webhook?")) {
-                  rotateMutation.mutate(id);
-                }
-              }}
-              onToggleStatus={onToggleStatus}
-              onEdit={setEditEndpoint}
-              pendingId={pendingId}
-            />
-          </div>
+          <WebhooksTable
+            endpoints={query.data ?? []}
+            canManage={canManage}
+            onRotate={setRotateTarget}
+            onToggleStatus={onToggleStatus}
+            onEdit={setEditEndpoint}
+            pending={pending}
+          />
         )
       ) : null}
 
       <CreateWebhookDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       <EditWebhookDialog endpoint={editEndpoint} onClose={() => setEditEndpoint(null)} />
+
+      <ConfirmDialog
+        open={Boolean(rotateTarget)}
+        title="Rotar secret"
+        description="Se generará un nuevo secret; el actual dejará de validar las firmas de inmediato."
+        confirmLabel="Rotar secret"
+        confirmIcon={RefreshCw}
+        pending={rotateMutation.isPending}
+        onConfirm={() => {
+          if (rotateTarget) rotateMutation.mutate(rotateTarget.id);
+        }}
+        onClose={() => setRotateTarget(null)}
+      >
+        {rotateTarget ? (
+          <p className="break-all font-mono text-theme-xs text-gray-700 dark:text-gray-300">
+            {rotateTarget.url}
+          </p>
+        ) : null}
+      </ConfirmDialog>
 
       <Dialog
         open={Boolean(rotatedSecret)}
@@ -180,31 +182,29 @@ export function WebhooksListPage() {
             <Label>Secret</Label>
             <div className="flex gap-2">
               <Input readOnly value={rotatedSecret ?? ""} className="font-mono text-theme-xs" />
-              <Button
-                type="button"
-                variant="outline"
+              <ActionButton
+                size="icon"
+                className="size-11 shrink-0"
+                icon={copied ? Check : Copy}
+                label={copied ? "Copiado" : "Copiar secret"}
                 onClick={() => {
                   if (!rotatedSecret) return;
                   void navigator.clipboard.writeText(rotatedSecret).then(() => {
                     setCopied(true);
                   });
                 }}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
+              />
             </div>
           </div>
         </DialogBody>
         <DialogFooter>
-          <Button
-            type="button"
-            size="icon-label-sm"
-            aria-label="Entendido"
+          <ActionButton
+            size="default"
+            variant="primary"
+            icon={Check}
+            label="Entendido"
             onClick={() => setRotatedSecret(null)}
-          >
-            <Check className={buttonIconClassName} />
-            <ButtonLabel>Entendido</ButtonLabel>
-          </Button>
+          />
         </DialogFooter>
       </Dialog>
     </div>

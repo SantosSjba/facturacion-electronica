@@ -1,6 +1,20 @@
-import { statusLabel } from "@/shared/ui/display-labels";
+import { formatDateTime, statusLabel } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Building2,
+  Clock,
+  FileText,
+  History,
+  Inbox,
+  KeyRound,
+  Layers,
+  Send,
+  Users,
+} from "lucide-react";
 import { toast } from "@factosys/ui";
 
 import {
@@ -12,11 +26,9 @@ import {
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
 import {
-  Button,
-  ButtonLabel,
-  Badge,
-  Card,
-  CardTitle,
+  ActionButton,
+  EntityCell,
+  IconTile,
   Label,
   Select,
   Textarea,
@@ -30,8 +42,30 @@ import {
   ErrorState,
   FieldError,
   LoadingState,
+  MutedText,
   PageHeader,
+  SectionCard,
 } from "@factosys/ui";
+
+function LimitItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+}) {
+  return (
+    <li className="flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2.5 dark:border-gray-800">
+      <Icon className="size-4 shrink-0 text-gray-400" aria-hidden />
+      <span className="text-gray-600 dark:text-gray-300">{label}</span>
+      <span className="ms-auto font-semibold text-gray-800 dark:text-white/90">
+        hasta {value.toLocaleString("es-PE")}
+      </span>
+    </li>
+  );
+}
 
 export function AppPlanPage() {
   const { user } = useSession();
@@ -94,7 +128,11 @@ export function AppPlanPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Plan" description="Consulta tu plan actual y solicita un cambio." />
+      <PageHeader
+        icon={Layers}
+        title="Plan"
+        description="Consulta tu plan actual y solicita un cambio."
+      />
 
       {planQuery.isLoading ? (
         <LoadingState variant="detail" showHeader={false} label="Cargando plan…" />
@@ -108,39 +146,52 @@ export function AppPlanPage() {
       ) : null}
 
       {plan ? (
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <CardTitle>Plan actual</CardTitle>
-            {plan.org_plan_status ? <Badge variant="muted">{statusLabel(plan.org_plan_status)}</Badge> : null}
-          </div>
+        <SectionCard
+          icon={Layers}
+          title="Plan actual"
+          description={
+            plan.org_plan_status ? (
+              <StatusBadge
+                status={plan.org_plan_status}
+                label={statusLabel(plan.org_plan_status)}
+              />
+            ) : undefined
+          }
+        >
           {plan.plan ? (
-            <>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {plan.plan.name}
-              </p>
-              <p className="text-sm text-gray-500">
-                {plan.plan.code} · {plan.plan.price_display}
-              </p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {plan.plan.name}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {plan.plan.code} · {plan.plan.price_display}
+                </p>
+              </div>
               {plan.limits ? (
-                <ul className="grid gap-1 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-2">
-                  <li>Empresas: hasta {plan.limits.max_companies}</li>
-                  <li>Usuarios: hasta {plan.limits.max_users}</li>
-                  <li>Documentos/mes: hasta {plan.limits.max_documents_per_month}</li>
-                  <li>API keys: hasta {plan.limits.max_api_keys}</li>
+                <ul className="grid gap-2 text-sm sm:grid-cols-2">
+                  <LimitItem icon={Building2} label="Empresas" value={plan.limits.max_companies} />
+                  <LimitItem icon={Users} label="Usuarios" value={plan.limits.max_users} />
+                  <LimitItem
+                    icon={FileText}
+                    label="Documentos/mes"
+                    value={plan.limits.max_documents_per_month}
+                  />
+                  <LimitItem icon={KeyRound} label="API keys" value={plan.limits.max_api_keys} />
                 </ul>
               ) : null}
-            </>
+            </div>
           ) : (
             <p className="text-sm text-gray-600 dark:text-gray-300">Sin plan asignado.</p>
           )}
-        </Card>
+        </SectionCard>
       ) : null}
 
-      <Card className="space-y-4">
-        <CardTitle>Solicitar cambio de plan</CardTitle>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Enviaremos la solicitud al equipo de operaciones. No cambia el plan automáticamente.
-        </p>
+      <SectionCard
+        icon={ArrowRightLeft}
+        title="Solicitar cambio de plan"
+        description="Enviaremos la solicitud al equipo de operaciones. No cambia el plan automáticamente."
+      >
         {catalogQuery.isLoading ? (
           <LoadingState variant="form" fields={2} label="Cargando planes disponibles…" />
         ) : catalogQuery.error ? (
@@ -149,7 +200,7 @@ export function AppPlanPage() {
             onRetry={() => void catalogQuery.refetch()}
           />
         ) : (
-          <>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="requested-plan">Plan deseado</Label>
               <Select
@@ -176,33 +227,39 @@ export function AppPlanPage() {
               />
             </div>
             {formError ? <FieldError message={formError} /> : null}
-            <Button
-              type="button"
+            <ActionButton
+              size="default"
+              variant="primary"
+              icon={Send}
+              label={mutation.isPending ? "Enviando…" : "Solicitar cambio"}
+              pending={mutation.isPending}
+              disabled={catalog.length === 0 || hasPendingRequest}
               onClick={submit}
-              loading={mutation.isPending}
-              disabled={mutation.isPending || catalog.length === 0 || hasPendingRequest}
-            >
-              <ButtonLabel>{mutation.isPending ? "Enviando…" : "Solicitar cambio"}</ButtonLabel>
-            </Button>
+            />
             {hasPendingRequest ? (
-              <p className="text-sm text-gray-500">
+              <MutedText className="flex items-start gap-2">
+                <Clock className="mt-0.5 size-4 shrink-0 text-warning-500" aria-hidden />
                 Tu solicitud está pendiente de revisión. Verás el resultado en el historial y en tus
                 notificaciones.
-              </p>
+              </MutedText>
             ) : null}
-          </>
+          </div>
         )}
-      </Card>
+      </SectionCard>
 
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-          Solicitudes recientes
-        </h3>
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <IconTile icon={History} size="sm" tone="neutral" />
+          <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+            Solicitudes recientes
+          </h3>
+        </div>
         {requestsQuery.isLoading ? (
           <LoadingState variant="table" columns={4} label="Cargando solicitudes…" />
         ) : null}
         {!requestsQuery.isLoading && requests.length === 0 ? (
           <EmptyState
+            icon={Inbox}
             title="Sin solicitudes"
             description="Cuando pidas un cambio de plan aparecerá aquí."
           />
@@ -219,49 +276,49 @@ export function AppPlanPage() {
               </TR>
             </THead>
             <TBody>
-              {requests.map((r) => (
-                <TR key={r.id}>
-                  <TD label="Solicitado">
-                    {r.requested_plan_name} ({r.requested_plan_code})
-                  </TD>
-                  <TD label="Actual">{r.current_plan_code ?? "—"}</TD>
-                  <TD label="Estado">
-                    <Badge
-                      color={
-                        r.resolution === "approved"
-                          ? "success"
-                          : r.resolution === "rejected"
-                            ? "error"
-                            : "warning"
-                      }
-                    >
-                      {r.resolution === "approved"
-                        ? "Aprobada"
-                        : r.resolution === "rejected"
-                          ? "Rechazada"
-                          : r.status === "pending"
-                            ? "Pendiente"
-                            : r.status === "acknowledged"
-                              ? "En revisión"
-                              : "Cerrada"}
-                    </Badge>
-                  </TD>
-                  <TD label="Respuesta">
-                    {r.resolution_note ??
-                      (r.resolution === "approved" ? "El plan solicitado fue aplicado." : "—")}
-                    {r.resolved_at ? (
-                      <div className="text-xs text-gray-500">
-                        {new Date(r.resolved_at).toLocaleString("es-PE")}
-                      </div>
-                    ) : null}
-                  </TD>
-                  <TD label="Fecha">{new Date(r.created_at).toLocaleString()}</TD>
-                </TR>
-              ))}
+              {requests.map((r) => {
+                const [status, label] =
+                  r.resolution === "approved"
+                    ? ["approved", "Aprobada"]
+                    : r.resolution === "rejected"
+                      ? ["rejected", "Rechazada"]
+                      : r.status === "pending"
+                        ? ["pending", "Pendiente"]
+                        : r.status === "acknowledged"
+                          ? ["acknowledged", "En revisión"]
+                          : ["closed", "Cerrada"];
+                return (
+                  <TR key={r.id}>
+                    <TD label="Solicitado">
+                      <EntityCell
+                        icon={Layers}
+                        title={r.requested_plan_name}
+                        subtitle={<span className="font-mono">{r.requested_plan_code}</span>}
+                      />
+                    </TD>
+                    <TD label="Actual">
+                      <span className="font-mono text-theme-xs">{r.current_plan_code ?? "—"}</span>
+                    </TD>
+                    <TD label="Estado">
+                      <StatusBadge status={status} label={label} />
+                    </TD>
+                    <TD label="Respuesta">
+                      {r.resolution_note ??
+                        (r.resolution === "approved" ? "El plan solicitado fue aplicado." : "—")}
+                      {r.resolved_at ? (
+                        <div className="text-xs text-gray-500">{formatDateTime(r.resolved_at)}</div>
+                      ) : null}
+                    </TD>
+                    <TD label="Fecha">
+                      <span className="whitespace-nowrap">{formatDateTime(r.created_at)}</span>
+                    </TD>
+                  </TR>
+                );
+              })}
             </TBody>
           </Table>
         ) : null}
-      </div>
+      </section>
     </div>
   );
 }

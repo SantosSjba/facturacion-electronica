@@ -1,27 +1,44 @@
-import { statusLabel } from "@/shared/ui/display-labels";
+import { formatDateTime, statusLabel } from "@/shared/ui/display-labels";
 import { UsersManager } from "@/modules/app/components/UsersManager";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  AtSign,
+  Building2,
+  CalendarClock,
+  CalendarPlus,
+  Check,
+  Download,
+  Layers,
+  LogIn,
+  PauseCircle,
+  PlayCircle,
+  Power,
+  UserCog,
+} from "lucide-react";
 import { toast } from "@factosys/ui";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
+import { BackLink } from "@/shared/ui/components/action-link";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
+  ActionButton,
+  Badge,
+  Card,
   ErrorState,
   FieldError,
-  LoadingState,
-  PageHeader,
-  Badge,
-  Button,
-  Card,
-  CardTitle,
   Input,
   Label,
+  LoadingState,
+  MutedText,
+  PageHeader,
+  SectionCard,
   Select,
+  StatCard,
 } from "@factosys/ui";
-
-import { TextLink } from "@/shared/ui/components/text-link";
 
 import {
   assignOrgPlan,
@@ -170,9 +187,23 @@ export function OrganizationDetailPage() {
   return (
     <div>
       <PageHeader
+        icon={Building2}
         title={org?.name ?? "Organización"}
         description="Detalle, suspensión y asignación de plan."
-        actions={<TextLink to="/platform/organizations">← Volver al listado</TextLink>}
+        meta={
+          org && badge ? (
+            <>
+              <StatusBadge status={org.status} label={badge.label} />
+              {org.slug ? (
+                <Badge color="muted">
+                  <AtSign className="size-3 shrink-0" aria-hidden />
+                  {org.slug}
+                </Badge>
+              ) : null}
+            </>
+          ) : null
+        }
+        actions={<BackLink to="/platform/organizations" />}
       />
 
       {query.isLoading ? (
@@ -190,135 +221,156 @@ export function OrganizationDetailPage() {
           {org.status === "suspended" ? (
             <div
               role="alert"
-              className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400"
+              className="flex items-start gap-3 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400"
             >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
               Organización suspendida — el acceso del tenant debe bloquearse en producto.
             </div>
           ) : null}
 
-          <Card>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge color={badge.color}>{badge.label}</Badge>
-              {org.slug ? <Badge color="muted">{org.slug}</Badge> : null}
-            </div>
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <CardTitle className="mb-1 text-theme-xs text-gray-500">Plan actual</CardTitle>
-                <p className="text-sm text-gray-800 dark:text-white/90">
-                  {org.current_plan
-                    ? `${org.current_plan.plan_name} (${org.current_plan.plan_code}) · ${statusLabel(org.current_plan.status)}`
-                    : "Sin plan asignado"}
-                </p>
-              </div>
-              <div>
-                <CardTitle className="mb-1 text-theme-xs text-gray-500">Creada</CardTitle>
-                <p className="text-sm text-gray-800 dark:text-white/90">
-                  {new Date(org.created_at).toLocaleString()}
-                </p>
-              </div>
-            </dl>
-          </Card>
+          <section className="grid gap-4 sm:grid-cols-3">
+            <StatCard
+              icon={Layers}
+              tone={org.current_plan ? "brand" : "muted"}
+              label="Plan actual"
+              value={org.current_plan?.plan_name ?? "Sin plan asignado"}
+              hint={
+                org.current_plan
+                  ? `${org.current_plan.plan_code} · ${statusLabel(org.current_plan.status)}`
+                  : undefined
+              }
+            />
+            <StatCard icon={CalendarPlus} label="Creada" value={formatDateTime(org.created_at)} />
+            <StatCard
+              icon={CalendarClock}
+              label="Actualizada"
+              value={formatDateTime(org.updated_at)}
+            />
+          </section>
 
           {error ? <FieldError message={error} /> : null}
 
-          <Card>
-            <CardTitle>Estado</CardTitle>
-            <div className="flex flex-wrap gap-2">
+          <section className="grid gap-4 lg:grid-cols-2">
+            <SectionCard
+              icon={Power}
+              tone={org.status === "active" ? "success" : "error"}
+              title="Estado"
+              description={
+                org.status === "active"
+                  ? "Suspender bloquea el acceso del tenant hasta reactivarlo."
+                  : "Reactivar devuelve el acceso al tenant."
+              }
+            >
               {org.status === "active" ? (
-                <Button
-                  type="button"
+                <ActionButton
+                  size="sm"
                   variant="destructive"
-                  disabled={statusMutation.isPending}
+                  icon={PauseCircle}
+                  label="Suspender"
+                  pending={statusMutation.isPending}
                   onClick={() => statusMutation.mutate("suspended")}
-                >
-                  Suspender
-                </Button>
+                />
               ) : (
-                <Button
-                  type="button"
-                  disabled={statusMutation.isPending}
+                <ActionButton
+                  size="sm"
+                  variant="primary"
+                  icon={PlayCircle}
+                  label="Reactivar"
+                  pending={statusMutation.isPending}
                   onClick={() => statusMutation.mutate("active")}
-                >
-                  Reactivar
-                </Button>
+                />
               )}
-            </div>
-          </Card>
+            </SectionCard>
 
-          <Card>
-            <CardTitle>Asignar plan</CardTitle>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="flex-1">
-                <Label htmlFor="plan">Plan activo</Label>
-                <Select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
-                  <option value="">Seleccionar…</option>
-                  {activePlans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.code}) — {p.price_display}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <Button
-                type="button"
-                disabled={!planId || assignMutation.isPending}
-                onClick={() => assignMutation.mutate()}
-              >
-                Asignar
-              </Button>
-            </div>
-          </Card>
-
-          {canExport && !org.is_platform ? (
-            <Card>
-              <CardTitle>Exportar JSON (stub)</CardTitle>
-              <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                Genera un snapshot asíncrono (org, plan, empresas, usuarios sin secretos) y descarga
-                el archivo.
-              </p>
-              <Button
-                type="button"
-                data-testid="org-export-json"
-                disabled={exportBusy}
-                onClick={() => void runExport()}
-              >
-                {exportBusy ? "Exportando…" : "Exportar JSON"}
-              </Button>
-            </Card>
-          ) : null}
-
-          {canImpersonate && !org.is_platform && org.status === "active" ? (
-            <Card>
-              <CardTitle>Suplantar (soporte)</CardTitle>
-              <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-                Emite un access token corto con permisos owner del tenant. Requiere motivo
-                (auditado).
-              </p>
+            <SectionCard
+              icon={Layers}
+              title="Asignar plan"
+              description="Aplica un plan activo del catálogo a la organización."
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <Label htmlFor="imp-reason">Motivo</Label>
-                  <Input
-                    id="imp-reason"
-                    value={impReason}
-                    onChange={(e) => setImpReason(e.target.value)}
-                    placeholder="Investigar incidencia de facturación…"
+                <div className="flex-1 space-y-1.5">
+                  <Label htmlFor="plan">Plan activo</Label>
+                  <Select id="plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
+                    <option value="">Seleccionar…</option>
+                    {activePlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.code}) — {p.price_display}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <ActionButton
+                  size="default"
+                  variant="primary"
+                  icon={Check}
+                  label="Asignar"
+                  disabled={!planId}
+                  pending={assignMutation.isPending}
+                  onClick={() => assignMutation.mutate()}
+                />
+              </div>
+            </SectionCard>
+
+            {canExport && !org.is_platform ? (
+              <SectionCard
+                icon={Download}
+                tone="neutral"
+                title="Exportar JSON (stub)"
+                description="Genera un snapshot asíncrono (org, plan, empresas, usuarios sin secretos) y descarga el archivo."
+              >
+                <ActionButton
+                  size="sm"
+                  variant="outline"
+                  icon={Download}
+                  label={exportBusy ? "Exportando…" : "Exportar JSON"}
+                  data-testid="org-export-json"
+                  pending={exportBusy}
+                  onClick={() => void runExport()}
+                />
+              </SectionCard>
+            ) : null}
+
+            {canImpersonate && !org.is_platform && org.status === "active" ? (
+              <SectionCard
+                icon={UserCog}
+                tone="warning"
+                title="Suplantar (soporte)"
+                description="Emite un access token corto con permisos owner del tenant. Requiere motivo (auditado)."
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <Label htmlFor="imp-reason">Motivo</Label>
+                    <Input
+                      id="imp-reason"
+                      value={impReason}
+                      onChange={(e) => setImpReason(e.target.value)}
+                      placeholder="Investigar incidencia de facturación…"
+                    />
+                  </div>
+                  <ActionButton
+                    size="default"
+                    variant="destructive"
+                    icon={LogIn}
+                    label="Suplantar"
+                    disabled={impReason.trim().length < 3}
+                    pending={impersonateMutation.isPending}
+                    onClick={() => impersonateMutation.mutate()}
                   />
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={impersonateMutation.isPending || impReason.trim().length < 3}
-                  onClick={() => impersonateMutation.mutate()}
-                >
-                  Suplantar
-                </Button>
-              </div>
-            </Card>
-          ) : null}
+              </SectionCard>
+            ) : null}
+          </section>
+
           {canImpersonate && !org.is_platform ? (
             <Card>
               <UsersManager organizationId={id} />
             </Card>
+          ) : null}
+
+          {org.is_platform ? (
+            <MutedText>
+              La organización de plataforma no admite exportación ni suplantación.
+            </MutedText>
           ) : null}
         </div>
       ) : null}

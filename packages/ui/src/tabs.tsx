@@ -1,4 +1,5 @@
 import { useId, useRef, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "./cn";
 import type { AdminLinkComponent } from "./admin/types";
 
@@ -9,7 +10,7 @@ export function TabNavigation({
   LinkComponent = "a",
   className,
 }: {
-  items: readonly { href: string; label: ReactNode }[];
+  items: readonly { href: string; label: ReactNode; icon?: LucideIcon }[];
   pathname: string;
   label: string;
   LinkComponent?: AdminLinkComponent;
@@ -25,18 +26,25 @@ export function TabNavigation({
     >
       {items.map((item) => {
         const active = pathname === item.href;
+        const Icon = item.icon;
         return (
           <LinkComponent
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+              "-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
               active
-                ? "border-b-2 border-brand-500 text-gray-800 dark:text-white/90"
-                : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90",
+                ? "border-brand-500 text-gray-800 dark:text-white/90"
+                : "border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white/90",
             )}
           >
+            {Icon ? (
+              <Icon
+                className={cn("size-4 shrink-0", active ? "text-brand-500" : undefined)}
+                aria-hidden
+              />
+            ) : null}
             {item.label}
           </LinkComponent>
         );

@@ -1,27 +1,29 @@
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, Truck, X } from "lucide-react";
+import { CalendarClock, Fingerprint, Lock, Save, Settings2, Truck, X } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import { useSession } from "@/shared/auth/session-context";
 import {
-  Badge,
+  ActionButton,
   Button,
   ButtonLabel,
   buttonIconClassName,
-  Card,
-  CardTitle,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
   Input,
   Label,
+  InfoField,
+  InfoGrid,
   MutedText,
   ErrorState,
-  cn,
+  SectionCard,
 } from "@factosys/ui";
 
 import { toast } from "@/shared/ui/toaster";
@@ -78,52 +80,52 @@ export function GreTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "flex size-10 items-center justify-center rounded-xl",
-                company.gre_configured
-                  ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-              )}
-            >
-              <Truck className="size-5" />
-            </span>
-            <div>
-              <CardTitle className="mb-1">Guía de remisión (GRE)</CardTitle>
-              <Badge variant={company.gre_configured ? "success" : "muted"}>
-                {company.gre_configured ? "Configurado" : "Sin configurar"}
-              </Badge>
-            </div>
-          </div>
-          {canManage ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Configurar GRE"
+      <SectionCard
+        icon={Truck}
+        tone={company.gre_configured ? "success" : "muted"}
+        title="Guía de remisión (GRE)"
+        description={
+          <StatusBadge
+            status={company.gre_configured ? "active" : "disabled"}
+            label={company.gre_configured ? "Configurado" : "Sin configurar"}
+          />
+        }
+        actions={
+          canManage ? (
+            <ActionButton
+              variant="primary"
+              icon={Settings2}
+              label={company.gre_configured ? "Actualizar GRE" : "Configurar GRE"}
               onClick={handleOpen}
-            >
-              <Save className={buttonIconClassName} />
-              <ButtonLabel>
-                {company.gre_configured ? "Actualizar GRE" : "Configurar GRE"}
-              </ButtonLabel>
-            </Button>
-          ) : null}
-        </div>
-
+            />
+          ) : null
+        }
+      >
         {summary ? (
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Row label="Identificador de cliente" value={summary.client_id ?? "—"} />
-            <Row label="Última actualización" value={summary.rotated_at ?? "—"} />
-          </dl>
+          <InfoGrid>
+            <InfoField
+              icon={Fingerprint}
+              label="Identificador de cliente"
+              value={summary.client_id}
+              mono
+            />
+            <InfoField
+              icon={CalendarClock}
+              label="Última actualización"
+              value={formatDateTime(summary.rotated_at)}
+            />
+          </InfoGrid>
         ) : (
           <MutedText>Credenciales OAuth de la API GRE / SUNAT para guías electrónicas.</MutedText>
         )}
 
-        {!canManage ? <MutedText className="mt-4">Necesitas permiso para administrar credenciales.</MutedText> : null}
-      </Card>
+        {!canManage ? (
+          <MutedText className="mt-4 flex items-center gap-1.5">
+            <Lock className="size-3.5 shrink-0" aria-hidden />
+            Necesitas permiso para administrar credenciales.
+          </MutedText>
+        ) : null}
+      </SectionCard>
 
       <Dialog
         open={open}
@@ -196,17 +198,6 @@ export function GreTab() {
           </DialogFooter>
         </form>
       </Dialog>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <MutedText as="dt" className="text-xs uppercase tracking-wide">
-        {label}
-      </MutedText>
-      <dd className="mt-0.5 font-mono text-xs text-gray-800 dark:text-white/90">{value}</dd>
     </div>
   );
 }

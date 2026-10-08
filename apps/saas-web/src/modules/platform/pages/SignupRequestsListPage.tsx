@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ClipboardList, Eye, Hash, Layers, Mail, SearchX } from "lucide-react";
 
 import {
   EmptyState,
@@ -12,8 +13,11 @@ import {
   DEFAULT_PAGE_SIZE,
   Pagination,
   Badge,
+  EntityCell,
   Input,
   Label,
+  MutedText,
+  RowActions,
   Select,
   Table,
   TBody,
@@ -21,14 +25,18 @@ import {
   TH,
   THead,
   TR,
+  initialsOf,
 } from "@factosys/ui";
 
+import { ActionLink } from "@/shared/ui/components/action-link";
 import { TextLink } from "@/shared/ui/components/text-link";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 
 import { fetchSignupRequests, type SignupStatus } from "../api/signups";
 import { signupStatusBadge } from "../lib/status-badges";
 
-const STATUS_OPTIONS: Array<SignupStatus | ""> = [
+const STATUS_OPTIONS: (SignupStatus | "")[] = [
   "",
   "received",
   "under_review",
@@ -80,7 +88,11 @@ export function SignupRequestsListPage() {
 
   return (
     <div>
-      <PageHeader title="Solicitudes" description="Signup requests de la landing." />
+      <PageHeader
+        icon={ClipboardList}
+        title="Solicitudes"
+        description="Solicitudes de registro recibidas desde la landing."
+      />
 
       {query.isLoading ? <LoadingState variant="table" label="Cargando solicitudes…" /> : null}
       {query.error ? (
@@ -109,7 +121,7 @@ export function SignupRequestsListPage() {
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s || "all"} value={s}>
-                      {s || "Todos"}
+                      {s ? signupStatusBadge(s).label : "Todos"}
                     </option>
                   ))}
                 </Select>
@@ -132,6 +144,7 @@ export function SignupRequestsListPage() {
 
           {items.length === 0 ? (
             <EmptyState
+              icon={activeFilterCount > 0 ? SearchX : ClipboardList}
               title="Sin solicitudes"
               description="No hay solicitudes con estos filtros."
             />
@@ -141,30 +154,67 @@ export function SignupRequestsListPage() {
                 <THead>
                   <TR>
                     <TH>Empresa</TH>
-                    <TH>RUC</TH>
                     <TH>Contacto</TH>
                     <TH>Plan</TH>
                     <TH>Estado</TH>
-                    <TH />
+                    <TH>Recibida</TH>
+                    <TH className="text-end">Acciones</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {visible.map((row) => {
                     const badge = signupStatusBadge(row.status);
+                    const to = `/platform/signup-requests/${row.id}`;
                     return (
                       <TR key={row.id}>
-                        <TD className="font-medium">{row.company_name}</TD>
-                        <TD>{row.ruc}</TD>
-                        <TD>
-                          <div>{row.contact_name}</div>
-                          <div className="text-theme-xs text-gray-500">{row.contact_email}</div>
+                        <TD label="Empresa">
+                          <EntityCell
+                            initials={initialsOf(row.company_name, row.ruc)}
+                            title={<TextLink to={to}>{row.company_name}</TextLink>}
+                            subtitle={
+                              <>
+                                <Hash aria-hidden />
+                                <span className="font-mono">{row.ruc}</span>
+                              </>
+                            }
+                          />
                         </TD>
-                        <TD>{row.plan_code ?? "—"}</TD>
-                        <TD>
-                          <Badge color={badge.color}>{badge.label}</Badge>
+                        <TD label="Contacto">
+                          <div className="min-w-0">
+                            <div className="text-gray-800 dark:text-white/90">
+                              {row.contact_name}
+                            </div>
+                            <MutedText
+                              as="span"
+                              className="mt-0.5 flex items-center gap-1 text-theme-xs max-md:justify-end"
+                            >
+                              <Mail className="size-3 shrink-0" aria-hidden />
+                              <span className="break-all">{row.contact_email}</span>
+                            </MutedText>
+                          </div>
                         </TD>
-                        <TD>
-                          <TextLink to={`/platform/signup-requests/${row.id}`}>Ver</TextLink>
+                        <TD label="Plan">
+                          {row.plan_code ? (
+                            <Badge color="outline">
+                              <Layers className="size-3 shrink-0" aria-hidden />
+                              {row.plan_code}
+                            </Badge>
+                          ) : (
+                            <MutedText as="span">—</MutedText>
+                          )}
+                        </TD>
+                        <TD label="Estado">
+                          <StatusBadge status={row.status} label={badge.label} />
+                        </TD>
+                        <TD label="Recibida">
+                          <MutedText as="span" className="whitespace-nowrap">
+                            {formatDateTime(row.created_at)}
+                          </MutedText>
+                        </TD>
+                        <TD actions>
+                          <RowActions>
+                            <ActionLink size="icon-sm" to={to} icon={Eye} label="Ver detalle" />
+                          </RowActions>
                         </TD>
                       </TR>
                     );

@@ -1,27 +1,47 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Building2,
+  CalendarClock,
+  CalendarPlus,
+  CheckCircle2,
+  ClipboardList,
+  Hash,
+  Layers,
+  ListChecks,
+  Mail,
+  Search,
+  StickyNote,
+  UserRound,
+  X,
+  XCircle,
+} from "lucide-react";
 import { toast } from "@factosys/ui";
 
 import { ApiError } from "@/shared/api/errors";
+import { BackLink } from "@/shared/ui/components/action-link";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
+  ActionButton,
+  Badge,
   ErrorState,
   FieldError,
+  InfoField,
+  InfoGrid,
   LoadingState,
+  MutedText,
   PageHeader,
-  Badge,
-  Button,
-  Card,
-  CardTitle,
+  SectionCard,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
   Label,
   Textarea,
+  textLinkClassName,
 } from "@factosys/ui";
-
-import { TextLink } from "@/shared/ui/components/text-link";
 
 import { fetchSignupRequest, patchSignupRequest, type SignupStatus } from "../api/signups";
 import { signupStatusBadge } from "../lib/status-badges";
@@ -64,12 +84,31 @@ export function SignupRequestDetailPage() {
   const item = query.data;
   const badge = item ? signupStatusBadge(item.status) : null;
 
+  function openReject() {
+    setRejectNotes("");
+    setRejectOpen(true);
+  }
+
   return (
     <div>
       <PageHeader
+        icon={ClipboardList}
         title={item?.company_name ?? "Solicitud"}
         description="Detalle y acciones de aprobación / rechazo."
-        actions={<TextLink to="/platform/signup-requests">← Volver al listado</TextLink>}
+        meta={
+          item && badge ? (
+            <>
+              <StatusBadge status={item.status} label={badge.label} />
+              {item.plan_code ? (
+                <Badge color="muted">
+                  <Layers className="size-3 shrink-0" aria-hidden />
+                  Plan: {item.plan_code}
+                </Badge>
+              ) : null}
+            </>
+          ) : null
+        }
+        actions={<BackLink to="/platform/signup-requests" />}
       />
 
       {query.isLoading ? (
@@ -84,99 +123,148 @@ export function SignupRequestDetailPage() {
 
       {item && badge ? (
         <div className="space-y-4">
-          <Card>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Badge color={badge.color}>{badge.label}</Badge>
-              {item.plan_code ? <Badge color="muted">Plan: {item.plan_code}</Badge> : null}
-            </div>
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <Field label="RUC" value={item.ruc} />
-              <Field label="Contacto" value={item.contact_name} />
-              <Field label="Email" value={item.contact_email} />
-              <Field label="Creada" value={new Date(item.created_at).toLocaleString()} />
-              <div className="sm:col-span-2">
-                <Field label="Notas" value={item.notes ?? "—"} />
-              </div>
-            </dl>
-          </Card>
+          <section className="grid gap-4 lg:grid-cols-2">
+            <SectionCard icon={Building2} title="Empresa">
+              <InfoGrid>
+                <InfoField icon={Hash} label="RUC" value={item.ruc} mono />
+                <InfoField icon={Layers} label="Plan solicitado" value={item.plan_code} />
+                <InfoField
+                  icon={CalendarPlus}
+                  label="Creada"
+                  value={formatDateTime(item.created_at)}
+                />
+                <InfoField
+                  icon={CalendarClock}
+                  label="Actualizada"
+                  value={formatDateTime(item.updated_at)}
+                />
+              </InfoGrid>
+            </SectionCard>
+
+            <SectionCard icon={UserRound} tone="neutral" title="Contacto">
+              <InfoGrid>
+                <InfoField icon={UserRound} label="Contacto" value={item.contact_name} />
+                <InfoField
+                  icon={Mail}
+                  label="Email"
+                  value={
+                    <a className={textLinkClassName} href={`mailto:${item.contact_email}`}>
+                      {item.contact_email}
+                    </a>
+                  }
+                />
+              </InfoGrid>
+            </SectionCard>
+          </section>
+
+          <SectionCard icon={StickyNote} tone="neutral" title="Notas">
+            <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-white/90">
+              {item.notes ?? "—"}
+            </p>
+          </SectionCard>
 
           {actionError ? <FieldError message={actionError} /> : null}
 
-          <div className="flex flex-wrap gap-2">
-            {item.status === "received" ? (
-              <>
-                <Button
-                  type="button"
-                  data-testid="signup-mark-review"
-                  disabled={mutation.isPending}
-                  onClick={() => mutation.mutate({ status: "under_review" })}
+          <SectionCard
+            icon={ListChecks}
+            tone={
+              item.status === "approved"
+                ? "success"
+                : item.status === "rejected"
+                  ? "error"
+                  : "brand"
+            }
+            title="Acciones"
+            description={
+              item.status === "received"
+                ? "Marca la solicitud en revisión antes de aprobarla."
+                : item.status === "under_review"
+                  ? "Aprueba para crear la organización o rechaza indicando el motivo."
+                  : undefined
+            }
+          >
+            <div className="flex flex-wrap gap-2">
+              {item.status === "received" ? (
+                <>
+                  <ActionButton
+                    size="sm"
+                    variant="primary"
+                    icon={Search}
+                    label="Marcar en revisión"
+                    data-testid="signup-mark-review"
+                    pending={mutation.isPending}
+                    onClick={() => mutation.mutate({ status: "under_review" })}
+                  />
+                  <ActionButton
+                    size="sm"
+                    variant="destructive"
+                    icon={XCircle}
+                    label="Rechazar"
+                    data-testid="signup-reject"
+                    disabled={mutation.isPending}
+                    onClick={openReject}
+                  />
+                </>
+              ) : null}
+              {item.status === "under_review" ? (
+                <>
+                  <ActionButton
+                    size="sm"
+                    variant="primary"
+                    icon={CheckCircle2}
+                    label="Aprobar"
+                    data-testid="signup-approve"
+                    pending={mutation.isPending}
+                    onClick={() => mutation.mutate({ status: "approved" })}
+                  />
+                  <ActionButton
+                    size="sm"
+                    variant="destructive"
+                    icon={XCircle}
+                    label="Rechazar"
+                    data-testid="signup-reject"
+                    disabled={mutation.isPending}
+                    onClick={openReject}
+                  />
+                </>
+              ) : null}
+              {item.status === "approved" ? (
+                <p
+                  className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
+                  data-testid="signup-approved"
                 >
-                  Marcar en revisión
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  data-testid="signup-reject"
-                  disabled={mutation.isPending}
-                  onClick={() => {
-                    setRejectNotes("");
-                    setRejectOpen(true);
-                  }}
-                >
-                  Rechazar
-                </Button>
-              </>
-            ) : null}
-            {item.status === "under_review" ? (
-              <>
-                <Button
-                  type="button"
-                  data-testid="signup-approve"
-                  disabled={mutation.isPending}
-                  onClick={() => mutation.mutate({ status: "approved" })}
-                >
-                  Aprobar
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  data-testid="signup-reject"
-                  disabled={mutation.isPending}
-                  onClick={() => {
-                    setRejectNotes("");
-                    setRejectOpen(true);
-                  }}
-                >
-                  Rechazar
-                </Button>
-              </>
-            ) : null}
-            {item.status === "approved" ? (
-              <p className="text-sm text-gray-500" data-testid="signup-approved">
-                Aprobada
-                {item.organization_id ? (
-                  <>
-                    {" "}
-                    — org{" "}
-                    <Link
-                      className="font-mono text-brand-500 hover:underline"
-                      data-testid="signup-org-id"
-                      to={`/platform/organizations/${item.organization_id}`}
-                    >
-                      {item.organization_id}
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    .{" "}
-                    <Link className="text-brand-500 hover:underline" to="/platform/organizations">
-                      Ver organizaciones
-                    </Link>
-                  </>
-                )}
-              </p>
-            ) : null}
-          </div>
+                  <CheckCircle2 className="size-4 shrink-0 text-success-500" aria-hidden />
+                  Aprobada
+                  {item.organization_id ? (
+                    <>
+                      {" "}
+                      — org{" "}
+                      <Link
+                        className="font-mono text-brand-500 hover:underline"
+                        data-testid="signup-org-id"
+                        to={`/platform/organizations/${item.organization_id}`}
+                      >
+                        {item.organization_id}
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      .{" "}
+                      <Link className="text-brand-500 hover:underline" to="/platform/organizations">
+                        Ver organizaciones
+                      </Link>
+                    </>
+                  )}
+                </p>
+              ) : null}
+              {item.status === "rejected" ? (
+                <MutedText className="flex items-center gap-1.5">
+                  <XCircle className="size-4 shrink-0 text-error-500" aria-hidden />
+                  Solicitud rechazada. El motivo queda registrado en las notas.
+                </MutedText>
+              ) : null}
+            </div>
+          </SectionCard>
         </div>
       ) : null}
 
@@ -187,7 +275,7 @@ export function SignupRequestDetailPage() {
         size="md"
       >
         <DialogHeader title="Rechazar solicitud" onClose={() => setRejectOpen(false)} />
-        <DialogBody>
+        <DialogBody className="space-y-1.5">
           <Label htmlFor="reject-notes">Motivo</Label>
           <Textarea
             id="reject-notes"
@@ -198,33 +286,28 @@ export function SignupRequestDetailPage() {
           />
         </DialogBody>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setRejectOpen(false)}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
+          <ActionButton
+            size="default"
+            icon={X}
+            label="Cancelar"
+            onClick={() => setRejectOpen(false)}
+          />
+          <ActionButton
+            size="default"
             variant="destructive"
-            disabled={mutation.isPending || !rejectNotes.trim()}
+            icon={XCircle}
+            label="Confirmar rechazo"
+            disabled={!rejectNotes.trim()}
+            pending={mutation.isPending}
             onClick={() =>
               mutation.mutate({
                 status: "rejected",
                 notes: rejectNotes.trim(),
               })
             }
-          >
-            Confirmar rechazo
-          </Button>
+          />
         </DialogFooter>
       </Dialog>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <CardTitle className="mb-1 text-theme-xs font-medium text-gray-500">{label}</CardTitle>
-      <p className="text-sm text-gray-800 dark:text-white/90">{value}</p>
     </div>
   );
 }

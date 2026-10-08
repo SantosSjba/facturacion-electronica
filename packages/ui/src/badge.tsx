@@ -48,7 +48,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-full px-2.5 py-0.5 font-medium",
+        "inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium",
         size === "sm" ? "text-theme-xs" : "text-sm",
         (variant === "solid" ? solid : light)[resolved],
         className,

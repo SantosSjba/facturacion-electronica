@@ -11,6 +11,19 @@ export function TableCell({
   return isHeader ? <TH {...props} /> : <TD {...props} label={label} actions={actions} />;
 }
 
+/** Right-aligned group of row actions (stays horizontal inside mobile cards). */
+export function RowActions({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "flex flex-row flex-wrap items-center justify-end gap-2 md:flex-nowrap",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
     <div

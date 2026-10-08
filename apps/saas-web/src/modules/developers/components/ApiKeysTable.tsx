@@ -1,32 +1,22 @@
-import { environmentLabel, statusLabel } from "@/shared/ui/display-labels";
-import { Spinner } from "@factosys/ui";
-import { Ban, KeyRound } from "lucide-react";
+import { environmentLabel, formatDateTime, statusLabel } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
+import { Ban, Globe, KeyRound } from "lucide-react";
 
 import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
+  ActionButton,
   Badge,
+  EntityCell,
   MutedText,
+  RowActions,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-  cn,
 } from "@factosys/ui";
 
 import type { ApiKey } from "../types";
-
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
-}
 
 export function ApiKeysTable({
   keys,
@@ -36,7 +26,7 @@ export function ApiKeysTable({
 }: {
   keys: ApiKey[];
   canManage: boolean;
-  onRevoke: (id: string) => void;
+  onRevoke: (key: ApiKey) => void;
   revokingId?: string | null;
 }) {
   return (
@@ -48,70 +38,61 @@ export function ApiKeysTable({
           <TH>Permisos</TH>
           <TH>Estado</TH>
           <TH>Último uso</TH>
-          <TH />
+          <TH className="text-end">Acciones</TH>
         </TR>
       </THead>
       <TBody>
         {keys.map((k) => (
           <TR key={k.id}>
             <TD label="Nombre">
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-full",
-                    k.status === "active"
-                      ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                      : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-                  )}
-                  aria-hidden
-                >
-                  <KeyRound className="size-4" />
-                </span>
-                <div className="min-w-0">
-                  <div className="font-medium text-gray-800 dark:text-white/90">{k.name}</div>
-                  {k.environmentConstraint ? (
-                    <MutedText as="span" className="text-theme-xs">
-                      {environmentLabel(k.environmentConstraint)}
-                    </MutedText>
-                  ) : null}
-                </div>
-              </div>
+              <EntityCell
+                icon={KeyRound}
+                tone={k.status === "active" ? "brand" : "muted"}
+                title={k.name}
+                subtitle={
+                  <>
+                    <Globe aria-hidden />
+                    {k.environmentConstraint
+                      ? environmentLabel(k.environmentConstraint)
+                      : "Todos los ambientes"}
+                  </>
+                }
+              />
             </TD>
             <TD label="Prefijo">
-              <code className="text-theme-xs">{k.keyPrefix}…</code>
+              <code className="rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-theme-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
+                {k.keyPrefix}…
+              </code>
             </TD>
             <TD label="Permisos">
               <div className="flex flex-wrap gap-1 max-md:justify-end">
                 {k.scopes.map((s) => (
-                  <Badge key={s} variant="outline">
+                  <Badge key={s} variant="outline" className="font-mono">
                     {s}
                   </Badge>
                 ))}
               </div>
             </TD>
             <TD label="Estado">
-              <Badge variant={k.status === "active" ? "success" : "muted"}>{statusLabel(k.status)}</Badge>
+              <StatusBadge status={k.status} label={statusLabel(k.status)} />
             </TD>
             <TD label="Último uso">
-              <MutedText as="span">{formatDate(k.lastUsedAt)}</MutedText>
+              <MutedText as="span" className="whitespace-nowrap">
+                {k.lastUsedAt ? formatDateTime(k.lastUsedAt) : "Nunca"}
+              </MutedText>
             </TD>
             <TD actions>
               {canManage && k.status === "active" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-label-sm"
-                  aria-label="Revocar"
-                  disabled={revokingId === k.id}
-                  onClick={() => onRevoke(k.id)}
-                >
-                  {revokingId === k.id ? (
-                    <Spinner className={buttonIconClassName} />
-                  ) : (
-                    <Ban className={buttonIconClassName} />
-                  )}
-                  <ButtonLabel>Revocar</ButtonLabel>
-                </Button>
+                <RowActions>
+                  <ActionButton
+                    size="icon-sm"
+                    icon={Ban}
+                    label="Revocar"
+                    className="text-error-600 dark:text-error-500"
+                    pending={revokingId === k.id}
+                    onClick={() => onRevoke(k)}
+                  />
+                </RowActions>
               ) : null}
             </TD>
           </TR>

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Crown, Mail, Pencil, Plus, Save, Shield, Users, X } from "lucide-react";
 import { z } from "zod";
 import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
+  ActionButton,
   Badge,
+  EntityCell,
+  RowActions,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -26,6 +26,7 @@ import {
   LoadingState,
   PageHeader,
   Select,
+  initialsOf,
   toast,
 } from "@factosys/ui";
 import {
@@ -39,6 +40,7 @@ import { useSession } from "@/shared/auth/session-context";
 import { getErrorMessage } from "@/shared/api/errors";
 import { usePlanCapacity } from "@/shared/plan/use-plan-capacity";
 import { PlanCapacityNotice } from "@/shared/plan/PlanCapacityNotice";
+import { StatusBadge } from "@/shared/ui/status-badge";
 
 const schema = z.object({
   email: z.string().trim().email("Ingresa un correo válido"),
@@ -139,20 +141,18 @@ export function UsersManager({ organizationId }: { organizationId?: string }) {
   return (
     <div className="space-y-6">
       <PageHeader
+        icon={Users}
         title={platform ? "Usuarios de la organización" : "Usuarios"}
         description="Gestiona los accesos y roles de tu equipo."
         actions={
           canWrite ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Crear usuario"
+            <ActionButton
+              variant="primary"
+              icon={Plus}
+              label="Crear usuario"
               disabled={capacity.blocked}
               onClick={() => show(null)}
-            >
-              <Plus className={buttonIconClassName} />
-              <ButtonLabel>Crear usuario</ButtonLabel>
-            </Button>
+            />
           ) : null
         }
       />
@@ -171,52 +171,74 @@ export function UsersManager({ organizationId }: { organizationId?: string }) {
         <Table>
           <THead>
             <TR>
-              <TH>Nombre</TH>
-              <TH>Correo</TH>
+              <TH>Usuario</TH>
               <TH>Roles</TH>
               <TH>Estado</TH>
-              {canWrite ? <TH>Acciones</TH> : null}
+              {canWrite ? <TH className="text-end">Acciones</TH> : null}
             </TR>
           </THead>
           <TBody>
-            {usersQuery.data.map((u) => (
-              <TR key={u.id}>
-                <TD label="Nombre">{u.name}</TD>
-                <TD label="Correo">{u.email}</TD>
-                <TD label="Roles">
-                  <div className="flex flex-wrap gap-1">
-                    {u.roles.map((role) => (
-                      <Badge key={role} variant="outline">
-                        {rolesQuery.data?.find((r) => r.code === role)?.name ?? role}
-                      </Badge>
-                    ))}
-                  </div>
-                </TD>
-                <TD label="Estado">
-                  <Badge variant={u.status === "active" ? "success" : "warning"}>
-                    {u.status === "active" ? "Activo" : "Desactivado"}
-                  </Badge>
-                </TD>
-                {canWrite ? (
-                  <TD label="Acciones">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-label={`Editar usuario ${u.email}`}
-                      onClick={() => show(u)}
-                      disabled={u.roles.some((r) => r.startsWith("platform_"))}
-                    >
-                      Editar
-                    </Button>
+            {usersQuery.data.map((u) => {
+              const active = u.status === "active";
+              return (
+                <TR key={u.id}>
+                  <TD label="Usuario">
+                    <EntityCell
+                      initials={initialsOf(u.name, u.email)}
+                      tone={active ? "brand" : "muted"}
+                      title={u.name}
+                      subtitle={
+                        <>
+                          <Mail aria-hidden />
+                          <span className="break-all">{u.email}</span>
+                        </>
+                      }
+                    />
                   </TD>
-                ) : null}
-              </TR>
-            ))}
+                  <TD label="Roles">
+                    <div className="flex flex-wrap gap-1 max-md:justify-end">
+                      {u.roles.map((role) => {
+                        const RoleIcon = role === "owner" ? Crown : Shield;
+                        return (
+                          <Badge key={role} variant={role === "owner" ? "warning" : "outline"}>
+                            <RoleIcon className="size-3 shrink-0" aria-hidden />
+                            {rolesQuery.data?.find((r) => r.code === role)?.name ?? role}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </TD>
+                  <TD label="Estado">
+                    <StatusBadge
+                      status={active ? "active" : "disabled"}
+                      label={active ? "Activo" : "Desactivado"}
+                    />
+                  </TD>
+                  {canWrite ? (
+                    <TD actions>
+                      <RowActions>
+                        <ActionButton
+                          size="icon-sm"
+                          icon={Pencil}
+                          label="Editar"
+                          aria-label={`Editar usuario ${u.email}`}
+                          onClick={() => show(u)}
+                          disabled={u.roles.some((r) => r.startsWith("platform_"))}
+                        />
+                      </RowActions>
+                    </TD>
+                  ) : null}
+                </TR>
+              );
+            })}
           </TBody>
         </Table>
       ) : (
-        <EmptyState title="Sin usuarios" description="Crea un usuario para tu equipo." />
+        <EmptyState
+          icon={Users}
+          title="Sin usuarios"
+          description="Crea un usuario para tu equipo."
+        />
       )}
       <Dialog
         open={open}
@@ -302,24 +324,25 @@ export function UsersManager({ organizationId }: { organizationId?: string }) {
             )}
           </DialogBody>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
+            <ActionButton
+              size="default"
+              icon={X}
+              label="Cancelar"
               disabled={mutation.isPending}
               onClick={() => {
                 setOpen(false);
                 setPassword("");
               }}
-            >
-              Cancelar
-            </Button>
-            <Button
+            />
+            <ActionButton
               type="submit"
-              loading={mutation.isPending}
+              size="default"
+              variant="primary"
+              icon={editing ? Save : Plus}
+              label={editing ? "Guardar cambios" : "Crear usuario"}
+              pending={mutation.isPending}
               disabled={!editing && capacity.blocked}
-            >
-              {editing ? "Guardar cambios" : "Crear usuario"}
-            </Button>
+            />
           </DialogFooter>
         </form>
       </Dialog>

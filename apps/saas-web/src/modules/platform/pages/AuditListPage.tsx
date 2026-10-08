@@ -1,7 +1,7 @@
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Filter } from "lucide-react";
+import { ChevronDown, Filter, ScrollText, SearchX } from "lucide-react";
 
 import {
   Button,
@@ -62,6 +62,7 @@ export function AuditListPage() {
   return (
     <div>
       <PageHeader
+        icon={ScrollText}
         title="Auditoría"
         description="Eventos de plataforma y tenants (solo lectura; datos sensibles redactados)."
       />
@@ -92,7 +93,11 @@ export function AuditListPage() {
 
       {!query.isLoading && !query.error ? (
         items.length === 0 ? (
-          <EmptyState title="Sin eventos" description="No hay eventos con los filtros actuales." />
+          <EmptyState
+            icon={SearchX}
+            title="Sin eventos"
+            description="No hay eventos con los filtros actuales."
+          />
         ) : (
           <div className="space-y-4">
             <AuditTable events={items} onSelect={setSelected} />

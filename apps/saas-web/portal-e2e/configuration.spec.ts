@@ -547,3 +547,56 @@ test('company labels are Spanish and editing switches environment without needin
     expect(current.environment).toBe(environment);
   }
 });
+
+
+for (const empty of [false, true]) {
+  test(`platform dashboard charts show real counts and handle empty data: ${empty}`, async ({ page }, testInfo) => {
+    await preparePortal(page, ["platform:admin"], "platform");
+    await page.route("http://localhost:3000/saas/**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (!["/saas/platform/stats", "/saas/signup-requests", "/saas/organizations", "/saas/platform/plans"].includes(path)) return route.fallback();
+      const headers = {
+        "access-control-allow-origin": "http://localhost:5184",
+        "access-control-allow-headers": "authorization,content-type",
+        "access-control-allow-methods": "GET,OPTIONS",
+      };
+      if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+      const json = path === "/saas/platform/stats" ? {
+        signup_requests: { received: empty ? 0 : 6, under_review: empty ? 0 : 4, approved: empty ? 0 : 8, rejected: empty ? 0 : 2, total: empty ? 0 : 20 },
+        organizations: { active: empty ? 0 : 9, suspended: empty ? 0 : 3, total: empty ? 0 : 12 },
+        plans: { active: empty ? 0 : 3, retired: empty ? 0 : 1, total: empty ? 0 : 4 },
+      } : path === "/saas/platform/plans" ? [] : { items: [], next_cursor: null };
+      return route.fulfill({ headers, json });
+    });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/platform");
+    await expect(page.getByRole("heading", { name: "Panel de plataforma" })).toBeVisible();
+    await expect(page.getByRole("img", { name: empty ? "Organizaciones: 0 organizaciones" : "Organizaciones: 12 organizaciones" })).toBeVisible();
+    await expect(page.getByRole("button", { name: empty ? "Aprobadas: 0 (0%)" : "Aprobadas: 8 (40%)" })).toBeVisible();
+    await expect(page.getByText(empty ? "Todavía no hay solicitudes resueltas" : "8 de 10 solicitudes resueltas", { exact: true })).toBeVisible();
+    if (!empty) await expect(page.getByText("80%", { exact: true })).toBeVisible();
+    if (empty) {
+      await expect(page.getByText("Aún no hay organizaciones de clientes.")).toBeVisible();
+      expect(await page.locator("svg[role=img] circle").count()).toBe(1);
+      await expect(page.locator("main")).not.toContainText(/NaN|Infinity/);
+    }
+    await page.screenshot({ path: testInfo.outputPath("dashboard-desktop.png"), fullPage: true, animations: "disabled" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("dashboard-mobile.png"), fullPage: true, animations: "disabled" });
+    await page.getByRole("button", { name: "Abrir acciones de cuenta" }).click();
+    await page.getByRole("button", { name: "Activar tema oscuro" }).click();
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await page.screenshot({ path: testInfo.outputPath("dashboard-mobile-dark.png"), fullPage: true, animations: "disabled" });
+    const approved = page.getByRole("button", { name: empty ? "Aprobadas: 0 (0%)" : "Aprobadas: 8 (40%)" });
+    await approved.focus();
+    await approved.press("Enter");
+    await expect(page).toHaveURL("http://localhost:5184/platform/signup-requests?status=approved");
+    await page.goto("/platform");
+    await page.getByRole("button", { name: empty ? "Suspendidas: 0 (0%)" : "Suspendidas: 3 (25%)" }).click();
+    await expect(page).toHaveURL("http://localhost:5184/platform/organizations?status=suspended");
+    await page.goto("/platform");
+    await page.getByRole("button", { name: empty ? "Disponibles: 0 (0%)" : "Disponibles: 3 (75%)" }).click();
+    await expect(page).toHaveURL("http://localhost:5184/platform/plans?active=1");
+  });
+}

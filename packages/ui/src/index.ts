@@ -6,6 +6,22 @@ export {
   buttonVariants,
   type ButtonProps,
 } from "./button";
+export { ActionButton, type ActionButtonProps } from "./action-button";
+export {
+  IconTile,
+  SectionCard,
+  StatCard,
+  InfoGrid,
+  InfoField,
+  EntityCell,
+  initialsOf,
+  type IconTone,
+  type IconTileProps,
+  type SectionCardProps,
+  type StatCardProps,
+  type InfoFieldProps,
+  type EntityCellProps,
+} from "./detail";
 export { Input, type InputProps } from "./input";
 export { Label } from "./label";
 export { Textarea, Textarea as TextArea, type TextareaProps } from "./textarea";
@@ -24,6 +40,7 @@ export { Avatar, type AvatarProps } from "./avatar";
 export { Alert, type AlertProps } from "./alert";
 export { Card, CardTitle, ComponentCard } from "./card";
 export {
+  RowActions,
   Table,
   TableHeader,
   TableBody,
@@ -44,6 +61,7 @@ export {
   type DialogProps,
   type DialogSize,
 } from "./dialog";
+export { ConfirmDialog, type ConfirmDialogProps } from "./confirm-dialog";
 export { Modal, type ModalProps } from "./modal";
 export { Dropdown, DropdownItem, type DropdownProps, type DropdownItemProps } from "./dropdown";
 export { Tabs, TabNavigation, type TabsProps, type TabItem } from "./tabs";
@@ -79,6 +97,7 @@ export {
   type PageSizeOption,
 } from "./Pagination";
 export { MutedText } from "./muted-text";
+export { HorizontalBarChart, DonutChart, type ChartDatum } from "./charts";
 export { TextLink, TextAnchor, textLinkClassName } from "./text-link";
 export {
   ResponsiveImage,

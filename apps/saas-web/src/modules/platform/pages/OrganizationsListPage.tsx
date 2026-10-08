@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { AtSign, Building2, Eye, Layers, SearchX } from "lucide-react";
 
 import {
   EmptyState,
@@ -11,9 +12,11 @@ import {
   PageHeader,
   DEFAULT_PAGE_SIZE,
   Pagination,
-  Badge,
+  EntityCell,
   Input,
   Label,
+  MutedText,
+  RowActions,
   Select,
   Table,
   TBody,
@@ -21,9 +24,13 @@ import {
   TH,
   THead,
   TR,
+  initialsOf,
 } from "@factosys/ui";
 
+import { ActionLink } from "@/shared/ui/components/action-link";
 import { TextLink } from "@/shared/ui/components/text-link";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 
 import { fetchOrganizations, type OrgStatus } from "../api/orgs";
 import { orgStatusBadge } from "../lib/status-badges";
@@ -67,7 +74,11 @@ export function OrganizationsListPage() {
 
   return (
     <div>
-      <PageHeader title="Organizaciones" description="Tenants SaaS (excluye org plataforma)." />
+      <PageHeader
+        icon={Building2}
+        title="Organizaciones"
+        description="Tenants SaaS (excluye org plataforma)."
+      />
 
       {query.isLoading ? <LoadingState variant="table" label="Cargando organizaciones…" /> : null}
       {query.error ? (
@@ -120,6 +131,7 @@ export function OrganizationsListPage() {
 
           {items.length === 0 ? (
             <EmptyState
+              icon={status || q ? SearchX : Building2}
               title="Sin organizaciones"
               description="No hay tenants con estos filtros."
             />
@@ -128,30 +140,59 @@ export function OrganizationsListPage() {
               <Table>
                 <THead>
                   <TR>
-                    <TH>Nombre</TH>
-                    <TH>Slug</TH>
+                    <TH>Organización</TH>
                     <TH>Plan</TH>
                     <TH>Estado</TH>
-                    <TH />
+                    <TH>Creada</TH>
+                    <TH className="text-end">Acciones</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {visible.map((row) => {
                     const badge = orgStatusBadge(row.status);
+                    const to = `/platform/organizations/${row.id}`;
                     return (
                       <TR key={row.id}>
-                        <TD className="font-medium">{row.name}</TD>
-                        <TD>{row.slug ?? "—"}</TD>
-                        <TD>
-                          {row.current_plan
-                            ? `${row.current_plan.plan_name} (${row.current_plan.plan_code})`
-                            : "—"}
+                        <TD label="Organización">
+                          <EntityCell
+                            initials={initialsOf(row.name)}
+                            tone={row.status === "active" ? "brand" : "muted"}
+                            title={<TextLink to={to}>{row.name}</TextLink>}
+                            subtitle={
+                              row.slug ? (
+                                <>
+                                  <AtSign aria-hidden />
+                                  <span className="font-mono">{row.slug}</span>
+                                </>
+                              ) : null
+                            }
+                          />
                         </TD>
-                        <TD>
-                          <Badge color={badge.color}>{badge.label}</Badge>
+                        <TD label="Plan">
+                          {row.current_plan ? (
+                            <span className="inline-flex items-center gap-1.5 text-gray-800 dark:text-white/90">
+                              <Layers className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                              {row.current_plan.plan_name}
+                              <span className="font-mono text-theme-xs text-gray-500 dark:text-gray-400">
+                                {row.current_plan.plan_code}
+                              </span>
+                            </span>
+                          ) : (
+                            <MutedText as="span">Sin plan</MutedText>
+                          )}
                         </TD>
-                        <TD>
-                          <TextLink to={`/platform/organizations/${row.id}`}>Ver</TextLink>
+                        <TD label="Estado">
+                          <StatusBadge status={row.status} label={badge.label} />
+                        </TD>
+                        <TD label="Creada">
+                          <MutedText as="span" className="whitespace-nowrap">
+                            {formatDateTime(row.created_at)}
+                          </MutedText>
+                        </TD>
+                        <TD actions>
+                          <RowActions>
+                            <ActionLink size="icon-sm" to={to} icon={Eye} label="Ver detalle" />
+                          </RowActions>
                         </TD>
                       </TR>
                     );

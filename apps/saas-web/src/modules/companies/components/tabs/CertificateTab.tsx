@@ -1,19 +1,27 @@
-import { certificateLabel } from "@/shared/ui/display-labels";
+import { certificateLabel, formatDateTime } from "@/shared/ui/display-labels";
+import { CertificateBadge } from "@/shared/ui/status-badge";
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, Upload, X } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarX,
+  Lock,
+  RefreshCw,
+  ShieldCheck,
+  Upload,
+  UserSquare,
+  X,
+} from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
 import {
-  Badge,
+  ActionButton,
   Button,
   ButtonLabel,
   buttonIconClassName,
-  Card,
-  CardTitle,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -21,9 +29,11 @@ import {
   Input,
   FileInput,
   Label,
+  InfoField,
+  InfoGrid,
   MutedText,
   ErrorState,
-  cn,
+  SectionCard,
 } from "@factosys/ui";
 
 import { toast } from "@/shared/ui/toaster";
@@ -75,56 +85,57 @@ export function CertificateTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "flex size-10 items-center justify-center rounded-xl",
-                certOk
-                  ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
-                  : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-              )}
-            >
-              <ShieldCheck className="size-5" />
-            </span>
-            <div>
-              <CardTitle className="mb-1">Estado del certificado</CardTitle>
-              <Badge variant={certOk ? "success" : "muted"}>{certificateLabel(company.certificate_status)}</Badge>
-            </div>
-          </div>
-          {canManage ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Subir PFX"
+      <SectionCard
+        icon={ShieldCheck}
+        tone={certOk ? "success" : "muted"}
+        title="Estado del certificado"
+        description={<CertificateBadge status={company.certificate_status} />}
+        actions={
+          canManage ? (
+            <ActionButton
+              variant="primary"
+              icon={Upload}
+              label="Subir PFX"
               onClick={() => setOpen(true)}
-            >
-              <Upload className={buttonIconClassName} />
-              <ButtonLabel>Subir PFX</ButtonLabel>
-            </Button>
-          ) : null}
-        </div>
-
+            />
+          ) : null
+        }
+      >
         {summary ? (
-          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Row label="Estado" value={certificateLabel(summary.status)} />
-            <Row label="CN" value={summary.subject_cn ?? "—"} />
-            <Row label="Vigente desde" value={summary.not_before ?? "—"} />
-            <Row label="Vigente hasta" value={summary.not_after ?? "—"} />
-            <Row label="Última renovación" value={summary.rotated_at ?? "—"} />
-          </dl>
+          <InfoGrid className="lg:grid-cols-3">
+            <InfoField icon={ShieldCheck} label="Estado" value={certificateLabel(summary.status)} />
+            <InfoField icon={UserSquare} label="CN" value={summary.subject_cn} mono />
+            <InfoField
+              icon={CalendarCheck}
+              label="Vigente desde"
+              value={formatDateTime(summary.not_before)}
+            />
+            <InfoField
+              icon={CalendarX}
+              label="Vigente hasta"
+              value={formatDateTime(summary.not_after)}
+            />
+            <InfoField
+              icon={RefreshCw}
+              label="Última renovación"
+              value={formatDateTime(summary.rotated_at)}
+            />
+          </InfoGrid>
         ) : (
           <MutedText>
-            Sin certificado cargado. Aunque la empresa esté en el ambiente de pruebas, hace falta un .pfx / .p12
-            para firmar el XML (certificado de prueba SUNAT o uno autogenerado en entorno Fake).
+            Sin certificado cargado. Aunque la empresa esté en el ambiente de pruebas, hace falta un
+            .pfx / .p12 para firmar el XML (certificado de prueba SUNAT o uno autogenerado en
+            entorno Fake).
           </MutedText>
         )}
 
         {!canManage ? (
-          <MutedText className="mt-4">Requiere permiso credentials:manage para subir.</MutedText>
+          <MutedText className="mt-4 flex items-center gap-1.5">
+            <Lock className="size-3.5 shrink-0" aria-hidden />
+            Requiere permiso credentials:manage para subir.
+          </MutedText>
         ) : null}
-      </Card>
+      </SectionCard>
 
       <Dialog
         open={open}
@@ -200,17 +211,6 @@ export function CertificateTab() {
           </DialogFooter>
         </form>
       </Dialog>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <MutedText as="dt" className="text-xs uppercase tracking-wide">
-        {label}
-      </MutedText>
-      <dd className="mt-0.5 font-mono text-xs text-gray-800 dark:text-white/90">{value}</dd>
     </div>
   );
 }

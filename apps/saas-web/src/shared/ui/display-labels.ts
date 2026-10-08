@@ -44,3 +44,11 @@ export function statusLabel(value: string): string {
     )[value] ?? "Estado desconocido"
   );
 }
+
+/** Locale date-time for tables and detail fields; "—" when empty. */
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("es-PE", { dateStyle: "medium", timeStyle: "short" });
+}

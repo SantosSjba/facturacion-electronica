@@ -1,24 +1,30 @@
-import { statusLabel } from "@/shared/ui/display-labels";
+import { formatDateTime, statusLabel } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { History, Inbox, RotateCw, Zap } from "lucide-react";
 
-import { Badge } from "@factosys/ui";
-import { Card, CardTitle } from "@factosys/ui";
-import { EmptyState } from "@factosys/ui";
-import { ErrorState } from "@factosys/ui";
-import { LoadingState } from "@factosys/ui";
-import { MutedText } from "@factosys/ui";
-import { Table, TBody, TD, TH, THead, TR } from "@factosys/ui";
+import {
+  Badge,
+  EmptyState,
+  ErrorState,
+  IconTile,
+  LoadingState,
+  MutedText,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@factosys/ui";
 
 import { fetchWebhookDeliveries } from "../api";
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
+function httpColor(status: number | null) {
+  if (status === null) return "muted" as const;
+  if (status >= 200 && status < 300) return "success" as const;
+  if (status >= 400) return "error" as const;
+  return "warning" as const;
 }
 
 export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
@@ -28,11 +34,7 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
   });
 
   if (query.isLoading) {
-    return (
-      <Card>
-        <LoadingState variant="table" label="Cargando deliveries…" />
-      </Card>
-    );
+    return <LoadingState variant="table" label="Cargando deliveries…" />;
   }
 
   if (query.error) {
@@ -48,6 +50,7 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
   if (rows.length === 0) {
     return (
       <EmptyState
+        icon={Inbox}
         title="Sin deliveries"
         description="Aún no hay intentos de entrega para este endpoint."
       />
@@ -55,12 +58,17 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
   }
 
   return (
-    <Card className="overflow-hidden p-0 sm:p-0 max-md:border-0 max-md:bg-transparent">
-      <div className="border-b border-gray-200 px-5 py-4 sm:px-6 dark:border-gray-800 max-md:border-0 max-md:px-0">
-        <CardTitle className="mb-0">Entregas recientes</CardTitle>
-        <MutedText className="mt-1 text-theme-xs">
-          {rows.length} registro{rows.length === 1 ? "" : "s"}
-        </MutedText>
+    <section className="space-y-3">
+      <div className="flex items-center gap-3">
+        <IconTile icon={History} size="sm" />
+        <div>
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-white/90">
+            Entregas recientes
+          </h2>
+          <MutedText className="text-theme-xs">
+            {rows.length} registro{rows.length === 1 ? "" : "s"}
+          </MutedText>
+        </div>
       </div>
       <Table>
         <THead>
@@ -74,47 +82,50 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
           </TR>
         </THead>
         <TBody>
-          {rows.map((d) => {
-            const ok = d.status === "delivered";
-            const failed = d.status === "failed";
-            return (
-              <TR key={d.id}>
-                <TD label="Evento">
-                  <code className="text-theme-xs">{d.event_type}</code>
-                </TD>
-                <TD label="Estado">
-                  <Badge variant={ok ? "success" : failed ? "error" : "muted"} className="gap-1">
-                    {ok ? (
-                      <CheckCircle2 className="size-3" aria-hidden />
-                    ) : failed ? (
-                      <XCircle className="size-3" aria-hidden />
-                    ) : (
-                      <AlertTriangle className="size-3" aria-hidden />
-                    )}
-                    {statusLabel(d.status)}
+          {rows.map((d) => (
+            <TR key={d.id}>
+              <TD label="Evento">
+                <span className="inline-flex items-center gap-1.5 font-mono text-theme-xs text-gray-800 dark:text-white/90">
+                  <Zap className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                  {d.event_type}
+                </span>
+              </TD>
+              <TD label="Estado">
+                <StatusBadge status={d.status} label={statusLabel(d.status)} />
+              </TD>
+              <TD label="Intentos">
+                <span className="inline-flex items-center gap-1.5">
+                  <RotateCw className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                  {d.attempt_count}
+                </span>
+              </TD>
+              <TD label="HTTP">
+                {d.http_status !== null ? (
+                  <Badge color={httpColor(d.http_status)} className="font-mono">
+                    {d.http_status}
                   </Badge>
-                </TD>
-                <TD label="Intentos">{d.attempt_count}</TD>
-                <TD label="HTTP">
-                  <span className="font-mono text-theme-xs">{d.http_status ?? "—"}</span>
-                </TD>
-                <TD label="Error">
-                  <MutedText
-                    as="span"
-                    className="line-clamp-2 max-w-xs text-theme-xs"
-                    title={d.last_error ?? undefined}
-                  >
-                    {d.last_error ?? "—"}
-                  </MutedText>
-                </TD>
-                <TD label="Creado">
-                  <MutedText as="span">{formatDate(d.created_at)}</MutedText>
-                </TD>
-              </TR>
-            );
-          })}
+                ) : (
+                  <MutedText as="span">—</MutedText>
+                )}
+              </TD>
+              <TD label="Error">
+                <MutedText
+                  as="span"
+                  className="line-clamp-2 max-w-xs text-theme-xs"
+                  title={d.last_error ?? undefined}
+                >
+                  {d.last_error ?? "—"}
+                </MutedText>
+              </TD>
+              <TD label="Creado">
+                <MutedText as="span" className="whitespace-nowrap">
+                  {formatDateTime(d.created_at)}
+                </MutedText>
+              </TD>
+            </TR>
+          ))}
         </TBody>
       </Table>
-    </Card>
+    </section>
   );
 }

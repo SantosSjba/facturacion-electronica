@@ -1,12 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Archive,
+  Building2,
+  FileText,
+  KeyRound,
+  Layers,
+  Pencil,
+  Plus,
+  Save,
+  SearchX,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "@factosys/ui";
 import { z } from "zod";
 
 import { ApiError } from "@/shared/api/errors";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
+  ActionButton,
+  EntityCell,
+  RowActions,
   EmptyState,
   ErrorState,
   FieldError,
@@ -16,10 +33,6 @@ import {
   PageHeader,
   DEFAULT_PAGE_SIZE,
   Pagination,
-  Badge,
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -187,13 +200,11 @@ export function PlansListPage() {
   return (
     <div>
       <PageHeader
+        icon={Layers}
         title="Planes"
         description="Catálogo SaaS (crear, editar, retirar)."
         actions={
-          <Button type="button" size="icon-label-sm" aria-label="Crear plan" onClick={openCreate}>
-            <Plus className={buttonIconClassName} />
-            <ButtonLabel>Crear plan</ButtonLabel>
-          </Button>
+          <ActionButton variant="primary" icon={Plus} label="Crear plan" onClick={openCreate} />
         }
       />
 
@@ -232,57 +243,83 @@ export function PlansListPage() {
           </FilterPanel>
 
           {filtered.length === 0 ? (
-            <EmptyState title="Sin planes" description="Crea el primer plan o ajusta el filtro." />
+            <EmptyState
+              icon={activeFilter ? SearchX : Layers}
+              title="Sin planes"
+              description="Crea el primer plan o ajusta el filtro."
+            />
           ) : (
             <>
               <Table>
                 <THead>
                   <TR>
-                    <TH>Código</TH>
-                    <TH>Nombre</TH>
+                    <TH>Plan</TH>
                     <TH>Precio</TH>
                     <TH>Límites</TH>
                     <TH>Estado</TH>
-                    <TH />
+                    <TH className="text-end">Acciones</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {visible.map((p) => (
                     <TR key={p.id}>
-                      <TD className="font-mono text-sm">{p.code}</TD>
-                      <TD className="font-medium">{p.name}</TD>
-                      <TD>{p.price_display}</TD>
-                      <TD className="text-theme-xs text-gray-500">
-                        {p.max_companies} emp · {p.max_users} usr · {p.max_documents_per_month} docs
-                        · {p.max_api_keys} keys
+                      <TD label="Plan">
+                        <EntityCell
+                          icon={Layers}
+                          tone={p.active ? "brand" : "muted"}
+                          title={p.name}
+                          subtitle={<span className="font-mono">{p.code}</span>}
+                        />
                       </TD>
-                      <TD>
-                        <Badge color={p.active ? "success" : "muted"}>
-                          {p.active ? "Activo" : "Retirado"}
-                        </Badge>
+                      <TD label="Precio">
+                        <span className="font-semibold text-gray-800 dark:text-white/90">
+                          {p.price_display}
+                        </span>
+                        <span className="text-theme-xs text-gray-500 dark:text-gray-400">
+                          {" "}
+                          / mes
+                        </span>
                       </TD>
-                      <TD>
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
+                      <TD label="Límites">
+                        <div className="flex flex-wrap gap-1.5 max-md:justify-end">
+                          <LimitChip icon={Building2} value={p.max_companies} title="Empresas" />
+                          <LimitChip icon={Users} value={p.max_users} title="Usuarios" />
+                          <LimitChip
+                            icon={FileText}
+                            value={p.max_documents_per_month}
+                            title="Documentos por mes"
+                          />
+                          <LimitChip icon={KeyRound} value={p.max_api_keys} title="API keys" />
+                        </div>
+                      </TD>
+                      <TD label="Estado">
+                        <StatusBadge
+                          status={p.active ? "active" : "disabled"}
+                          label={p.active ? "Activo" : "Retirado"}
+                        />
+                      </TD>
+                      <TD actions>
+                        <RowActions>
+                          <ActionButton
+                            size="icon-sm"
+                            icon={Pencil}
+                            label="Editar"
                             onClick={() => openEdit(p)}
-                          >
-                            Editar
-                          </Button>
+                          />
                           {p.active ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
+                            <ActionButton
+                              size="icon-sm"
+                              icon={Archive}
+                              label="Retirar"
+                              className="text-error-600 dark:text-error-500"
+                              pending={
+                                retireMutation.isPending && retireMutation.variables === p.id
+                              }
                               disabled={retireMutation.isPending}
                               onClick={() => retireMutation.mutate(p.id)}
-                            >
-                              Retirar
-                            </Button>
+                            />
                           ) : null}
-                        </div>
+                        </RowActions>
                       </TD>
                     </TR>
                   ))}
@@ -407,19 +444,44 @@ export function PlansListPage() {
           {formError ? <FieldError message={formError} /> : null}
         </DialogBody>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={saveMutation.isPending}
+          <ActionButton
+            size="default"
+            icon={X}
+            label="Cancelar"
+            onClick={() => setDialogOpen(false)}
+          />
+          <ActionButton
+            size="default"
+            variant="primary"
+            icon={Save}
+            label="Guardar"
+            pending={saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
-          >
-            Guardar
-          </Button>
+          />
         </DialogFooter>
       </Dialog>
     </div>
+  );
+}
+
+function LimitChip({
+  icon: Icon,
+  value,
+  title,
+}: {
+  icon: LucideIcon;
+  value: number;
+  title: string;
+}) {
+  return (
+    <span
+      title={title}
+      className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-theme-xs font-medium text-gray-700 dark:bg-white/5 dark:text-gray-300"
+    >
+      <Icon className="size-3 shrink-0 text-gray-400" aria-hidden />
+      {value.toLocaleString("es-PE")}
+      <span className="sr-only">{title}</span>
+    </span>
   );
 }
 

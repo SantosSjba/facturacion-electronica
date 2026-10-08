@@ -1,18 +1,32 @@
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Hash, Plus, Power, PowerOff, Sparkles, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  FileMinus2,
+  FilePlus2,
+  FileStack,
+  FileText,
+  FileX2,
+  Hash,
+  Plus,
+  Power,
+  PowerOff,
+  Receipt,
+  Sparkles,
+  Truck,
+  X,
+} from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session-context";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
-  Badge,
+  ActionButton,
   Button,
   ButtonLabel,
   buttonIconClassName,
-  Card,
-  CardTitle,
   Dialog,
   DialogBody,
   DialogFooter,
@@ -22,8 +36,11 @@ import {
   Select,
   EmptyState,
   ErrorState,
+  EntityCell,
   FieldError,
   LoadingState,
+  RowActions,
+  SectionCard,
   Table,
   TBody,
   TD,
@@ -48,6 +65,17 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   "31": "GRE transportista",
   RA: "Comunicación de baja",
   RC: "Resumen diario",
+};
+
+const DOC_TYPE_ICONS: Record<string, LucideIcon> = {
+  "01": Receipt,
+  "03": Receipt,
+  "07": FileMinus2,
+  "08": FilePlus2,
+  "09": Truck,
+  "31": Truck,
+  RA: FileX2,
+  RC: FileStack,
 };
 
 export function SeriesTab() {
@@ -158,135 +186,114 @@ export function SeriesTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4 sm:p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">
-              <Hash className="size-5" />
-            </span>
-            <div>
-              <CardTitle className="mb-0.5">Series documentales</CardTitle>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {rows.length === 0
-                  ? "Aún no hay series"
-                  : `${activeCount} activas · ${rows.length} en total`}
-              </p>
-            </div>
-          </div>
-          {canWrite ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Crear serie"
-              onClick={handleOpen}
-            >
-              <Plus className={buttonIconClassName} />
-              <ButtonLabel>Crear serie</ButtonLabel>
-            </Button>
-          ) : null}
-        </div>
-      </Card>
+      <SectionCard
+        icon={Hash}
+        title="Series documentales"
+        description={
+          rows.length === 0
+            ? "Aún no hay series"
+            : `${activeCount} activas · ${rows.length} en total`
+        }
+        actions={
+          canWrite ? (
+            <ActionButton variant="primary" icon={Plus} label="Crear serie" onClick={handleOpen} />
+          ) : null
+        }
+      />
 
       {rows.length === 0 ? (
         <EmptyState
+          icon={Hash}
           title="Sin series"
           description="Crea las series iniciales (F001, B001, etc.) o agrega una serie manualmente."
           action={
             canWrite ? (
               <div className="flex flex-wrap justify-center gap-2">
-                <Button
-                  type="button"
-                  size="icon-label-sm"
+                <ActionButton
+                  variant="primary"
+                  size="sm"
+                  icon={Sparkles}
+                  label={seedMutation.isPending ? "Creando…" : "Crear series iniciales"}
                   aria-label="Crear series iniciales"
-                  disabled={seedMutation.isPending}
+                  pending={seedMutation.isPending}
                   onClick={() => seedMutation.mutate()}
-                >
-                  {seedMutation.isPending ? (
-                    <Spinner className={buttonIconClassName} />
-                  ) : (
-                    <Sparkles className={buttonIconClassName} />
-                  )}
-                  <ButtonLabel>
-                    {seedMutation.isPending ? "Creando…" : "Crear series iniciales"}
-                  </ButtonLabel>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-label-sm"
+                />
+                <ActionButton
+                  size="sm"
+                  icon={Plus}
+                  label="Crear una serie"
                   aria-label="Crear serie"
                   onClick={handleOpen}
-                >
-                  <Plus className={buttonIconClassName} />
-                  <ButtonLabel>Crear una serie</ButtonLabel>
-                </Button>
+                />
               </div>
             ) : undefined
           }
         />
       ) : (
-        <Card className="overflow-hidden p-0 sm:p-0 max-md:border-0 max-md:bg-transparent">
-          <Table>
-            <THead>
-              <TR>
-                <TH>Tipo</TH>
-                <TH>Serie</TH>
-                <TH>Next</TH>
-                <TH>Activa</TH>
-                <TH />
-              </TR>
-            </THead>
-            <TBody>
-              {rows.map((s) => (
+        <Table>
+          <THead>
+            <TR>
+              <TH>Tipo de documento</TH>
+              <TH>Serie</TH>
+              <TH>Siguiente número</TH>
+              <TH>Estado</TH>
+              {canWrite ? <TH className="text-end">Acciones</TH> : null}
+            </TR>
+          </THead>
+          <TBody>
+            {rows.map((s) => {
+              const toggling =
+                toggleMutation.isPending && toggleMutation.variables?.seriesId === s.id;
+              return (
                 <TR key={s.id}>
                   <TD label="Tipo">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-mono text-xs">{s.documentType}</span>
-                      <span className="text-theme-xs text-gray-500 dark:text-gray-400">
-                        {DOC_TYPE_LABELS[s.documentType] ?? "Documento"}
-                      </span>
-                    </div>
+                    <EntityCell
+                      icon={DOC_TYPE_ICONS[s.documentType] ?? FileText}
+                      tone={s.isActive ? "brand" : "muted"}
+                      title={DOC_TYPE_LABELS[s.documentType] ?? "Documento"}
+                      subtitle={<span className="font-mono">Código {s.documentType}</span>}
+                    />
                   </TD>
-                  <TD label="Serie" className="font-mono">
-                    {s.serie}
+                  <TD label="Serie">
+                    <span className="font-mono text-sm font-semibold text-gray-800 dark:text-white/90">
+                      {s.serie}
+                    </span>
                   </TD>
-                  <TD label="Next" className="font-mono">
-                    {s.nextNumber}
+                  <TD label="Siguiente número">
+                    <span className="font-mono text-theme-xs">
+                      {s.serie}-{String(s.nextNumber).padStart(s.padding || 0, "0")}
+                    </span>
                   </TD>
-                  <TD label="Activa">
-                    <Badge variant={s.isActive ? "success" : "muted"}>
-                      {s.isActive ? "sí" : "no"}
-                    </Badge>
+                  <TD label="Estado">
+                    <StatusBadge
+                      status={s.isActive ? "active" : "disabled"}
+                      label={s.isActive ? "Activa" : "Inactiva"}
+                    />
                   </TD>
-                  <TD actions>
-                    {canWrite ? (
-                      <Button
-                        type="button"
-                        size="icon-label-sm"
-                        variant="outline"
-                        aria-label={s.isActive ? "Desactivar" : "Activar"}
-                        disabled={toggleMutation.isPending}
-                        onClick={() =>
-                          toggleMutation.mutate({
-                            seriesId: s.id,
-                            is_active: !s.isActive,
-                          })
-                        }
-                      >
-                        {s.isActive ? (
-                          <PowerOff className={buttonIconClassName} />
-                        ) : (
-                          <Power className={buttonIconClassName} />
-                        )}
-                        <ButtonLabel>{s.isActive ? "Desactivar" : "Activar"}</ButtonLabel>
-                      </Button>
-                    ) : null}
-                  </TD>
+                  {canWrite ? (
+                    <TD actions>
+                      <RowActions>
+                        <ActionButton
+                          size="icon-sm"
+                          icon={s.isActive ? PowerOff : Power}
+                          label={s.isActive ? "Desactivar" : "Activar"}
+                          pending={toggling}
+                          disabled={toggleMutation.isPending}
+                          onClick={() =>
+                            toggleMutation.mutate({
+                              seriesId: s.id,
+                              is_active: !s.isActive,
+                            })
+                          }
+                        />
+                      </RowActions>
+                    </TD>
+                  ) : null}
                 </TR>
-              ))}
-            </TBody>
-          </Table>
-        </Card>
+              );
+            })}
+          </TBody>
+        </Table>
       )}
 
       <Dialog

@@ -1,22 +1,11 @@
-import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { KeyRound } from "lucide-react";
+import { CheckCircle2, KeyRound, Save, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
 import { changePassword } from "@/modules/app/api/auth";
 import { ApiError } from "@/shared/api/errors";
-import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
-  Card,
-  CardTitle,
-  Input,
-  Label,
-  FieldError,
-  PageHeader,
-} from "@factosys/ui";
+import { ActionButton, Input, Label, FieldError, PageHeader, SectionCard } from "@factosys/ui";
 
 const passwordSchema = z
   .object({
@@ -86,18 +75,17 @@ export function AppSecurityPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        icon={ShieldCheck}
         title="Seguridad"
         description="Cambia tu contraseña. Se verifica la actual con Argon2."
       />
 
-      <Card className="max-w-lg space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
-            <KeyRound className="size-5" />
-          </div>
-          <CardTitle>Cambiar contraseña</CardTitle>
-        </div>
-
+      <SectionCard
+        className="max-w-lg"
+        icon={KeyRound}
+        title="Cambiar contraseña"
+        description="Usa al menos 8 caracteres."
+      >
         <form className="space-y-4" onSubmit={submit}>
           <div className="space-y-2">
             <Label htmlFor="current-password">Contraseña actual</Label>
@@ -138,20 +126,21 @@ export function AppSecurityPage() {
           </div>
           {formError ? <FieldError message={formError} /> : null}
           {success ? (
-            <p className="text-sm text-success-600 dark:text-success-500">
+            <p className="flex items-center gap-1.5 text-sm text-success-600 dark:text-success-500">
+              <CheckCircle2 className="size-4 shrink-0" aria-hidden />
               Contraseña actualizada correctamente.
             </p>
           ) : null}
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? (
-              <Spinner className={`${buttonIconClassName}`} />
-            ) : (
-              <KeyRound className={buttonIconClassName} />
-            )}
-            <ButtonLabel>{mutation.isPending ? "Guardando…" : "Guardar"}</ButtonLabel>
-          </Button>
+          <ActionButton
+            type="submit"
+            size="default"
+            variant="primary"
+            icon={Save}
+            label={mutation.isPending ? "Guardando…" : "Guardar"}
+            pending={mutation.isPending}
+          />
         </form>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

@@ -1,19 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Building2, Plus, SearchX } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useSession } from "@/shared/auth/session-context";
 import {
+  ActionButton,
   EmptyState,
   ErrorState,
   LoadingState,
   PageHeader,
   Pagination,
   DEFAULT_PAGE_SIZE,
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
 } from "@factosys/ui";
 
 import { fetchCompanies } from "../api";
@@ -52,21 +50,19 @@ export function CompaniesListPage() {
   return (
     <div>
       <PageHeader
+        icon={Building2}
         title="Empresas"
         description="Onboarding de empresas, credenciales y series."
         actions={
           canWrite ? (
-            <Button
-              type="button"
-              size="icon-label-sm"
-              aria-label="Crear empresa"
+            <ActionButton
+              variant="primary"
+              icon={Plus}
+              label="Crear empresa"
               disabled={capacity.blocked}
               aria-describedby={capacity.message ? "company-capacity" : undefined}
               onClick={() => setCreateOpen(true)}
-            >
-              <Plus className={buttonIconClassName} />
-              <ButtonLabel>Crear empresa</ButtonLabel>
-            </Button>
+            />
           ) : null
         }
       />
@@ -108,8 +104,13 @@ export function CompaniesListPage() {
           <CompanyFilters value={filters} onChange={setFilters} />
           {filtered.length === 0 ? (
             <EmptyState
+              icon={(query.data?.length ?? 0) === 0 ? Building2 : SearchX}
               title="Sin empresas"
-              description="No hay empresas que coincidan con los filtros."
+              description={
+                (query.data?.length ?? 0) === 0
+                  ? "Aún no registras empresas en tu organización."
+                  : "No hay empresas que coincidan con los filtros."
+              }
             />
           ) : (
             <>

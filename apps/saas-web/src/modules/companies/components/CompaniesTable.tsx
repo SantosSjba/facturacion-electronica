@@ -1,27 +1,25 @@
-import { environmentLabel, certificateLabel } from "@/shared/ui/display-labels";
-import { Spinner } from "@factosys/ui";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { CertificateBadge, EnvironmentBadge, StatusBadge } from "@/shared/ui/status-badge";
+import { ActionLink } from "@/shared/ui/components/action-link";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle2, CircleOff, Power, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Eye, Hash, KeyRound, Power, Truck } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
 import {
+  ActionButton,
   Badge,
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  DialogHeader,
+  ConfirmDialog,
+  EntityCell,
   MutedText,
+  RowActions,
   Table,
   TBody,
   TD,
   TH,
   THead,
   TR,
-  cn,
+  initialsOf,
 } from "@factosys/ui";
 
 import { TextLink } from "@/shared/ui/components/text-link";
@@ -29,35 +27,12 @@ import { TextLink } from "@/shared/ui/components/text-link";
 import { patchCompany } from "../api";
 import type { Company, CompanyStatus } from "../types";
 
-function formatDate(value: string): string {
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return value;
-  }
-}
-
-function companyInitials(legalName: string, ruc: string): string {
-  const words = legalName
-    .trim()
-    .split(/\s+/)
-    .filter(
-      (w) => w.length > 1 && !/^(S\.?A\.?|S\.?R\.?L\.?|E\.?I\.?R\.?L\.?|SAC|SRL|EIRL|SA)$/i.test(w),
-    );
-  if (words.length >= 2) {
-    return `${words[0][0] ?? ""}${words[1][0] ?? ""}`.toUpperCase();
-  }
-  if (words[0] && words[0].length >= 2) {
-    return words[0].slice(0, 2).toUpperCase();
-  }
-  return ruc.slice(0, 2) || "?";
-}
-
 export function CompaniesTable({ companies }: { companies: Company[] }) {
   const { hasPermission } = useSession();
   const canWrite = hasPermission("companies:write");
   const qc = useQueryClient();
   const [pending, setPending] = useState<Company | null>(null);
+  const pendingActive = (pending?.status ?? "active") === "active";
 
   const mutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: CompanyStatus }) =>
@@ -79,157 +54,121 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
             <TH>Certificado</TH>
             <TH>Credenciales</TH>
             <TH>Actualizado</TH>
-            {canWrite ? <TH /> : null}
+            <TH className="text-end">Acciones</TH>
           </TR>
         </THead>
         <TBody>
           {companies.map((c) => {
-            const certOk = c.certificate_status === "active";
             const active = (c.status ?? "active") === "active";
             return (
               <TR key={c.id}>
                 <TD label="Empresa">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-full text-theme-xs font-semibold",
-                        active
-                          ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                          : "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-                      )}
-                      aria-hidden
-                    >
-                      {companyInitials(c.legal_name, c.ruc)}
-                    </span>
-                    <div className="min-w-0">
-                      <TextLink to={`/app/companies/${c.id}/overview`} className="block truncate">
-                        {c.legal_name}
-                      </TextLink>
-                      <MutedText
-                        as="span"
-                        className="mt-0.5 flex items-center gap-1 font-mono text-theme-xs"
-                      >
-                        <Building2 className="size-3 shrink-0" aria-hidden />
-                        {c.ruc}
-                      </MutedText>
-                    </div>
-                  </div>
+                  <EntityCell
+                    initials={initialsOf(c.legal_name, c.ruc)}
+                    tone={active ? "brand" : "muted"}
+                    title={
+                      <TextLink to={`/app/companies/${c.id}/overview`}>{c.legal_name}</TextLink>
+                    }
+                    subtitle={
+                      <>
+                        <Hash aria-hidden />
+                        <span className="font-mono">{c.ruc}</span>
+                      </>
+                    }
+                  />
                 </TD>
                 <TD label="Ambiente">
-                  <Badge variant={c.environment === "production" ? "warning" : "primary"}>
-                    {environmentLabel(c.environment)}
-                  </Badge>
+                  <EnvironmentBadge environment={c.environment} />
                 </TD>
                 <TD label="Estado">
-                  <Badge variant={active ? "success" : "muted"} className="gap-1">
-                    {active ? (
-                      <CheckCircle2 className="size-3" aria-hidden />
-                    ) : (
-                      <CircleOff className="size-3" aria-hidden />
-                    )}
-                    {active ? "Activa" : "Deshabilitada"}
-                  </Badge>
+                  <StatusBadge
+                    status={active ? "active" : "disabled"}
+                    label={active ? "Activa" : "Deshabilitada"}
+                  />
                 </TD>
                 <TD label="Certificado">
-                  <Badge variant={certOk ? "success" : "muted"} className="gap-1">
-                    {certOk ? (
-                      <ShieldCheck className="size-3" aria-hidden />
-                    ) : (
-                      <ShieldAlert className="size-3" aria-hidden />
-                    )}
-                    {certificateLabel(c.certificate_status)}
-                  </Badge>
+                  <CertificateBadge status={c.certificate_status} />
                 </TD>
                 <TD label="Credenciales">
-                  <div className="flex flex-wrap gap-1 max-md:justify-end">
-                    <Badge variant={c.sol_configured ? "success" : "outline"}>SOL</Badge>
-                    <Badge variant={c.gre_configured ? "success" : "outline"}>GRE</Badge>
+                  <div className="flex flex-wrap gap-1 max-md:justify-end md:flex-nowrap">
+                    <Badge
+                      color={c.sol_configured ? "success" : "outline"}
+                      title={c.sol_configured ? "SOL configurado" : "SOL pendiente"}
+                    >
+                      <KeyRound className="size-3 shrink-0" aria-hidden />
+                      SOL
+                    </Badge>
+                    <Badge
+                      color={c.gre_configured ? "success" : "outline"}
+                      title={c.gre_configured ? "GRE configurado" : "GRE pendiente"}
+                    >
+                      <Truck className="size-3 shrink-0" aria-hidden />
+                      GRE
+                    </Badge>
                   </div>
                 </TD>
                 <TD label="Actualizado">
-                  <MutedText as="span">{formatDate(c.updated_at)}</MutedText>
+                  <MutedText as="span" className="whitespace-nowrap">
+                    {formatDateTime(c.updated_at)}
+                  </MutedText>
                 </TD>
-                {canWrite ? (
-                  <TD actions>
-                    <Button
-                      type="button"
-                      size="icon-label-sm"
-                      variant="outline"
-                      aria-label={active ? "Dar de baja" : "Reactivar"}
-                      onClick={() => setPending(c)}
-                    >
-                      <Power className={buttonIconClassName} />
-                      <ButtonLabel>{active ? "Dar de baja" : "Reactivar"}</ButtonLabel>
-                    </Button>
-                  </TD>
-                ) : null}
+                <TD actions>
+                  <RowActions>
+                    <ActionLink
+                      size="icon-sm"
+                      to={`/app/companies/${c.id}/overview`}
+                      icon={Eye}
+                      label="Ver detalle"
+                    />
+                    {canWrite ? (
+                      <ActionButton
+                        size="icon-sm"
+                        icon={Power}
+                        label={active ? "Dar de baja" : "Reactivar"}
+                        onClick={() => setPending(c)}
+                      />
+                    ) : null}
+                  </RowActions>
+                </TD>
               </TR>
             );
           })}
         </TBody>
       </Table>
 
-      <Dialog
+      <ConfirmDialog
         open={Boolean(pending)}
-        onClose={() => {
-          if (!mutation.isPending) setPending(null);
+        title={pendingActive ? "Dar de baja empresa" : "Reactivar empresa"}
+        description={
+          pendingActive
+            ? "No podrá emitir comprobantes hasta que la reactives. El historial se conserva."
+            : "La empresa volverá a estar disponible para emisión."
+        }
+        confirmLabel={pendingActive ? "Dar de baja" : "Reactivar"}
+        confirmIcon={Power}
+        tone={pendingActive ? "destructive" : "primary"}
+        pending={mutation.isPending}
+        error={
+          mutation.error
+            ? mutation.error instanceof Error
+              ? mutation.error.message
+              : "No se pudo actualizar"
+            : null
+        }
+        onConfirm={() => {
+          if (!pending) return;
+          const next: CompanyStatus = pendingActive ? "disabled" : "active";
+          mutation.mutate({ id: pending.id, status: next });
         }}
-        ariaLabel="Confirmar estado de empresa"
-        size="sm"
+        onClose={() => {
+          mutation.reset();
+          setPending(null);
+        }}
       >
-        <DialogHeader
-          title={
-            (pending?.status ?? "active") === "active" ? "Dar de baja empresa" : "Reactivar empresa"
-          }
-          description={
-            (pending?.status ?? "active") === "active"
-              ? "No podrá emitir comprobantes hasta que la reactives. El historial se conserva."
-              : "La empresa volverá a estar disponible para emisión."
-          }
-          onClose={() => {
-            if (!mutation.isPending) setPending(null);
-          }}
-        />
-        <DialogBody>
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            {pending?.legal_name} <span className="font-mono text-theme-xs">({pending?.ruc})</span>
-          </p>
-          {mutation.error ? (
-            <p className="mt-2 text-sm text-error-600 dark:text-error-500">
-              {mutation.error instanceof Error ? mutation.error.message : "No se pudo actualizar"}
-            </p>
-          ) : null}
-        </DialogBody>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={mutation.isPending}
-            onClick={() => setPending(null)}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            disabled={mutation.isPending || !pending}
-            onClick={() => {
-              if (!pending) return;
-              const next: CompanyStatus =
-                (pending.status ?? "active") === "active" ? "disabled" : "active";
-              mutation.mutate({ id: pending.id, status: next });
-            }}
-          >
-            {mutation.isPending ? (
-              <Spinner className={`${buttonIconClassName}`} />
-            ) : (
-              <Power className={buttonIconClassName} />
-            )}
-            <ButtonLabel>
-              {(pending?.status ?? "active") === "active" ? "Dar de baja" : "Reactivar"}
-            </ButtonLabel>
-          </Button>
-        </DialogFooter>
-      </Dialog>
+        <p className="text-sm text-gray-700 dark:text-gray-300">
+          {pending?.legal_name} <span className="font-mono text-theme-xs">({pending?.ruc})</span>
+        </p>
+      </ConfirmDialog>
     </>
   );
 }

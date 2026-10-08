@@ -1,33 +1,34 @@
 import { environmentLabel } from "@/shared/ui/display-labels";
 import { useState } from "react";
-import { ArrowLeft, Pencil } from "lucide-react";
-import { Link, Outlet, useParams, useLocation } from "react-router-dom";
+import {
+  Building2,
+  Fingerprint,
+  Hash,
+  KeyRound,
+  LayoutDashboard,
+  Pencil,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
+import { Outlet, useParams, useLocation } from "react-router-dom";
 import { TabNavigation } from "@factosys/ui";
 import { PortalLink } from "@/app/layout/branding";
 import { useQuery } from "@tanstack/react-query";
 
 import { useSession } from "@/shared/auth/session-context";
-import {
-  ErrorState,
-  LoadingState,
-  PageHeader,
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
-  buttonVariants,
-  cn,
-} from "@factosys/ui";
+import { BackLink } from "@/shared/ui/components/action-link";
+import { ActionButton, ErrorState, LoadingState, PageHeader } from "@factosys/ui";
 
 import { fetchCompany } from "../api";
 import { CompanyFormDialog } from "../components/CompanyFormDialog";
 
 const TABS = [
-  { to: "overview", label: "Resumen" },
-  { to: "certificate", label: "Certificado" },
-  { to: "sol", label: "SOL" },
-  { to: "gre", label: "GRE" },
-  { to: "series", label: "Series" },
-  { to: "ruleset", label: "Reglas de validación" },
+  { to: "overview", label: "Resumen", icon: LayoutDashboard },
+  { to: "certificate", label: "Certificado", icon: ShieldCheck },
+  { to: "sol", label: "SOL", icon: KeyRound },
+  { to: "gre", label: "GRE", icon: Truck },
+  { to: "series", label: "Series", icon: Hash },
+  { to: "ruleset", label: "Reglas de validación", icon: Fingerprint },
 ] as const;
 
 export function CompanyDetailPage() {
@@ -57,31 +58,16 @@ export function CompanyDetailPage() {
   return (
     <div>
       <PageHeader
+        icon={Building2}
         title={company.legal_name}
         description={`${company.ruc} · ${environmentLabel(company.environment)}`}
         actions={
-          <div className="flex gap-2">
+          <>
             {canWrite ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-label-sm"
-                aria-label="Editar"
-                onClick={() => setEditOpen(true)}
-              >
-                <Pencil className={buttonIconClassName} />
-                <ButtonLabel>Editar</ButtonLabel>
-              </Button>
+              <ActionButton icon={Pencil} label="Editar" onClick={() => setEditOpen(true)} />
             ) : null}
-            <Link
-              to="/app/companies"
-              className={cn(buttonVariants({ variant: "outline", size: "icon-label-sm" }))}
-              aria-label="Lista"
-            >
-              <ArrowLeft className={buttonIconClassName} />
-              <ButtonLabel>Lista</ButtonLabel>
-            </Link>
-          </div>
+            <BackLink to="/app/companies" />
+          </>
         }
       />
 
@@ -90,6 +76,7 @@ export function CompanyDetailPage() {
         items={TABS.map((tab) => ({
           href: `/app/companies/${company.id}/${tab.to}`,
           label: tab.label,
+          icon: tab.icon,
         }))}
         pathname={pathname}
         LinkComponent={PortalLink}

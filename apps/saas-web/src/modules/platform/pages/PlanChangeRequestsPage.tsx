@@ -1,21 +1,34 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
 import {
-  Badge,
-  Button,
+  ArrowRight,
+  ArrowRightLeft,
+  Building2,
+  CheckCircle2,
+  ClipboardCheck,
+  Eye,
+  Inbox,
+  Mail,
+  RefreshCw,
+  X,
+  XCircle,
+} from "lucide-react";
+import {
+  ActionButton,
   DEFAULT_PAGE_SIZE,
   Dialog,
   DialogBody,
   DialogFooter,
   DialogHeader,
   EmptyState,
+  EntityCell,
   ErrorState,
   FieldError,
   Label,
   LoadingState,
   PageHeader,
   Pagination,
+  RowActions,
   Select,
   Table,
   TBody,
@@ -24,10 +37,13 @@ import {
   THead,
   TR,
   Textarea,
+  initialsOf,
   toast,
 } from "@factosys/ui";
 import { ApiError, getErrorMessage } from "@/shared/api/errors";
 import { TextLink } from "@/shared/ui/components/text-link";
+import { formatDateTime } from "@/shared/ui/display-labels";
+import { StatusBadge } from "@/shared/ui/status-badge";
 import {
   fetchPlatformPlanChangeRequests,
   resolvePlanChangeRequest,
@@ -36,31 +52,17 @@ import {
 } from "../api/plan-change-requests";
 
 function RequestStatus({ request }: { request: PlatformPlanChangeRequest }) {
-  const label =
+  const [status, label] =
     request.resolution === "approved"
-      ? "Aprobada"
+      ? ["approved", "Aprobada"]
       : request.resolution === "rejected"
-        ? "Rechazada"
+        ? ["rejected", "Rechazada"]
         : request.status === "pending"
-          ? "Pendiente"
+          ? ["pending", "Pendiente"]
           : request.status === "acknowledged"
-            ? "En revisión"
-            : "Cerrada";
-  return (
-    <Badge
-      color={
-        request.resolution === "approved"
-          ? "success"
-          : request.resolution === "rejected"
-            ? "error"
-            : request.status === "pending"
-              ? "warning"
-              : "info"
-      }
-    >
-      {label}
-    </Badge>
-  );
+            ? ["acknowledged", "En revisión"]
+            : ["closed", "Cerrada"];
+  return <StatusBadge status={status} label={label} />;
 }
 
 export function PlanChangeRequestsPage() {
@@ -121,6 +123,7 @@ export function PlanChangeRequestsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
+        icon={ArrowRightLeft}
         title="Cambios de plan"
         description="Revisa las solicitudes y responde al cliente. Aprobar aplica el plan y cierra la solicitud en un solo paso."
       />
@@ -141,9 +144,12 @@ export function PlanChangeRequestsPage() {
             <option value="closed">Resueltas</option>
           </Select>
         </div>
-        <Button variant="outline" loading={query.isFetching} onClick={() => void query.refetch()}>
-          Actualizar
-        </Button>
+        <ActionButton
+          icon={RefreshCw}
+          label="Actualizar"
+          pending={query.isFetching}
+          onClick={() => void query.refetch()}
+        />
       </div>
       {query.isLoading ? (
         <LoadingState variant="table" label="Cargando solicitudes de cambio de plan…" />
@@ -154,6 +160,7 @@ export function PlanChangeRequestsPage() {
         />
       ) : items.length === 0 ? (
         <EmptyState
+          icon={status === "pending" ? CheckCircle2 : Inbox}
           title="Sin solicitudes de cambio de plan"
           description={
             status === "pending"
@@ -170,39 +177,58 @@ export function PlanChangeRequestsPage() {
                 <TH>Cambio solicitado</TH>
                 <TH>Estado</TH>
                 <TH>Fecha</TH>
-                <TH>Acciones</TH>
+                <TH className="text-end">Acciones</TH>
               </TR>
             </THead>
             <TBody>
               {items.map((request) => (
                 <TR key={request.id}>
                   <TD label="Organización">
-                    <div className="font-medium">{request.organization_name}</div>
-                    <div className="break-all text-xs text-gray-500">
-                      {request.requested_by_email}
-                    </div>
+                    <EntityCell
+                      initials={initialsOf(request.organization_name)}
+                      title={request.organization_name}
+                      subtitle={
+                        <>
+                          <Mail aria-hidden />
+                          <span className="break-all">{request.requested_by_email}</span>
+                        </>
+                      }
+                    />
                   </TD>
                   <TD label="Cambio">
                     <div className="flex flex-wrap items-center justify-end gap-2 md:justify-start">
-                      <span className="text-gray-500">
+                      <span className="text-gray-500 dark:text-gray-400">
                         {request.current_plan_name ?? "Sin plan"}
                       </span>
-                      <ArrowRight size={16} aria-hidden="true" />
-                      <span className="font-medium">{request.requested_plan_name}</span>
+                      <ArrowRight className="size-4 shrink-0 text-gray-400" aria-hidden="true" />
+                      <span className="font-medium text-gray-800 dark:text-white/90">
+                        {request.requested_plan_name}
+                      </span>
                     </div>
                   </TD>
                   <TD label="Estado">
                     <RequestStatus request={request} />
                   </TD>
-                  <TD label="Fecha">{new Date(request.created_at).toLocaleString("es-PE")}</TD>
+                  <TD label="Fecha">
+                    <span className="whitespace-nowrap">{formatDateTime(request.created_at)}</span>
+                  </TD>
                   <TD actions>
-                    <Button
-                      variant={request.status === "closed" ? "outline" : "primary"}
-                      size="sm"
-                      onClick={() => openReview(request)}
-                    >
-                      {request.status === "closed" ? "Ver resultado" : "Revisar solicitud"}
-                    </Button>
+                    <RowActions>
+                      {request.status === "closed" ? (
+                        <ActionButton
+                          icon={Eye}
+                          label="Ver resultado"
+                          onClick={() => openReview(request)}
+                        />
+                      ) : (
+                        <ActionButton
+                          variant="primary"
+                          icon={ClipboardCheck}
+                          label="Revisar solicitud"
+                          onClick={() => openReview(request)}
+                        />
+                      )}
+                    </RowActions>
                   </TD>
                 </TR>
               ))}
@@ -252,8 +278,7 @@ export function PlanChangeRequestsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">
-                  Enviada por {selected.requested_by_email} ·{" "}
-                  {new Date(selected.created_at).toLocaleString("es-PE")}
+                  Enviada por {selected.requested_by_email} · {formatDateTime(selected.created_at)}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap break-words">
                   {selected.message ?? "El cliente no adjuntó un mensaje."}
@@ -270,7 +295,7 @@ export function PlanChangeRequestsPage() {
                   </p>
                   {selected.resolved_at ? (
                     <p className="mt-2 text-sm text-gray-500">
-                      Resuelta el {new Date(selected.resolved_at).toLocaleString("es-PE")}
+                      Resuelta el {formatDateTime(selected.resolved_at)}
                     </p>
                   ) : null}
                 </div>
@@ -317,26 +342,31 @@ export function PlanChangeRequestsPage() {
                   </div>
                 </>
               )}
-              <TextLink to={"/platform/organizations/" + selected.organization_id}>
+              <TextLink
+                to={"/platform/organizations/" + selected.organization_id}
+                className="inline-flex items-center gap-1.5"
+              >
+                <Building2 className="size-4 shrink-0" aria-hidden />
                 Ver organización
               </TextLink>
             </DialogBody>
             <DialogFooter>
-              <Button
-                variant="outline"
+              <ActionButton
+                size="default"
+                icon={X}
+                label={closed ? "Cerrar" : "Cancelar"}
                 disabled={mutation.isPending}
                 onClick={() => setSelected(null)}
-              >
-                {closed ? "Cerrar" : "Cancelar"}
-              </Button>
+              />
               {!closed ? (
-                <Button
+                <ActionButton
+                  size="default"
                   variant={decision === "reject" ? "destructive" : "primary"}
-                  loading={mutation.isPending}
+                  icon={decision === "approve" ? CheckCircle2 : XCircle}
+                  label={decision === "approve" ? "Aprobar y aplicar" : "Confirmar rechazo"}
+                  pending={mutation.isPending}
                   onClick={submit}
-                >
-                  {decision === "approve" ? "Aprobar y aplicar" : "Confirmar rechazo"}
-                </Button>
+                />
               ) : null}
             </DialogFooter>
           </>

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowRightLeft,
   Bell,
   Building2,
   ClipboardList,
@@ -9,6 +10,7 @@ import {
   LayoutDashboard,
   Scale,
   ScrollText,
+  ShieldCheck,
   Users,
   Webhook,
 } from "lucide-react";
@@ -51,7 +53,7 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
     id: "plan-change-requests",
     label: "Cambios de plan",
     to: "/platform/plan-change-requests",
-    icon: ClipboardList,
+    icon: ArrowRightLeft,
   },
   {
     id: "legal",
@@ -119,7 +121,7 @@ export const ORG_NAV_ITEMS: NavItem[] = [
     id: "security",
     label: "Seguridad",
     to: "/app/security",
-    icon: KeyRound,
+    icon: ShieldCheck,
   },
 ];
 
