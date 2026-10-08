@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShieldCheck, Upload, X } from "lucide-react";
+import { ShieldCheck, Upload, X } from "lucide-react";
 import { useOutletContext, useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
@@ -189,7 +190,7 @@ export function CertificateTab() {
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
-                <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                <Spinner className={buttonIconClassName} />
               ) : (
                 <Upload className={buttonIconClassName} />
               )}

@@ -1,14 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Building2,
-  CheckCircle2,
-  CircleOff,
-  Loader2,
-  Power,
-  ShieldAlert,
-  ShieldCheck,
-} from "lucide-react";
+import { Building2, CheckCircle2, CircleOff, Power, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { useSession } from "@/shared/auth/session-context";
 import {
@@ -226,7 +219,7 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
             }}
           >
             {mutation.isPending ? (
-              <Loader2 className={`${buttonIconClassName} animate-spin`} />
+              <Spinner className={`${buttonIconClassName}`} />
             ) : (
               <Power className={buttonIconClassName} />
             )}

@@ -1,6 +1,7 @@
 import { BellIcon } from "./icons";
 import { useAdminDropdown } from "./dropdown";
 import type { AdminLinkComponent } from "./types";
+import { ListSkeleton } from "../skeleton";
 
 export interface AdminNotificationItem {
   id: string;
@@ -98,10 +99,11 @@ export function AdminNotificationDropdown({
               </li>
             ))}
           </ul>
-          {items.length === 0 && (
-            <p className="p-4 text-theme-sm text-gray-500">
-              {error ? labels.error : loading ? labels.loading : labels.empty}
-            </p>
+          {loading && items.length === 0 && !error ? (
+            <ListSkeleton label={labels.loading} rows={3} contained={false} />
+          ) : null}
+          {items.length === 0 && (!loading || error) && (
+            <p className="p-4 text-theme-sm text-gray-500">{error ? labels.error : labels.empty}</p>
           )}
           <LinkComponent
             href={href}

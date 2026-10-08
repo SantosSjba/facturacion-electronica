@@ -82,7 +82,7 @@ export function SignupRequestsListPage() {
     <div>
       <PageHeader title="Solicitudes" description="Signup requests de la landing." />
 
-      {query.isLoading ? <LoadingState label="Cargando solicitudes…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando solicitudes…" /> : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "Error al cargar"}

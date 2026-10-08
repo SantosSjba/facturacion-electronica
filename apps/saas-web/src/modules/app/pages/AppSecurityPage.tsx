@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { KeyRound, Loader2 } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import { z } from "zod";
 
 import { changePassword } from "@/modules/app/api/auth";
@@ -143,7 +144,7 @@ export function AppSecurityPage() {
           ) : null}
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? (
-              <Loader2 className={`${buttonIconClassName} animate-spin`} />
+              <Spinner className={`${buttonIconClassName}`} />
             ) : (
               <KeyRound className={buttonIconClassName} />
             )}

@@ -1,4 +1,5 @@
-import { History, Loader2, Pencil, Power, PowerOff, RefreshCw, Webhook } from "lucide-react";
+import { Spinner } from "@factosys/ui";
+import { History, Pencil, Power, PowerOff, RefreshCw, Webhook } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import {
@@ -145,7 +146,7 @@ export function WebhooksTable({
                         onClick={() => onRotate(ep.id)}
                       >
                         {isPending ? (
-                          <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                          <Spinner className={buttonIconClassName} />
                         ) : (
                           <RefreshCw className={buttonIconClassName} />
                         )}
@@ -160,7 +161,7 @@ export function WebhooksTable({
                         onClick={() => onToggleStatus(ep)}
                       >
                         {isPending ? (
-                          <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                          <Spinner className={buttonIconClassName} />
                         ) : isActive ? (
                           <PowerOff className={buttonIconClassName} />
                         ) : (

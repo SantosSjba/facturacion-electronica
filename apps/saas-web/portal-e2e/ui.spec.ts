@@ -4,6 +4,58 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/portal-e2e/fixtures/ui.html");
 });
 
+test("loading scenarios announce status, hide fake controls, respect reduced motion and fit mobile", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/portal-e2e/fixtures/ui.html?loading");
+  for (const variant of [
+    "table",
+    "cards",
+    "detail",
+    "form",
+    "list",
+    "documents",
+    "dashboard",
+    "page",
+  ]) {
+    const region = page.locator(`[data-skeleton="${variant}"]`);
+    await expect(region).toHaveAttribute("role", "status");
+    await expect(region).toHaveAttribute("aria-busy", "true");
+    await expect(region).toContainText(`Cargando ${variant}`);
+    await expect(region.getByRole("button")).toHaveCount(0);
+    await expect(region.getByRole("textbox")).toHaveCount(0);
+  }
+  await expect(page.getByRole("button", { name: "Guardando…" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Guardando…" })).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.locator('[data-skeleton="table"] .bg-gray-200').first()).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`loading-${width}.png`),
+      fullPage: true,
+      animations: "disabled",
+    });
+    await page.locator('[data-skeleton="table"]').screenshot({ path: testInfo.outputPath(`table-${width}.png`), animations: "disabled" });
+  }
+  await page.getByRole("button", { name: "Cambiar tema" }).click();
+  await page.screenshot({
+    path: testInfo.outputPath("loading-mobile-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.locator('[data-skeleton="form"]').screenshot({ path: testInfo.outputPath("form-mobile-dark.png"), animations: "disabled" });
+});
+
 test("shared fields keep controlled values, native form semantics and keyboard access", async ({
   page,
 }) => {

@@ -50,6 +50,22 @@ export { Tabs, TabNavigation, type TabsProps, type TabItem } from "./tabs";
 export { Breadcrumb, type BreadcrumbItem } from "./breadcrumb";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { LoadingState, PageSpinner, type LoadingStateProps } from "./LoadingState";
+export {
+  Skeleton,
+  SkeletonRegion,
+  SkeletonContent,
+  TableSkeleton,
+  FormSkeleton,
+  DetailSkeleton,
+  CardsSkeleton,
+  ListSkeleton,
+  DocumentsSkeleton,
+  DashboardSkeleton,
+  PageSkeleton,
+  type SkeletonProps,
+  type SkeletonVariant,
+} from "./skeleton";
+export { Spinner, type SpinnerProps } from "./spinner";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { ErrorState, type ErrorStateProps } from "./ErrorState";
 export { FieldError } from "./FieldError";

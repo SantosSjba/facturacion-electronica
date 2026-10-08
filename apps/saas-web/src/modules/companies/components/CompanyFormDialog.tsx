@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Save, X } from "lucide-react";
+import { Plus, Save, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
@@ -21,7 +22,6 @@ import {
   ErrorState,
   FieldError,
   LoadingState,
-  cn,
 } from "@factosys/ui";
 
 import { toast } from "@/shared/ui/toaster";
@@ -238,7 +238,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
           onClose={handleClose}
         />
         <DialogBody className="space-y-4">
-          {loadingEdit ? <LoadingState label="Cargando empresa…" /> : null}
+          {loadingEdit ? <LoadingState variant="form" label="Cargando empresa…" /> : null}
           {editError ? (
             <ErrorState
               message={
@@ -419,7 +419,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
             disabled={mutation.isPending || loadingEdit || Boolean(editError)}
           >
             {mutation.isPending ? (
-              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+              <Spinner className={buttonIconClassName} />
             ) : mode === "create" ? (
               <Plus className={buttonIconClassName} />
             ) : (

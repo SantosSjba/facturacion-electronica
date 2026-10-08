@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchOnboardingStatus } from "@/modules/app/api/onboarding";
 import { useSession } from "@/shared/auth/session-context";
-import { ErrorState, PageSpinner } from "@factosys/ui";
+import { ErrorState, PageSkeleton } from "@factosys/ui";
 
 import { resolveHomePath } from "./nav-config";
 
@@ -11,7 +11,7 @@ export function RequirePlatform() {
   const { user, bootstrapping, isPlatform } = useSession();
   const location = useLocation();
 
-  if (bootstrapping) return <PageSpinner />;
+  if (bootstrapping) return <PageSkeleton />;
   if (!user) {
     return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
@@ -25,7 +25,7 @@ export function RequireOrg() {
   const { user, bootstrapping, isPlatform } = useSession();
   const location = useLocation();
 
-  if (bootstrapping) return <PageSpinner />;
+  if (bootstrapping) return <PageSkeleton />;
   if (!user) {
     return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   }
@@ -51,7 +51,7 @@ export function RequireOnboarded() {
   });
 
   if (bootstrapping || (user && statusQuery.isLoading)) {
-    return <PageSpinner />;
+    return <PageSkeleton />;
   }
   if (!user) {
     return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
@@ -73,7 +73,7 @@ export function RedirectIfOnboarded({ children }: { children: React.ReactNode })
   });
 
   if (bootstrapping || (user && statusQuery.isLoading)) {
-    return <PageSpinner />;
+    return <PageSkeleton />;
   }
   if (statusQuery.data?.complete || statusQuery.data?.has_company) {
     return <Navigate to="/app" replace />;
@@ -83,7 +83,7 @@ export function RedirectIfOnboarded({ children }: { children: React.ReactNode })
 
 export function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
   const { user, bootstrapping, isPlatform } = useSession();
-  if (bootstrapping) return <PageSpinner />;
+  if (bootstrapping) return <PageSkeleton />;
   if (user) {
     return <Navigate to={resolveHomePath(user.perms, isPlatform ? "platform" : "org")} replace />;
   }

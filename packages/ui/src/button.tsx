@@ -2,6 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "./cn";
+import { Spinner } from "./spinner";
 
 export const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
@@ -39,18 +40,41 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
+  loading?: boolean;
+  loadingLabel?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = "button", startIcon, endIcon, children, ...props }, ref) => (
+  (
+    {
+      className,
+      variant,
+      size,
+      type = "button",
+      startIcon,
+      endIcon,
+      children,
+      loading,
+      loadingLabel,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => (
     <button
       ref={ref}
       type={type}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      disabled={disabled || loading}
+      aria-busy={loading || props["aria-busy"]}
     >
-      {startIcon && <span className="flex items-center">{startIcon}</span>}
-      {children}
+      {loading ? (
+        <Spinner className="size-4" />
+      ) : (
+        startIcon && <span className="flex items-center">{startIcon}</span>
+      )}
+      {loading && loadingLabel ? loadingLabel : children}
       {endIcon && <span className="flex items-center">{endIcon}</span>}
     </button>
   ),

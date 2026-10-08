@@ -62,6 +62,23 @@ La ruta de `@source` se ajusta a la ubicación del CSS consumidor. `admin.css` c
 
 El paquete es interno al monorepo y exporta directamente `src/index.ts`. Vite procesa sus componentes y refleja los cambios en desarrollo sin compilar previamente `packages/ui` ni mantener un proceso de watch separado. El comando `pnpm --filter @factosys/ui build` sigue disponible para comprobar sus tipos y generar declaraciones.
 
+## Skeletons y cargas
+
+`Skeleton` es el bloque visual básico. `TableSkeleton`, `CardsSkeleton`, `DetailSkeleton`, `FormSkeleton`, `ListSkeleton`, `DocumentsSkeleton`, `DashboardSkeleton` y `PageSkeleton` componen las formas de cada escenario. Admiten `label` y `className`; según el escenario se configuran `rows`, `columns`, `fields`, `count`, `showHeader` y `contained`.
+
+```tsx
+if (query.isLoading) return <TableSkeleton label="Cargando empresas…" columns={6} rows={5} />;
+// También se puede usar la API de los paneles:
+<LoadingState variant="form" fields={8} label="Cargando empresa…" />
+<Button loading={saving} loadingLabel="Guardando…" type="submit">Guardar</Button>
+```
+
+Cada región anuncia una sola etiqueta mediante `role="status"`, `aria-live` y `aria-busy`. Las formas son decorativas y no crean inputs, botones ni datos ficticios accesibles. Las tablas reservan filas en escritorio y tarjetas en móvil. Los fondos se adaptan a claro/oscuro; el pulso y el spinner respetan `prefers-reduced-motion`.
+
+Los skeletons se usan durante la carga inicial (`isLoading`). Un refetch con datos existentes conserva el contenido. Las mutaciones usan `Spinner` (decorativo por defecto, o con `label` para anunciarlo) y `Button loading`; `LoadingState variant="inline"` sirve para actualizar una sección sin reemplazarla. `PageSpinner` queda como alias de compatibilidad de `PageSkeleton` para sesión y guards.
+
+`SkeletonRegion` y `SkeletonContent` permiten composiciones nuevas sin duplicar la accesibilidad ni estilos. Los componentes se conectan a estados de la aplicación; no incluyen temporizadores ni llamadas a la API.
+
 ## Verificación
 
 `pnpm --filter saas-web test:ui` abre un catálogo de pruebas (fuera del bundle de producción) y comprueba formularios, archivos, fechas, teclado, foco y diseño en 1440/390 px, en claro y oscuro. Las capturas quedan en `apps/saas-web/test-results`. `pnpm --filter saas-web test:portal` comprueba los flujos de los paneles con fixtures HTTP.

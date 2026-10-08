@@ -29,7 +29,7 @@ export function DeliveriesPanel({ endpointId }: { endpointId: string }) {
   if (query.isLoading) {
     return (
       <Card>
-        <LoadingState label="Cargando deliveries…" />
+        <LoadingState variant="table" label="Cargando deliveries…" />
       </Card>
     );
   }

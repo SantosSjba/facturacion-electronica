@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Filter, Loader2 } from "lucide-react";
+import { ChevronDown, Filter } from "lucide-react";
 
 import {
   Button,
@@ -11,7 +12,6 @@ import {
   LoadingState,
   PageHeader,
   DEFAULT_PAGE_SIZE,
-  cn,
 } from "@factosys/ui";
 
 import { fetchPlatformAuditEvents, type AuditEvent } from "../api/audit";
@@ -79,7 +79,9 @@ export function AuditListPage() {
         </Button>
       </div>
 
-      {query.isLoading && !cursor ? <LoadingState label="Cargando auditoría…" /> : null}
+      {query.isLoading && !cursor ? (
+        <LoadingState variant="table" label="Cargando auditoría…" />
+      ) : null}
 
       {!query.isLoading && query.error ? (
         <ErrorState
@@ -104,7 +106,7 @@ export function AuditListPage() {
                 onClick={loadMore}
               >
                 {query.isFetching ? (
-                  <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                  <Spinner className={buttonIconClassName} />
                 ) : (
                   <ChevronDown className={buttonIconClassName} />
                 )}

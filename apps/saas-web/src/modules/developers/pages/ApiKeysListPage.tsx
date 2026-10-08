@@ -55,7 +55,7 @@ export function ApiKeysListPage() {
         }
       />
 
-      {query.isLoading ? <LoadingState label="Cargando API keys…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando API keys…" /> : null}
 
       {!query.isLoading && query.error ? (
         <ErrorState

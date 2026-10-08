@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Loader2, Plus, X } from "lucide-react";
+import { Check, Copy, Plus, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import {
@@ -17,7 +18,6 @@ import {
   Select,
   ErrorState,
   FieldError,
-  cn,
 } from "@factosys/ui";
 
 import { createApiKey } from "../api";
@@ -201,7 +201,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
               disabled={mutation.isPending}
             >
               {mutation.isPending ? (
-                <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                <Spinner className={buttonIconClassName} />
               ) : (
                 <Plus className={buttonIconClassName} />
               )}

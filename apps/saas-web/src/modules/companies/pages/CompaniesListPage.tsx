@@ -66,7 +66,7 @@ export function CompaniesListPage() {
         }
       />
 
-      {query.isLoading ? <LoadingState label="Cargando empresas…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando empresas…" /> : null}
 
       {query.error ? (
         <ErrorState

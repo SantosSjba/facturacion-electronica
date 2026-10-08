@@ -127,7 +127,7 @@ export function AppUsersPage() {
         }
       />
 
-      {loading ? <LoadingState label="Cargando usuarios…" /> : null}
+      {loading ? <LoadingState variant="table" label="Cargando usuarios…" /> : null}
       {!loading && error ? (
         <ErrorState message={error instanceof Error ? error.message : "Error al cargar usuarios"} />
       ) : null}

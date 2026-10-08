@@ -90,7 +90,9 @@ export function AppNotificationsPage() {
         }
       />
 
-      {inboxQuery.isLoading ? <LoadingState label="Cargando notificaciones…" /> : null}
+      {inboxQuery.isLoading ? (
+        <LoadingState variant="list" label="Cargando notificaciones…" />
+      ) : null}
       {inboxQuery.error ? (
         <ErrorState
           message={
@@ -153,7 +155,9 @@ export function AppNotificationsPage() {
         <p className="text-sm text-gray-600 dark:text-gray-300">
           Activa o desactiva email e in-app por tipo de evento.
         </p>
-        {prefsQuery.isLoading ? <LoadingState label="Cargando preferencias…" /> : null}
+        {prefsQuery.isLoading ? (
+          <LoadingState variant="form" fields={4} label="Cargando preferencias…" />
+        ) : null}
         <div className="space-y-3">
           {prefs.map((p) => (
             <div

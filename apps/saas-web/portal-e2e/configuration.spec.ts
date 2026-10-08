@@ -32,6 +32,7 @@ async function preparePortal(
   page: Page,
   perms = ownerPermissions,
   ctx: "org" | "platform" = "org",
+  pending?: { path: string; wait: Promise<void>; fail?: boolean },
 ) {
   const payload = Buffer.from(
     JSON.stringify({
@@ -57,6 +58,13 @@ async function preparePortal(
     if (req.method() === "OPTIONS") {
       await route.fulfill({ status: 204, headers });
       return;
+    }
+    if (pending && req.method() === "GET" && pathname === pending.path) {
+      await pending.wait;
+      if (pending.fail) {
+        await route.fulfill({ status: 403, json: { message: "Sin acceso" }, headers });
+        return;
+      }
     }
     if (req.method() !== "GET")
       writes.push({
@@ -109,6 +117,39 @@ async function preparePortal(
   });
   return writes;
 }
+
+test("company list shows a skeleton until data arrives", async ({ page }) => {
+  let release: (() => void) | undefined;
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await preparePortal(page, ownerPermissions, "org", { path: "/companies", wait });
+  await page.goto("/app/companies");
+  await expect(page.locator('[data-skeleton="table"]')).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Cargando empresas");
+  release?.();
+  await expect(page.getByText(company.legal_name, { exact: true })).toBeVisible();
+  await expect(page.locator("[data-skeleton]")).toHaveCount(0);
+});
+
+test("owner initial audit errors do not leave a skeleton or show empty success", async ({
+  page,
+}) => {
+  let release: (() => void) | undefined;
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await preparePortal(page, ownerPermissions, "platform", {
+    path: "/saas/platform/audit-events",
+    wait,
+    fail: true,
+  });
+  await page.goto("/platform/audit");
+  await expect(page.locator('[data-skeleton="table"]')).toBeVisible();
+  release?.();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("[data-skeleton]")).toHaveCount(0);
+});
 
 test("company registration stays in the portal and keeps API endpoints", async ({ page }) => {
   const writes = await preparePortal(page);

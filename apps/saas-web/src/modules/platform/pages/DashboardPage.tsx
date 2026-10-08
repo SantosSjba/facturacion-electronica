@@ -20,7 +20,7 @@ export function DashboardPage() {
         description="KPIs de la plataforma. Cada tarjeta abre el listado filtrado."
       />
 
-      {query.isLoading ? <LoadingState label="Cargando KPIs…" /> : null}
+      {query.isLoading ? <LoadingState variant="dashboard" label="Cargando KPIs…" /> : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "Error al cargar stats"}

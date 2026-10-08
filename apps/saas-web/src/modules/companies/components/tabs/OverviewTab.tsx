@@ -1,3 +1,4 @@
+import { Spinner } from "@factosys/ui";
 import type { ComponentType } from "react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import {
   CircleOff,
   Fingerprint,
   KeyRound,
-  Loader2,
   Pencil,
   Power,
   ShieldCheck,
@@ -153,7 +153,7 @@ export function OverviewTab() {
             onClick={() => statusMutation.mutate(active ? "disabled" : "active")}
           >
             {statusMutation.isPending ? (
-              <Loader2 className={`${buttonIconClassName} animate-spin`} />
+              <Spinner className={`${buttonIconClassName}`} />
             ) : (
               <Power className={buttonIconClassName} />
             )}

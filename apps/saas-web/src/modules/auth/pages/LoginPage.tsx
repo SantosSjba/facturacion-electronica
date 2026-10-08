@@ -1,16 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Building2,
-  Eye,
-  EyeOff,
-  Loader2,
-  LogIn,
-  Moon,
-  ShieldCheck,
-  Sun,
-} from "lucide-react";
+import { ArrowLeft, Building2, Eye, EyeOff, LogIn, Moon, ShieldCheck, Sun } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { getAccessTokenMemory, type LoginOrganizationOption } from "@/shared/api/http-client";
@@ -195,7 +186,7 @@ export function LoginPage() {
                       >
                         <span className="flex size-11 items-center justify-center rounded-xl bg-brand-50 text-sm font-semibold text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
                           {busy ? (
-                            <Loader2 className="size-5 animate-spin" />
+                            <Spinner className="size-5" />
                           ) : initials ? (
                             initials
                           ) : (
@@ -278,7 +269,7 @@ export function LoginPage() {
                   data-testid="login-submit"
                 >
                   {submitting ? (
-                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                    <Spinner className={buttonIconClassName} />
                   ) : (
                     <LogIn className={buttonIconClassName} />
                   )}

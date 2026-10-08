@@ -15,7 +15,8 @@ export function RulesetTab() {
     queryFn: fetchRuleset,
   });
 
-  if (query.isLoading) return <LoadingState label="Cargando ruleset…" />;
+  if (query.isLoading)
+    return <LoadingState variant="detail" showHeader={false} label="Cargando ruleset…" />;
   if (query.error) {
     return (
       <ErrorState

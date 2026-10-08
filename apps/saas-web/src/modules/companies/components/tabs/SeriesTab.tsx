@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Hash, Loader2, Plus, Power, PowerOff, Sparkles, X } from "lucide-react";
+import { Hash, Plus, Power, PowerOff, Sparkles, X } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { ApiError } from "@/shared/api/errors";
@@ -29,7 +30,6 @@ import {
   TH,
   THead,
   TR,
-  cn,
 } from "@factosys/ui";
 
 import { toast } from "@/shared/ui/toaster";
@@ -143,7 +143,7 @@ export function SeriesTab() {
     setOpen(true);
   }
 
-  if (query.isLoading) return <LoadingState label="Cargando series…" />;
+  if (query.isLoading) return <LoadingState variant="table" label="Cargando series…" />;
   if (query.error) {
     return (
       <ErrorState
@@ -202,7 +202,7 @@ export function SeriesTab() {
                   onClick={() => seedMutation.mutate()}
                 >
                   {seedMutation.isPending ? (
-                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                    <Spinner className={buttonIconClassName} />
                   ) : (
                     <Sparkles className={buttonIconClassName} />
                   )}
@@ -381,7 +381,7 @@ export function SeriesTab() {
               disabled={createMutation.isPending}
             >
               {createMutation.isPending ? (
-                <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                <Spinner className={buttonIconClassName} />
               ) : (
                 <Plus className={buttonIconClassName} />
               )}

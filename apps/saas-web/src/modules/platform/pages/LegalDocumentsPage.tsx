@@ -197,7 +197,7 @@ export function LegalDocumentsPage() {
         }
       />
 
-      {query.isLoading ? <LoadingState label="Cargando documentos…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando documentos…" /> : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "Error al cargar"}

@@ -1,7 +1,8 @@
+import { Spinner } from "@factosys/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Building2, Check, Loader2, Scale, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Check, Scale, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { ApiError } from "@/shared/api/errors";
@@ -130,7 +131,7 @@ export function OnboardingWizardPage() {
   if (statusQuery.isLoading && !bootstrapped) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <LoadingState label="Cargando onboarding…" />
+        <LoadingState variant="form" label="Cargando onboarding…" />
       </div>
     );
   }
@@ -271,9 +272,7 @@ export function OnboardingWizardPage() {
                       companyMutation.mutate();
                     }}
                   >
-                    {companyMutation.isPending ? (
-                      <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
-                    ) : null}
+                    {companyMutation.isPending ? <Spinner className={buttonIconClassName} /> : null}
                     <ButtonLabel>
                       {companyMutation.isPending ? "Creando…" : "Crear empresa"}
                     </ButtonLabel>
@@ -290,7 +289,7 @@ export function OnboardingWizardPage() {
               </div>
               <CardTitle>Términos legales</CardTitle>
               {legalQuery.isLoading ? (
-                <LoadingState label="Cargando documentos…" />
+                <LoadingState variant="documents" label="Cargando documentos…" />
               ) : legalQuery.error ? (
                 <ErrorState
                   message="No se pudieron cargar los documentos"
@@ -345,9 +344,7 @@ export function OnboardingWizardPage() {
                     legalMutation.mutate();
                   }}
                 >
-                  {legalMutation.isPending ? (
-                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
-                  ) : null}
+                  {legalMutation.isPending ? <Spinner className={buttonIconClassName} /> : null}
                   <ButtonLabel>
                     {legalMutation.isPending ? "Guardando…" : "Aceptar y continuar"}
                   </ButtonLabel>

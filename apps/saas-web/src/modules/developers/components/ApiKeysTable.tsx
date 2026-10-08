@@ -1,4 +1,5 @@
-import { Ban, KeyRound, Loader2 } from "lucide-react";
+import { Spinner } from "@factosys/ui";
+import { Ban, KeyRound } from "lucide-react";
 
 import {
   Button,
@@ -104,7 +105,7 @@ export function ApiKeysTable({
                   onClick={() => onRevoke(k.id)}
                 >
                   {revokingId === k.id ? (
-                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+                    <Spinner className={buttonIconClassName} />
                   ) : (
                     <Ban className={buttonIconClassName} />
                   )}

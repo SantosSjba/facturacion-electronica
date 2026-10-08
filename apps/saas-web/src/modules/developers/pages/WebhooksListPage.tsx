@@ -115,7 +115,7 @@ export function WebhooksListPage() {
         </div>
       ) : null}
 
-      {query.isLoading ? <LoadingState label="Cargando webhooks…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando webhooks…" /> : null}
 
       {!query.isLoading && query.error ? (
         <ErrorState

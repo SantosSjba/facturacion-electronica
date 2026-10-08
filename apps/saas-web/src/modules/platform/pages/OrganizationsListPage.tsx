@@ -69,7 +69,7 @@ export function OrganizationsListPage() {
     <div>
       <PageHeader title="Organizaciones" description="Tenants SaaS (excluye org plataforma)." />
 
-      {query.isLoading ? <LoadingState label="Cargando organizaciones…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando organizaciones…" /> : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "Error al cargar"}

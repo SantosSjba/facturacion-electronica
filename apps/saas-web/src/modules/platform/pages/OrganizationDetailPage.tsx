@@ -171,7 +171,9 @@ export function OrganizationDetailPage() {
         actions={<TextLink to="/platform/organizations">← Volver al listado</TextLink>}
       />
 
-      {query.isLoading ? <LoadingState label="Cargando…" /> : null}
+      {query.isLoading ? (
+        <LoadingState variant="detail" showHeader={false} label="Cargando…" />
+      ) : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "No se pudo cargar"}

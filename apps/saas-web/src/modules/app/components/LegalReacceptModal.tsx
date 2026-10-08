@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Scale } from "lucide-react";
+import { Scale } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -22,7 +23,6 @@ import {
   ErrorState,
   FieldError,
   LoadingState,
-  cn,
 } from "@factosys/ui";
 
 /** Blocking modal when published legal docs bump and org must re-accept (S16-LEG). */
@@ -105,7 +105,7 @@ export function LegalReacceptModal() {
           <Scale className="size-6" />
         </div>
         {legalQuery.isLoading ? (
-          <LoadingState label="Cargando documentos…" />
+          <LoadingState variant="documents" label="Cargando documentos…" />
         ) : legalQuery.error ? (
           <ErrorState
             message="No se pudieron cargar los documentos"
@@ -157,9 +157,7 @@ export function LegalReacceptModal() {
             acceptMutation.mutate();
           }}
         >
-          {acceptMutation.isPending ? (
-            <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
-          ) : null}
+          {acceptMutation.isPending ? <Spinner className={buttonIconClassName} /> : null}
           <ButtonLabel>
             {acceptMutation.isPending ? "Guardando…" : "Aceptar y continuar"}
           </ButtonLabel>

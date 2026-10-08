@@ -1,6 +1,7 @@
+import { Spinner } from "@factosys/ui";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save, X } from "lucide-react";
+import { Save, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import {
@@ -16,7 +17,6 @@ import {
   Label,
   ErrorState,
   FieldError,
-  cn,
 } from "@factosys/ui";
 
 import { patchWebhook } from "../api";
@@ -134,7 +134,7 @@ export function EditWebhookDialog({
             disabled={mutation.isPending}
           >
             {mutation.isPending ? (
-              <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
+              <Spinner className={buttonIconClassName} />
             ) : (
               <Save className={buttonIconClassName} />
             )}

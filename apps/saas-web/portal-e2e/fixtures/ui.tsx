@@ -35,6 +35,8 @@ import {
   TR,
   Tabs,
   Textarea,
+  LoadingState,
+  type SkeletonVariant,
 } from "@factosys/ui";
 import "../../src/index.css";
 
@@ -316,4 +318,48 @@ function Catalog() {
 }
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing UI catalogue root");
-createRoot(root).render(<Catalog />);
+function LoadingCatalog() {
+  const scenarios: SkeletonVariant[] = [
+    "table",
+    "cards",
+    "detail",
+    "form",
+    "list",
+    "documents",
+    "dashboard",
+    "page",
+  ];
+  return (
+    <main className="mx-auto max-w-5xl space-y-6 p-4">
+      <PageHeader
+        title="Estados de carga"
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => document.documentElement.classList.toggle("dark")}
+          >
+            Cambiar tema
+          </Button>
+        }
+      />
+      {scenarios.map((variant) => (
+        <ComponentCard key={variant} title={variant}>
+          <LoadingState
+            variant={variant}
+            label={`Cargando ${variant}`}
+            rows={3}
+            fields={4}
+            count={3}
+          />
+        </ComponentCard>
+      ))}
+      <LoadingState variant="inline" label="Actualizando…" />
+      <Button loading loadingLabel="Guardando…">
+        Guardar
+      </Button>
+    </main>
+  );
+}
+createRoot(root).render(
+  new URLSearchParams(location.search).has("loading") ? <LoadingCatalog /> : <Catalog />,
+);

@@ -197,7 +197,7 @@ export function PlansListPage() {
         }
       />
 
-      {query.isLoading ? <LoadingState label="Cargando planes…" /> : null}
+      {query.isLoading ? <LoadingState variant="table" label="Cargando planes…" /> : null}
       {query.error ? (
         <ErrorState
           message={query.error instanceof Error ? query.error.message : "Error al cargar"}

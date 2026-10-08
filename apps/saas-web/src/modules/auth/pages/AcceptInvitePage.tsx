@@ -1,18 +1,11 @@
+import { Spinner } from "@factosys/ui";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Moon, Sun } from "lucide-react";
+import { Eye, EyeOff, Moon, Sun } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
 import { apiRequest } from "@/shared/api/http-client";
-import {
-  Button,
-  ButtonLabel,
-  buttonIconClassName,
-  Input,
-  Label,
-  FieldError,
-  cn,
-} from "@factosys/ui";
+import { Button, ButtonLabel, buttonIconClassName, Input, Label, FieldError } from "@factosys/ui";
 
 import { useTheme } from "@/shared/ui/theme-context";
 
@@ -159,9 +152,7 @@ export function AcceptInvitePage() {
                   className="w-full"
                   disabled={submitting || !token}
                 >
-                  {submitting ? (
-                    <Loader2 className={cn(buttonIconClassName, "animate-spin")} />
-                  ) : null}
+                  {submitting ? <Spinner className={buttonIconClassName} /> : null}
                   <ButtonLabel>{submitting ? "Activando…" : "Activar cuenta"}</ButtonLabel>
                 </Button>
 

@@ -30,7 +30,7 @@ export function WebhookDeliveriesPage() {
   const endpoint = (webhooksQuery.data ?? []).find((ep) => ep.id === id);
 
   if (webhooksQuery.isLoading) {
-    return <LoadingState label="Cargando webhook…" />;
+    return <LoadingState variant="detail" label="Cargando webhook…" />;
   }
 
   if (webhooksQuery.error) {

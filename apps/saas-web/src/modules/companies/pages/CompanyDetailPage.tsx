@@ -42,7 +42,7 @@ export function CompanyDetailPage() {
     enabled: Boolean(id),
   });
 
-  if (query.isLoading) return <LoadingState label="Cargando empresa…" />;
+  if (query.isLoading) return <LoadingState variant="detail" label="Cargando empresa…" />;
   if (query.error || !query.data) {
     return (
       <ErrorState

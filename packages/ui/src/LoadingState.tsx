@@ -1,32 +1,43 @@
-import { Loader2 } from "lucide-react";
-
 import { cn } from "./cn";
-
-export interface LoadingStateProps {
-  label?: string;
-  className?: string;
+import {
+  PageSkeleton,
+  SkeletonContent,
+  SkeletonRegion,
+  type SkeletonProps,
+  type SkeletonVariant,
+} from "./skeleton";
+import { Spinner } from "./spinner";
+export interface LoadingStateProps extends SkeletonProps {
+  variant?: SkeletonVariant | "inline";
 }
-
-export function LoadingState({ label = "Cargando…", className }: LoadingStateProps) {
+export function LoadingState({
+  label = "Cargando…",
+  className,
+  variant = "detail",
+  ...props
+}: LoadingStateProps) {
+  if (variant === "inline")
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        className={cn(
+          "flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400",
+          className,
+        )}
+      >
+        <Spinner className="size-4 text-brand-500" />
+        <span>{label}</span>
+      </div>
+    );
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-3 py-16 text-gray-500 dark:text-gray-400",
-        className,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <Loader2 className="size-8 animate-spin text-brand-500" />
-      <p className="text-sm">{label}</p>
-    </div>
+    <SkeletonRegion label={label} className={className} variant={variant}>
+      <SkeletonContent variant={variant} {...props} />
+    </SkeletonRegion>
   );
 }
-
-export function PageSpinner({ className }: { className?: string }) {
-  return (
-    <div className={cn("flex min-h-[40vh] items-center justify-center", className)}>
-      <Loader2 className="size-8 animate-spin text-brand-500" />
-    </div>
-  );
+/** Compatibility alias: session/route loading now reserves the page layout. */
+export function PageSpinner(props: SkeletonProps) {
+  return <PageSkeleton {...props} />;
 }

@@ -90,7 +90,9 @@ export function AppPlanPage() {
     <div className="space-y-6">
       <PageHeader title="Plan" description="Consulta tu plan actual y solicita un cambio." />
 
-      {planQuery.isLoading ? <LoadingState label="Cargando plan…" /> : null}
+      {planQuery.isLoading ? (
+        <LoadingState variant="detail" showHeader={false} label="Cargando plan…" />
+      ) : null}
       {planQuery.error ? (
         <ErrorState
           message={
@@ -133,46 +135,60 @@ export function AppPlanPage() {
         <p className="text-sm text-gray-600 dark:text-gray-300">
           Enviaremos la solicitud al equipo de operaciones. No cambia el plan automáticamente.
         </p>
-        <div className="space-y-2">
-          <Label htmlFor="requested-plan">Plan deseado</Label>
-          <Select
-            id="requested-plan"
-            value={requestedCode}
-            onChange={(e) => setRequestedCode(e.target.value)}
-          >
-            <option value="">Seleccionar…</option>
-            {catalog.map((p) => (
-              <option key={p.id} value={p.code}>
-                {p.name} ({p.code}) — {p.price_display}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="plan-message">Mensaje (opcional)</Label>
-          <Textarea
-            id="plan-message"
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Cuéntanos por qué necesitas el cambio…"
+        {catalogQuery.isLoading ? (
+          <LoadingState variant="form" fields={2} label="Cargando planes disponibles…" />
+        ) : catalogQuery.error ? (
+          <ErrorState
+            message="No se pudieron cargar los planes disponibles"
+            onRetry={() => void catalogQuery.refetch()}
           />
-        </div>
-        {formError ? <FieldError message={formError} /> : null}
-        <Button
-          type="button"
-          onClick={submit}
-          disabled={mutation.isPending || catalog.length === 0}
-        >
-          <ButtonLabel>{mutation.isPending ? "Enviando…" : "Solicitar cambio"}</ButtonLabel>
-        </Button>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="requested-plan">Plan deseado</Label>
+              <Select
+                id="requested-plan"
+                value={requestedCode}
+                onChange={(e) => setRequestedCode(e.target.value)}
+              >
+                <option value="">Seleccionar…</option>
+                {catalog.map((p) => (
+                  <option key={p.id} value={p.code}>
+                    {p.name} ({p.code}) — {p.price_display}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="plan-message">Mensaje (opcional)</Label>
+              <Textarea
+                id="plan-message"
+                rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Cuéntanos por qué necesitas el cambio…"
+              />
+            </div>
+            {formError ? <FieldError message={formError} /> : null}
+            <Button
+              type="button"
+              onClick={submit}
+              loading={mutation.isPending}
+              disabled={mutation.isPending || catalog.length === 0}
+            >
+              <ButtonLabel>{mutation.isPending ? "Enviando…" : "Solicitar cambio"}</ButtonLabel>
+            </Button>
+          </>
+        )}
       </Card>
 
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
           Solicitudes recientes
         </h3>
-        {requestsQuery.isLoading ? <LoadingState label="Cargando solicitudes…" /> : null}
+        {requestsQuery.isLoading ? (
+          <LoadingState variant="table" columns={4} label="Cargando solicitudes…" />
+        ) : null}
         {!requestsQuery.isLoading && requests.length === 0 ? (
           <EmptyState
             title="Sin solicitudes"

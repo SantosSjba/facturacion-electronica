@@ -61,7 +61,9 @@ export function AppHomePage() {
         }
       />
 
-      {planQuery.isLoading ? <LoadingState label="Cargando plan…" /> : null}
+      {planQuery.isLoading ? (
+        <LoadingState variant="detail" showHeader={false} label="Cargando plan…" />
+      ) : null}
       {planQuery.error ? (
         <ErrorState
           message={
