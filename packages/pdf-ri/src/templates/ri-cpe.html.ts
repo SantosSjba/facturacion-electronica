@@ -21,7 +21,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
       (l, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${esc(l.description)}</td>
+        <td>${esc(l.description)}${l.productCode ? `<br>Código: ${esc(l.productCode)}` : ""}${l.sunatProductCode ? `<br>SUNAT: ${esc(l.sunatProductCode)}` : ""}</td>
         <td>${esc(l.quantity)} ${esc(l.unit)}</td>
         <td>${esc(l.unitPrice)}</td>
         <td>${esc(l.igv)}</td>
@@ -68,10 +68,15 @@ export function buildRiHtml(input: PdfRenderInput): string {
       <div><strong>${esc(TYPE_LABEL[input.documentType] ?? input.documentType)}</strong></div>
       <div>${esc(input.serieNumber)}</div>
       <div>Fecha: ${esc(input.issueDate)}</div>
+      ${input.issueTime ? `<div>Hora: ${esc(input.issueTime)}</div>` : ""}
+      ${input.dueDate ? `<div>Vencimiento: ${esc(input.dueDate)}</div>` : ""}
       <div>Moneda: ${esc(input.currency)}</div>
     </div>
   </div>
   <p><strong>Adquirente:</strong> ${esc(input.customer.identityType)} ${esc(input.customer.identityNumber)} — ${esc(input.customer.name)}</p>
+  ${input.customer.address ? `<p>Dirección: ${esc(input.customer.address)}</p>` : ""}
+  ${input.customer.email ? `<p>Email: ${esc(input.customer.email)}</p>` : ""}
+  ${input.purchaseOrder ? `<p>Orden de compra: ${esc(input.purchaseOrder)}</p>` : ""}
   ${noteBlock}
   <table>
     <thead>
@@ -82,6 +87,11 @@ export function buildRiHtml(input: PdfRenderInput): string {
   <div class="totals">
     ${input.totals.gravado ? `<div>Gravado: ${esc(input.totals.gravado)}</div>` : ""}
     ${input.totals.igv ? `<div>IGV: ${esc(input.totals.igv)}</div>` : ""}
+    ${input.totals.exempt ? `<div>Exonerado: ${esc(input.totals.exempt)}</div>` : ""}
+    ${input.totals.unaffected ? `<div>Inafecto: ${esc(input.totals.unaffected)}</div>` : ""}
+    ${input.totals.export ? `<div>Exportación: ${esc(input.totals.export)}</div>` : ""}
+    ${input.totals.free ? `<div>Gratuito (referencial): ${esc(input.totals.free)}</div>` : ""}
+    ${input.totals.freeTax ? `<div>Impuesto gratuito (no cobrado): ${esc(input.totals.freeTax)}</div>` : ""}
     <div><strong>Total: ${esc(input.totals.total)}</strong></div>
   </div>
   <div class="footer">
@@ -95,6 +105,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
     </div>
   </div>
   <p class="legend">Representación impresa del comprobante de pago electrónico.</p>
+  ${(input.legends ?? []).map((legend) => `<p class="legend">${esc(legend.code)}: ${esc(legend.text)}</p>`).join("")}
 </body>
 </html>`;
 }

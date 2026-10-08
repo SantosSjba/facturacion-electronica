@@ -4,6 +4,13 @@
  */
 
 export const PACKAGE_NAME = "@factosys/sunat-ubl" as const;
+export {
+  cpeAddressSchema,
+  cpeLegendSchema,
+  cpeOptionalFields,
+  cpeTotalsInputSchema,
+} from "./types/cpe-fields";
+export { invoiceLineInputSchema, partyCanonicalSchema } from "./types/invoice-canonical";
 
 export {
   BUILD_INVOICE_XML_PORT,

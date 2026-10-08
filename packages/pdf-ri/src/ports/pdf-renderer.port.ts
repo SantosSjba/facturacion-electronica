@@ -7,12 +7,18 @@ export interface PdfLineItem {
   unitPrice: string;
   igv: string;
   amount: string;
+  productCode?: string;
+  sunatProductCode?: string;
 }
 
 export interface PdfRenderInput {
   documentType: PdfDocumentType;
   serieNumber: string;
   issueDate: string;
+  issueTime?: string;
+  dueDate?: string;
+  purchaseOrder?: string;
+  legends?: { code: string; text: string }[];
   currency: string;
   issuer: {
     ruc: string;
@@ -24,12 +30,19 @@ export interface PdfRenderInput {
     identityType: string;
     identityNumber: string;
     name: string;
+    address?: string;
+    email?: string;
   };
   lines: PdfLineItem[];
   totals: {
     gravado?: string;
     igv?: string;
     total: string;
+    exempt?: string;
+    unaffected?: string;
+    export?: string;
+    free?: string;
+    freeTax?: string;
   };
   digestValue: string;
   qrPayload: string;

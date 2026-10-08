@@ -50,19 +50,10 @@ export class PdfService {
     }
 
     try {
-      const existing = await this.documents.getArtifact(
-        organizationId,
-        documentId,
-        "pdf",
-      );
+      const existing = await this.documents.getArtifact(organizationId, documentId, "pdf");
       // Re-render when switching from Fake → Playwright (cached stub would stick).
-      if (
-        this.mode === "playwright" &&
-        isFakeRiPdf(existing.body)
-      ) {
-        this.logger.log(
-          `Replacing Fake RI PDF for ${documentId} with Playwright render`,
-        );
+      if (this.mode === "playwright" && isFakeRiPdf(existing.body)) {
+        this.logger.log(`Replacing Fake RI PDF for ${documentId} with Playwright render`);
       } else {
         return { body: existing.body, contentType: "application/pdf" };
       }
@@ -101,11 +92,7 @@ export class PdfService {
     for (let i = 0; i < 40; i++) {
       await sleep(250);
       try {
-        const art = await this.documents.getArtifact(
-          organizationId,
-          documentId,
-          "pdf",
-        );
+        const art = await this.documents.getArtifact(organizationId, documentId, "pdf");
         if (!isFakeRiPdf(art.body)) {
           return { body: art.body, contentType: "application/pdf" };
         }
@@ -119,10 +106,7 @@ export class PdfService {
     );
   }
 
-  async renderAndStore(
-    organizationId: string,
-    documentId: string,
-  ): Promise<Buffer> {
+  async renderAndStore(organizationId: string, documentId: string): Promise<Buffer> {
     const doc = await this.documents.getById(organizationId, documentId);
     if (!PDF_TYPES.has(doc.documentType)) {
       throw AppError.validation("PDF not applicable to this document type", [
@@ -138,31 +122,28 @@ export class PdfService {
       // No stored PDF yet; continue rendering.
     }
 
-    const xmlArt = await this.documents.getArtifact(
-      organizationId,
-      documentId,
-      "xml_signed",
-    );
+    const xmlArt = await this.documents.getArtifact(organizationId, documentId, "xml_signed");
     const signedXml = xmlArt.body.toString("utf8");
     const digest = extractDigestValue(signedXml);
     if (!digest) {
       throw AppError.internal("Signed XML missing DigestValue");
     }
 
-    const company = await this.companies.requireCompany(
-      organizationId,
-      doc.companyId,
-    );
+    const company = await this.companies.requireCompany(organizationId, doc.companyId);
     const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
 
     const serie = doc.serie ?? doc.serieNumber?.split("-")[0] ?? "";
-    const number =
-      doc.number != null
-        ? String(doc.number)
-        : (doc.serieNumber?.split("-")[1] ?? "");
+    const number = doc.number != null ? String(doc.number) : (doc.serieNumber?.split("-")[1] ?? "");
     const totals = (doc.totals ?? {}) as Record<string, unknown>;
+    const payload = (doc.payload ?? {}) as Record<string, unknown>;
+    const snapshot = payload["_canonical"] as Record<string, unknown> | undefined;
+    const snapshotSupplier = snapshot?.["supplier"] as Record<string, unknown> | undefined;
+    const snapshotCustomer = snapshot?.["customer"] as Record<string, unknown> | undefined;
     const igv = moneyStr(
-      totals["tax_amount"] ??
+      (snapshot
+        ? Number(totals["tax_amount"] ?? 0) - Number(totals["free_tax_amount"] ?? 0)
+        : undefined) ??
+        totals["tax_amount"] ??
         totals["total_igv"] ??
         totals["igv"] ??
         totals["tax"],
@@ -176,24 +157,29 @@ export class PdfService {
         totals["TaxInclusiveAmount"],
     );
     const gravado = moneyStr(
-      totals["line_extension_amount"] ??
+      totals["taxed_amount"] ??
+        totals["line_extension_amount"] ??
         totals["total_taxed"] ??
         totals["gravado"],
       undefined,
     );
 
-    const payload = (doc.payload ?? {}) as Record<string, unknown>;
-    const linesRaw = Array.isArray(payload["lines"])
-      ? (payload["lines"] as Record<string, unknown>[])
-      : Array.isArray(payload["items"])
-        ? (payload["items"] as Record<string, unknown>[])
-        : [];
+    const linesRaw = Array.isArray(snapshot?.["lines"])
+      ? (snapshot["lines"] as Record<string, unknown>[])
+      : Array.isArray(payload["lines"])
+        ? (payload["lines"] as Record<string, unknown>[])
+        : Array.isArray(payload["items"])
+          ? (payload["items"] as Record<string, unknown>[])
+          : [];
 
     const lines = linesRaw.length
       ? linesRaw.map((l) => {
           const qty = Number(l["quantity"] ?? 1) || 1;
           const unitValue = Number(l["unit_value"] ?? l["unit_price"] ?? l["price"] ?? 0);
           const lineExt =
+            (snapshot
+              ? Number(l["line_extension_amount"]) + (l["is_free"] ? 0 : Number(l["tax_amount"]))
+              : undefined) ??
             l["line_extension_amount"] ??
             l["amount"] ??
             l["line_total"] ??
@@ -201,6 +187,9 @@ export class PdfService {
           const lineIgv = l["tax_amount"] ?? l["igv"] ?? 0;
           return {
             description: String(l["description"] ?? l["name"] ?? "Item"),
+            productCode: typeof l["product_code"] === "string" ? l["product_code"] : undefined,
+            sunatProductCode:
+              typeof l["sunat_product_code"] === "string" ? l["sunat_product_code"] : undefined,
             quantity: String(l["quantity"] ?? "1"),
             unit: String(l["unit_code"] ?? l["unit"] ?? "NIU"),
             unitPrice: moneyStr(l["unit_price"] ?? unitValue),
@@ -220,7 +209,7 @@ export class PdfService {
         ];
 
     const qrPayload = buildQrPayload({
-      ruc: company.ruc,
+      ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
       documentType: doc.documentType,
       serie,
       number,
@@ -236,19 +225,41 @@ export class PdfService {
       documentType: doc.documentType as PdfDocumentType,
       serieNumber: doc.serieNumber ?? `${serie}-${number}`,
       issueDate: doc.issueDate ?? "",
+      issueTime: snapshot?.["issue_time"] as string | undefined,
+      dueDate: snapshot?.["due_date"] as string | undefined,
+      purchaseOrder: snapshot?.["purchase_order"] as string | undefined,
+      legends: snapshot?.["legends"] as PdfRenderInput["legends"],
+      noteReason: snapshot?.["reason"] as string | undefined,
+      affectedSerieNumber: (
+        snapshot?.["affected_document"] as Record<string, string> | undefined
+      )?.["serie_number"],
       currency: doc.currency ?? "PEN",
       issuer: {
-        ruc: company.ruc,
-        legalName: company.legalName,
+        ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
+        legalName: String(snapshotSupplier?.["name"] ?? company.legalName),
+        address: addressLine(snapshot ? snapshotSupplier?.["address"] : company.address),
         logoDataUrl: documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
       },
       customer: {
-        identityType: doc.customerIdentityType ?? "",
-        identityNumber: doc.customerIdentityNumber ?? "",
-        name: doc.customerName ?? "",
+        identityType: String(snapshotCustomer?.["identity_type"] ?? doc.customerIdentityType ?? ""),
+        identityNumber: String(
+          snapshotCustomer?.["identity_number"] ?? doc.customerIdentityNumber ?? "",
+        ),
+        name: String(snapshotCustomer?.["name"] ?? doc.customerName ?? ""),
+        address: addressLine(snapshotCustomer?.["address"]),
+        email: snapshotCustomer?.["email"] as string | undefined,
       },
       lines,
-      totals: { gravado, igv, total },
+      totals: {
+        gravado,
+        igv,
+        total,
+        exempt: nonzeroMoney(totals["exempt_amount"]),
+        unaffected: nonzeroMoney(totals["unaffected_amount"]),
+        export: nonzeroMoney(totals["export_amount"]),
+        free: nonzeroMoney(totals["free_amount"]),
+        freeTax: nonzeroMoney(totals["free_tax_amount"]),
+      },
       digestValue: digest,
       qrPayload,
     };
@@ -292,4 +303,17 @@ function moneyStr(value: unknown, fallback = "0.00"): string {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return String(value);
   return n.toFixed(2);
+}
+
+function addressLine(value: unknown): string | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const addr = value as Record<string, unknown>;
+  const parts = [addr["line"], addr["district"], addr["province"], addr["department"]].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
+  return parts.length ? parts.join(", ") : undefined;
+}
+
+function nonzeroMoney(value: unknown): string | undefined {
+  return Number(value) > 0 ? moneyStr(value) : undefined;
 }

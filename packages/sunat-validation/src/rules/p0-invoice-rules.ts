@@ -1,3 +1,4 @@
+import { checkCpeAmounts } from "./cpe-amounts";
 import { DOMParser, type Document, type Element } from "@xmldom/xmldom";
 import type { CatalogPort } from "@factosys/sunat-catalogs";
 import { JsonCatalogAdapter } from "@factosys/sunat-catalogs";
@@ -17,10 +18,7 @@ export const P0_SUNAT_CODES = {
   totales: "2325",
 } as const;
 
-function findFirstByLocalName(
-  parent: Element | Document,
-  localName: string,
-): Element | null {
+function findFirstByLocalName(parent: Element | Document, localName: string): Element | null {
   const nodes = parent.getElementsByTagName("*");
   for (let i = 0; i < nodes.length; i++) {
     const el = nodes.item(i);
@@ -40,16 +38,7 @@ function textOf(el: Element | null): string {
   return (el?.textContent ?? "").trim();
 }
 
-function money(value: string): number | null {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function issue(
-  sunatCode: string,
-  message: string,
-  path?: string,
-): SunatValidationIssue {
+function issue(sunatCode: string, message: string, path?: string): SunatValidationIssue {
   // Ensure OBS→ERROR list is loaded (all P0 violations are severity error).
   void isObsMigratedToError(sunatCode);
   return {
@@ -69,11 +58,7 @@ function invoiceDocumentId(doc: Document): string {
     const n = root.childNodes.item(i);
     if (!n || n.nodeType !== 1) continue;
     const el = n as Element;
-    if (
-      el.localName === "ID" ||
-      el.nodeName === "ID" ||
-      el.nodeName.endsWith(":ID")
-    ) {
+    if (el.localName === "ID" || el.nodeName === "ID" || el.nodeName.endsWith(":ID")) {
       return textOf(el);
     }
   }
@@ -97,9 +82,7 @@ export async function runP0InvoiceRules(
   const issues: SunatValidationIssue[] = [];
 
   const supplierParty = findFirstByLocalName(doc, "AccountingSupplierParty");
-  const supplierId = supplierParty
-    ? findFirstByLocalName(supplierParty, "ID")
-    : null;
+  const supplierId = supplierParty ? findFirstByLocalName(supplierParty, "ID") : null;
   const ruc = textOf(supplierId);
   if (!/^\d{11}$/.test(ruc)) {
     issues.push(
@@ -134,9 +117,7 @@ export async function runP0InvoiceRules(
   }
 
   const taxSchemeEl = findFirstByLocalName(doc, "TaxScheme");
-  const taxSchemeId = textOf(
-    taxSchemeEl ? findFirstByLocalName(taxSchemeEl, "ID") : null,
-  );
+  const taxSchemeId = textOf(taxSchemeEl ? findFirstByLocalName(taxSchemeEl, "ID") : null);
   // Gravada uses scheme 1000; require 1000 or catalog 05 entry
   if (taxSchemeId && taxSchemeId !== "1000") {
     const inCatalog = await catalogs.hasCode("05", taxSchemeId);
@@ -159,39 +140,8 @@ export async function runP0InvoiceRules(
     );
   }
 
-  const legal = findFirstByLocalName(doc, "LegalMonetaryTotal");
-  const lineExt = money(
-    textOf(legal ? findFirstByLocalName(legal, "LineExtensionAmount") : null),
-  );
-  const docTaxTotal = findFirstByLocalName(doc, "TaxTotal");
-  const taxAmount = money(
-    textOf(
-      docTaxTotal ? findFirstByLocalName(docTaxTotal, "TaxAmount") : null,
-    ),
-  );
-  const payable = money(
-    textOf(legal ? findFirstByLocalName(legal, "PayableAmount") : null),
-  );
-
-  if (lineExt != null && taxAmount != null && payable != null) {
-    const expected = Math.round((lineExt + taxAmount) * 100) / 100;
-    if (Math.abs(expected - payable) > 0.01) {
-      issues.push(
-        issue(
-          P0_SUNAT_CODES.totales,
-          `PayableAmount ${payable} != LineExtensionAmount+TaxAmount ${expected}`,
-          "cac:LegalMonetaryTotal/cbc:PayableAmount",
-        ),
-      );
-    }
-  } else {
-    issues.push(
-      issue(
-        P0_SUNAT_CODES.totales,
-        "Missing LineExtensionAmount, TaxAmount, or PayableAmount for totals check",
-        "cac:LegalMonetaryTotal",
-      ),
-    );
+  for (const message of checkCpeAmounts(doc)) {
+    issues.push(issue(P0_SUNAT_CODES.totales, message, "cac:LegalMonetaryTotal"));
   }
 
   return issues;

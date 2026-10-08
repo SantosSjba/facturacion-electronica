@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ublValidationError } from "../errors";
+import { cpeOptionalFields, cpeTotalsInputSchema } from "./cpe-fields";
 import {
   invoiceLineCanonicalSchema,
   invoiceLineInputSchema,
@@ -29,6 +30,7 @@ export const noteCanonicalSchema = z
     serie: z.string().regex(/^[FfBb][A-Za-z0-9]{3}$/),
     number: z.number().int().positive(),
     issue_date: z.string().min(10),
+    ...cpeOptionalFields,
     currency: z.string().length(3),
     note_type: z.string().min(1),
     reason: z.string().min(1),
@@ -66,11 +68,13 @@ export const noteFixtureRequestSchema = z.object({
   serie: z.string().regex(/^[FfBb][A-Za-z0-9]{3}$/),
   number: z.number().int().positive().optional(),
   issue_date: z.string().min(10),
+  ...cpeOptionalFields,
   currency: z.string().length(3),
   note_type: z.string().min(1),
   reason: z.string().min(1),
   affected_document: affectedDocumentSchema,
   totals_mode: z.enum(["auto", "strict"]).optional(),
+  totals: cpeTotalsInputSchema.optional(),
   customer: partyCanonicalSchema,
   lines: z.array(invoiceLineInputSchema).min(1),
 });

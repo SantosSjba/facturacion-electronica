@@ -379,11 +379,23 @@ describe("API e2e", () => {
       operation_type: "0101",
       issue_date: "2026-09-17",
       currency: "PEN",
-      totals_mode: "auto",
+      totals_mode: "strict",
+      totals: {
+        line_extension_amount: 200,
+        tax_amount: 36,
+        tax_inclusive_amount: 236,
+        payable_amount: 236,
+      },
+      issue_time: "10:15:30",
+      due_date: "2026-10-30",
+      purchase_order: "OC-PHASE0",
+      legends: [{ code: "1000", text: "DOSCIENTOS TREINTA Y SEIS" }],
       customer: {
         identity_type: "6",
         identity_number: "20123456789",
         name: "ACME SAC",
+        email: "cliente@example.com",
+        address: { line: "Calle Uno", ubigeo: "150101" },
       },
       lines: [
         {
@@ -396,6 +408,16 @@ describe("API e2e", () => {
           tax_affectation: "10",
           igv_percent: 18,
           tax_scheme_id: "1000",
+        },
+        {
+          id: 2,
+          quantity: 1,
+          unit_code: "NIU",
+          description: "SEGUNDO PRODUCTO PHASE0",
+          unit_value: 100,
+          tax_affectation: "10",
+          product_code: "P-2",
+          sunat_product_code: "10000000",
         },
       ],
     };
@@ -454,6 +476,10 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${emitSecret}`)
       .expect(200);
     expect(xml.text).toContain("Invoice");
+    expect((xml.text.match(/<cac:InvoiceLine>/g) ?? []).length).toBe(2);
+    for (const value of ["SEGUNDO PRODUCTO PHASE0", "P-2", "OC-PHASE0", "Calle Uno", "2026-10-30"])
+      expect(xml.text).toContain(value);
+    expect(created.body.totals.payable_amount).toBe(236);
 
     await request(server)
       .get(`/v1/documents/${documentId}/cdr`)

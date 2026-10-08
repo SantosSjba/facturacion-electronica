@@ -1,7 +1,4 @@
-import {
-  computeAutoTotals,
-  toCanonical as toInvoiceCanonical,
-} from "../totals/auto-totals";
+import { computeAutoTotals, toCanonical as toInvoiceCanonical } from "../totals/auto-totals";
 import type { InvoiceCanonical } from "../types/invoice-canonical";
 import {
   parseNoteFixtureRequest,
@@ -18,16 +15,12 @@ interface FixtureFile {
 }
 
 export function loadCreditNoteVoidFixtureRequest(): NoteFixtureRequest {
-  const file = readAssetJson<FixtureFile>(
-    "assets/fixtures/07-credit-note-void.json",
-  );
+  const file = readAssetJson<FixtureFile>("assets/fixtures/07-credit-note-void.json");
   return parseNoteFixtureRequest(file.request);
 }
 
 export function loadDebitNoteInterestFixtureRequest(): NoteFixtureRequest {
-  const file = readAssetJson<FixtureFile>(
-    "assets/fixtures/08-debit-note-interest.json",
-  );
+  const file = readAssetJson<FixtureFile>("assets/fixtures/08-debit-note-interest.json");
   return parseNoteFixtureRequest(file.request);
 }
 
@@ -47,10 +40,16 @@ export function hydrateNoteFromFixtureRequest(
 
   // Reuse invoice totals engine with a synthetic invoice-shaped request
   const invoiceShape = {
+    ...request,
+    document_type: undefined,
     company_id: request.company_id,
     serie: request.serie,
     operation_type: "0101",
     issue_date: request.issue_date,
+    issue_time: request.issue_time,
+    due_date: request.due_date,
+    purchase_order: request.purchase_order,
+    legends: request.legends,
     currency: request.currency,
     totals_mode: request.totals_mode,
     customer: request.customer,
@@ -67,6 +66,10 @@ export function hydrateNoteFromFixtureRequest(
 
   return {
     document_type: documentType,
+    issue_time: request.issue_time,
+    due_date: request.due_date,
+    purchase_order: request.purchase_order,
+    legends: invoiceCanon.legends,
     serie: invoiceCanon.serie,
     number: invoiceCanon.number,
     issue_date: request.issue_date,
@@ -93,9 +96,7 @@ export function hydrateCreditNoteVoidFixture(options?: {
   const request = loadCreditNoteVoidFixtureRequest();
   if (options?.affectedSerieNumber) {
     request.affected_document.serie_number = options.affectedSerieNumber;
-  } else if (
-    request.affected_document.serie_number.includes("{{")
-  ) {
+  } else if (request.affected_document.serie_number.includes("{{")) {
     request.affected_document.serie_number = "F001-00000001";
   }
   return hydrateNoteFromFixtureRequest(request, "07", options);
@@ -109,9 +110,7 @@ export function hydrateDebitNoteInterestFixture(options?: {
   const request = loadDebitNoteInterestFixtureRequest();
   if (options?.affectedSerieNumber) {
     request.affected_document.serie_number = options.affectedSerieNumber;
-  } else if (
-    request.affected_document.serie_number.includes("{{")
-  ) {
+  } else if (request.affected_document.serie_number.includes("{{")) {
     request.affected_document.serie_number = "F001-00000001";
   }
   return hydrateNoteFromFixtureRequest(request, "08", options);

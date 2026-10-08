@@ -8,20 +8,19 @@ import type { CompaniesService } from "../companies/companies.service";
 import type { CompanyLogoService } from "../companies/company-logo.service";
 import type { QueueProducer } from "../queues/queue.producer";
 import { envSchema, type Env } from "../config/env.schema";
+import { hydrateFromFixtureRequest, loadGravadaFixtureRequest } from "@factosys/sunat-ubl";
 
 afterEach(() => vi.restoreAllMocks());
 
 function fixture(withLogo = true) {
   const documents = {
-    getById: vi
-      .fn()
-      .mockResolvedValue({
-        companyId: "company",
-        documentType: "01",
-        serieNumber: "F001-1",
-        issueDate: "2026-10-08",
-        totals: { total: "100.00" },
-      }),
+    getById: vi.fn().mockResolvedValue({
+      companyId: "company",
+      documentType: "01",
+      serieNumber: "F001-1",
+      issueDate: "2026-10-08",
+      totals: { total: "100.00" },
+    }),
     getArtifact: vi.fn().mockImplementation(async (_org, _doc, kind) => {
       if (kind === "pdf") throw AppError.notFound("Artifact not found");
       return { body: Buffer.from("<DigestValue>abc=</DigestValue>") };
@@ -29,13 +28,11 @@ function fixture(withLogo = true) {
     putArtifact: vi.fn().mockResolvedValue(undefined),
   };
   const companies = {
-    requireCompany: vi
-      .fn()
-      .mockResolvedValue({
-        ruc: "20100070970",
-        legalName: "Demo",
-        logo: withLogo ? { objectKey: "org/company/logo.png" } : null,
-      }),
+    requireCompany: vi.fn().mockResolvedValue({
+      ruc: "20100070970",
+      legalName: "Demo",
+      logo: withLogo ? { objectKey: "org/company/logo.png" } : null,
+    }),
   };
   const logos = { getDataUrl: vi.fn().mockResolvedValue("data:image/png;base64,aGVsbG8=") };
   const service = new PdfService(
@@ -49,6 +46,76 @@ function fixture(withLogo = true) {
 }
 
 describe("company logo PDF wiring", () => {
+  it("uses the persisted fiscal snapshot for all lines, taxes and addresses", async () => {
+    const { service, documents } = fixture(false);
+    const base = loadGravadaFixtureRequest();
+    const canonical = hydrateFromFixtureRequest({
+      ...base,
+      purchase_order: "OC-1",
+      due_date: "2026-10-30",
+      legends: [{ code: "1000", text: "TOTAL" }],
+      customer: { ...base.customer, address: { line: "Calle Uno" } },
+      lines: [
+        required(base.lines[0]),
+        {
+          ...required(base.lines[0]),
+          id: 2,
+          tax_affectation: "20",
+          tax_scheme_id: "9997",
+          igv_percent: 0,
+          unit_price: 100,
+        },
+      ],
+    });
+    const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+    documents.getById.mockResolvedValue({
+      companyId: "company",
+      documentType: "01",
+      totals: canonical.totals,
+      payload: { _canonical: canonical },
+    });
+    await service.renderAndStore("org", "document");
+    expect(render).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lines: [
+          expect.objectContaining({ unitPrice: "118.00", igv: "18.00", amount: "118.00" }),
+          expect.objectContaining({ unitPrice: "100.00", igv: "0.00", amount: "100.00" }),
+        ],
+        totals: expect.objectContaining({
+          gravado: "100.00",
+          exempt: "100.00",
+          igv: "18.00",
+          total: "218.00",
+        }),
+        customer: expect.objectContaining({ address: "Calle Uno" }),
+        purchaseOrder: "OC-1",
+        dueDate: "2026-10-30",
+      }),
+    );
+  });
+
+  it("does not include free-operation tax in the collectible total or CPE QR IGV", async () => {
+    const { service, documents } = fixture(false);
+    const base = loadGravadaFixtureRequest();
+    const canonical = hydrateFromFixtureRequest({
+      ...base,
+      lines: [
+        { ...required(base.lines[0]), tax_affectation: "11", tax_scheme_id: "9996", unit_price: 0 },
+      ],
+    });
+    const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+    documents.getById.mockResolvedValue({
+      companyId: "company",
+      documentType: "01",
+      totals: canonical.totals,
+      payload: { _canonical: canonical },
+    });
+    await service.renderAndStore("org", "document");
+    expect(render.mock.calls[0]?.[0]).toMatchObject({
+      totals: { total: "0.00", igv: "0.00", free: "100.00", freeTax: "18.00" },
+      lines: [{ amount: "0.00", unitPrice: "0.00" }],
+    });
+  });
   it("loads the company's image and sends it to the renderer", async () => {
     const render = vi.spyOn(FakePdfRenderer.prototype, "render");
     const { service, logos, documents } = fixture();
@@ -98,3 +165,8 @@ describe("company logo PDF wiring", () => {
     expect(logos.getDataUrl).not.toHaveBeenCalled();
   });
 });
+
+function required<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error("Missing test fixture value");
+  return value;
+}

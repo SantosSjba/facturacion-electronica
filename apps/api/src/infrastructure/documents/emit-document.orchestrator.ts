@@ -25,6 +25,7 @@ export interface EmitBuiltPayload {
   signedXml: string;
   zipBytes: Buffer;
   relatedDocumentId?: string;
+  canonicalSnapshot?: Record<string, unknown>;
 }
 
 export interface EmitDocumentParams {
@@ -43,7 +44,7 @@ export interface EmitDocumentParams {
   idempotencyKey: string;
   relatedDocumentId?: string;
   build: (ctx: {
-    company: { id: string; ruc: string; legalName: string; environment: string };
+    company: { id: string; ruc: string; legalName: string; environment: string; address?: unknown };
     allocated: { number: number; padded: string };
     pfx: Buffer;
     password: string;
@@ -152,7 +153,10 @@ export class EmitDocumentOrchestrator {
                   customerIdentityNumber: input.customer.identity_number,
                   customerName: input.customer.name,
                   totals: built.totals,
-                  payload: input.payload as Record<string, unknown>,
+                  payload: {
+                    ...(input.payload as Record<string, unknown>),
+                    ...(built.canonicalSnapshot ? { _canonical: built.canonicalSnapshot } : {}),
+                  },
                   payloadHash,
                   logoSnapshot: { logo: company.logo ?? null },
                   idempotencyKey: input.idempotencyKey,

@@ -1,11 +1,15 @@
 import { create } from "xmlbuilder2";
+import {
+  appendCpeParty,
+  appendDocumentTaxes,
+  appendCpeLineTaxes,
+  appendCpeItem,
+  appendLegends,
+  formatUnit,
+} from "./cpe-xml";
 
 import { ListUri } from "../attributes/listuri-injector";
-import {
-  documentId,
-  fileStem,
-  formatMoney,
-} from "../totals/auto-totals";
+import { documentId, fileStem, formatMoney } from "../totals/auto-totals";
 import type { NoteCanonical } from "../types/note-canonical";
 import { assertNoteCanonical } from "../types/note-canonical";
 
@@ -23,73 +27,13 @@ export interface BuildNoteXmlResult {
   fileStem: string;
 }
 
-function appendParty(
-  root: ReturnType<ReturnType<typeof create>["ele"]>,
-  tag: "cac:AccountingSupplierParty" | "cac:AccountingCustomerParty",
-  party: NoteCanonical["supplier"],
-  opts: { establishmentCode?: string } = {},
-): void {
-  const node = root.ele(tag).ele("cac:Party");
-  node
-    .ele("cac:PartyIdentification")
-    .ele("cbc:ID", { schemeID: party.identity_type })
-    .txt(party.identity_number)
-    .up()
-    .up();
-  const taxScheme = node.ele("cac:PartyTaxScheme");
-  taxScheme
-    .ele("cbc:CompanyID", ListUri.companyId(party.identity_type))
-    .txt(party.identity_number)
-    .up();
-  taxScheme.ele("cac:TaxScheme").ele("cbc:ID").txt("1000").up().up();
-  const legal = node.ele("cac:PartyLegalEntity");
-  legal.ele("cbc:RegistrationName").txt(party.name).up();
-  if (opts.establishmentCode) {
-    legal
-      .ele("cac:RegistrationAddress")
-      .ele("cbc:AddressTypeCode", {
-        listAgencyName: "PE:SUNAT",
-        listName: "SUNAT:Identificador de establecimiento",
-        listURI: "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo54",
-      })
-      .txt(opts.establishmentCode)
-      .up()
-      .up();
-  }
-}
-
 function appendTaxAndMonetary(
   root: ReturnType<ReturnType<typeof create>["ele"]>,
   canonical: NoteCanonical,
   monetaryTag: "cac:LegalMonetaryTotal" | "cac:RequestedMonetaryTotal",
 ): void {
   const cur = canonical.currency;
-  const taxTotal = root.ele("cac:TaxTotal");
-  taxTotal
-    .ele("cbc:TaxAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.tax_amount))
-    .up();
-  const sub = taxTotal.ele("cac:TaxSubtotal");
-  sub
-    .ele("cbc:TaxableAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.line_extension_amount))
-    .up();
-  sub
-    .ele("cbc:TaxAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.tax_amount))
-    .up();
-  const cat = sub.ele("cac:TaxCategory");
-  cat
-    .ele("cbc:ID", ListUri.docTaxCategory())
-    .txt(canonical.totals.tax_category_id)
-    .up();
-  const scheme = cat.ele("cac:TaxScheme");
-  scheme
-    .ele("cbc:ID", ListUri.docTaxScheme())
-    .txt(canonical.totals.tax_scheme_id)
-    .up();
-  scheme.ele("cbc:Name").txt(canonical.totals.tax_scheme_name).up();
-  scheme.ele("cbc:TaxTypeCode").txt("VAT").up();
+  appendDocumentTaxes(root, canonical.totals, cur);
 
   const monetary = root.ele(monetaryTag);
   monetary
@@ -106,42 +50,6 @@ function appendTaxAndMonetary(
     .up();
 }
 
-function appendLineTaxes(
-  lineNode: ReturnType<ReturnType<typeof create>["ele"]>,
-  line: NoteCanonical["lines"][0],
-  canonical: NoteCanonical,
-): void {
-  const cur = canonical.currency;
-  const lineTax = lineNode.ele("cac:TaxTotal");
-  lineTax
-    .ele("cbc:TaxAmount", { currencyID: cur })
-    .txt(formatMoney(line.tax_amount))
-    .up();
-  const lineSub = lineTax.ele("cac:TaxSubtotal");
-  lineSub
-    .ele("cbc:TaxableAmount", { currencyID: cur })
-    .txt(formatMoney(line.line_extension_amount))
-    .up();
-  lineSub
-    .ele("cbc:TaxAmount", { currencyID: cur })
-    .txt(formatMoney(line.tax_amount))
-    .up();
-  const lineCat = lineSub.ele("cac:TaxCategory");
-  lineCat.ele("cbc:ID", ListUri.lineTaxCategory()).txt("S").up();
-  lineCat.ele("cbc:Percent").txt(String(line.igv_percent)).up();
-  lineCat
-    .ele("cbc:TaxExemptionReasonCode", ListUri.taxExemptionReason())
-    .txt(line.tax_affectation)
-    .up();
-  const lineScheme = lineCat.ele("cac:TaxScheme");
-  lineScheme
-    .ele("cbc:ID", ListUri.lineTaxScheme())
-    .txt(line.tax_scheme_id)
-    .up();
-  lineScheme.ele("cbc:Name").txt(canonical.totals.tax_scheme_name).up();
-  lineScheme.ele("cbc:TaxTypeCode").txt("VAT").up();
-}
-
 function buildNoteXml(
   input: NoteCanonical,
   rootName: "CreditNote" | "DebitNote",
@@ -154,9 +62,7 @@ function buildNoteXml(
     (rootName === "CreditNote" && canonical.document_type !== "07") ||
     (rootName === "DebitNote" && canonical.document_type !== "08")
   ) {
-    throw new Error(
-      `document_type ${canonical.document_type} incompatible with ${rootName}`,
-    );
+    throw new Error(`document_type ${canonical.document_type} incompatible with ${rootName}`);
   }
 
   const id = documentId(canonical.serie, canonical.number);
@@ -167,11 +73,6 @@ function buildNoteXml(
     canonical.number,
   );
   const cur = canonical.currency;
-  const line = canonical.lines[0];
-  if (!line) {
-    throw new Error("NoteCanonical requires at least one line");
-  }
-
   const root = create({ version: "1.0", encoding: "UTF-8" }).ele(rootName, {
     xmlns,
     "xmlns:cac": NS.cac,
@@ -184,6 +85,8 @@ function buildNoteXml(
   root.ele("cbc:CustomizationID").txt("2.0").up();
   root.ele("cbc:ID").txt(id).up();
   root.ele("cbc:IssueDate").txt(canonical.issue_date).up();
+  if (canonical.issue_time) root.ele("cbc:IssueTime").txt(canonical.issue_time);
+  appendLegends(root, canonical);
   root.ele("cbc:DocumentCurrencyCode", ListUri.currency()).txt(cur).up();
 
   const discrepancy = root.ele("cac:DiscrepancyResponse");
@@ -207,57 +110,55 @@ function buildNoteXml(
     .up();
   discrepancy.ele("cbc:Description").txt(canonical.reason).up();
 
+  if (canonical.purchase_order)
+    root.ele("cac:OrderReference").ele("cbc:ID").txt(canonical.purchase_order);
   const billing = root.ele("cac:BillingReference").ele("cac:InvoiceDocumentReference");
-  billing
-    .ele("cbc:ID")
-    .txt(canonical.affected_document.serie_number.toUpperCase())
-    .up();
+  billing.ele("cbc:ID").txt(canonical.affected_document.serie_number.toUpperCase()).up();
   billing
     .ele("cbc:DocumentTypeCode", ListUri.invoiceTypeCode())
     .txt(canonical.affected_document.document_type)
     .up();
 
-  appendParty(root, "cac:AccountingSupplierParty", canonical.supplier, {
-    establishmentCode: "0000",
-  });
-  appendParty(root, "cac:AccountingCustomerParty", canonical.customer);
+  appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
+  appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
   appendTaxAndMonetary(
     root,
     canonical,
-    rootName === "DebitNote"
-      ? "cac:RequestedMonetaryTotal"
-      : "cac:LegalMonetaryTotal",
+    rootName === "DebitNote" ? "cac:RequestedMonetaryTotal" : "cac:LegalMonetaryTotal",
   );
 
-  const noteLine = root.ele(lineTag);
-  noteLine.ele("cbc:ID").txt(String(line.id)).up();
-  noteLine
-    .ele(qtyTag, ListUri.invoicedQuantity(line.unit_code))
-    .txt(String(line.quantity))
-    .up();
-  noteLine
-    .ele("cbc:LineExtensionAmount", { currencyID: cur })
-    .txt(formatMoney(line.line_extension_amount))
-    .up();
+  for (const line of canonical.lines) {
+    const noteLine = root.ele(lineTag);
+    noteLine.ele("cbc:ID").txt(String(line.id)).up();
+    noteLine
+      .ele(qtyTag, ListUri.invoicedQuantity(line.unit_code))
+      .txt(formatUnit(line.quantity, 0))
+      .up();
+    noteLine
+      .ele("cbc:LineExtensionAmount", { currencyID: cur })
+      .txt(formatMoney(line.line_extension_amount))
+      .up();
 
-  const pricing = noteLine
-    .ele("cac:PricingReference")
-    .ele("cac:AlternativeConditionPrice");
-  pricing
-    .ele("cbc:PriceAmount", { currencyID: cur })
-    .txt(formatMoney(line.unit_price))
-    .up();
-  pricing.ele("cbc:PriceTypeCode", ListUri.priceTypeCode()).txt("01").up();
+    const pricing = noteLine.ele("cac:PricingReference").ele("cac:AlternativeConditionPrice");
+    pricing
+      .ele("cbc:PriceAmount", { currencyID: cur })
+      .txt(formatUnit(line.is_free ? line.unit_value : line.unit_price))
+      .up();
+    pricing
+      .ele("cbc:PriceTypeCode", ListUri.priceTypeCode())
+      .txt(line.is_free ? "02" : "01")
+      .up();
 
-  appendLineTaxes(noteLine, line, canonical);
+    appendCpeLineTaxes(noteLine, line, cur);
 
-  noteLine.ele("cac:Item").ele("cbc:Description").txt(line.description).up().up();
-  noteLine
-    .ele("cac:Price")
-    .ele("cbc:PriceAmount", { currencyID: cur })
-    .txt(formatMoney(line.unit_value))
-    .up()
-    .up();
+    appendCpeItem(noteLine, line);
+    noteLine
+      .ele("cac:Price")
+      .ele("cbc:PriceAmount", { currencyID: cur })
+      .txt(formatUnit(line.is_free ? 0 : line.unit_value))
+      .up()
+      .up();
+  }
 
   const xml = root.end({ prettyPrint: true, indent: "  ", newline: "\n" });
   return { xml, fileStem: stem };

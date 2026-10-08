@@ -1,3 +1,4 @@
+import { checkCpeAmounts } from "./cpe-amounts";
 import { DOMParser, type Document, type Element } from "@xmldom/xmldom";
 import type { CatalogPort } from "@factosys/sunat-catalogs";
 import { JsonCatalogAdapter } from "@factosys/sunat-catalogs";
@@ -9,10 +10,7 @@ import { P0_SUNAT_CODES, runP0InvoiceRules } from "./p0-invoice-rules";
 export const P1_SUNAT_CODES = P0_SUNAT_CODES;
 export const P2_SUNAT_CODES = P0_SUNAT_CODES;
 
-function findFirstByLocalName(
-  parent: Element | Document,
-  localName: string,
-): Element | null {
+function findFirstByLocalName(parent: Element | Document, localName: string): Element | null {
   const nodes = parent.getElementsByTagName("*");
   for (let i = 0; i < nodes.length; i++) {
     const el = nodes.item(i);
@@ -32,16 +30,7 @@ function textOf(el: Element | null): string {
   return (el?.textContent ?? "").trim();
 }
 
-function money(value: string): number | null {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function issue(
-  sunatCode: string,
-  message: string,
-  path?: string,
-): SunatValidationIssue {
+function issue(sunatCode: string, message: string, path?: string): SunatValidationIssue {
   void isObsMigratedToError(sunatCode);
   return {
     severity: "error",
@@ -59,11 +48,7 @@ function documentRootId(doc: Document): string {
     const n = root.childNodes.item(i);
     if (!n || n.nodeType !== 1) continue;
     const el = n as Element;
-    if (
-      el.localName === "ID" ||
-      el.nodeName === "ID" ||
-      el.nodeName.endsWith(":ID")
-    ) {
+    if (el.localName === "ID" || el.nodeName === "ID" || el.nodeName.endsWith(":ID")) {
       return textOf(el);
     }
   }
@@ -107,9 +92,7 @@ export async function runP1BoletaRules(
   }
 
   const supplierParty = findFirstByLocalName(doc, "AccountingSupplierParty");
-  const supplierId = supplierParty
-    ? findFirstByLocalName(supplierParty, "ID")
-    : null;
+  const supplierId = supplierParty ? findFirstByLocalName(supplierParty, "ID") : null;
   const ruc = textOf(supplierId);
   if (!/^\d{11}$/.test(ruc)) {
     issues.push(
@@ -171,9 +154,7 @@ export async function runP2NoteRules(
   }
 
   const supplierParty = findFirstByLocalName(doc, "AccountingSupplierParty");
-  const supplierId = supplierParty
-    ? findFirstByLocalName(supplierParty, "ID")
-    : null;
+  const supplierId = supplierParty ? findFirstByLocalName(supplierParty, "ID") : null;
   const ruc = textOf(supplierId);
   if (!/^\d{11}$/.test(ruc)) {
     issues.push(
@@ -231,11 +212,7 @@ export async function runP2NoteRules(
   const billing = findFirstByLocalName(doc, "BillingReference");
   if (!billing) {
     issues.push(
-      issue(
-        P2_SUNAT_CODES.serieNumero,
-        "Missing cac:BillingReference",
-        "cac:BillingReference",
-      ),
+      issue(P2_SUNAT_CODES.serieNumero, "Missing cac:BillingReference", "cac:BillingReference"),
     );
   }
 
@@ -254,44 +231,10 @@ export async function runP2NoteRules(
   return issues;
 }
 
-function appendTotalsCheck(
-  doc: Document,
-  issues: SunatValidationIssue[],
-): void {
-  const legal =
-    findFirstByLocalName(doc, "LegalMonetaryTotal") ??
-    findFirstByLocalName(doc, "RequestedMonetaryTotal");
-  const lineExt = money(
-    textOf(legal ? findFirstByLocalName(legal, "LineExtensionAmount") : null),
-  );
-  const docTaxTotal = findFirstByLocalName(doc, "TaxTotal");
-  const taxAmount = money(
-    textOf(
-      docTaxTotal ? findFirstByLocalName(docTaxTotal, "TaxAmount") : null,
-    ),
-  );
-  const payable = money(
-    textOf(legal ? findFirstByLocalName(legal, "PayableAmount") : null),
-  );
-
-  if (lineExt != null && taxAmount != null && payable != null) {
-    const expected = Math.round((lineExt + taxAmount) * 100) / 100;
-    if (Math.abs(expected - payable) > 0.01) {
-      issues.push(
-        issue(
-          P0_SUNAT_CODES.totales,
-          `PayableAmount ${payable} != LineExtensionAmount+TaxAmount ${expected}`,
-          "cac:LegalMonetaryTotal|RequestedMonetaryTotal/cbc:PayableAmount",
-        ),
-      );
-    }
-  } else {
+function appendTotalsCheck(doc: Document, issues: SunatValidationIssue[]): void {
+  for (const message of checkCpeAmounts(doc)) {
     issues.push(
-      issue(
-        P0_SUNAT_CODES.totales,
-        "Missing LineExtensionAmount, TaxAmount, or PayableAmount for totals check",
-        "cac:LegalMonetaryTotal|RequestedMonetaryTotal",
-      ),
+      issue(P0_SUNAT_CODES.totales, message, "cac:LegalMonetaryTotal|RequestedMonetaryTotal"),
     );
   }
 }

@@ -16,6 +16,7 @@ export interface SummaryPoolLine {
     gravadas: number;
     exoneradas: number;
     inafectas: number;
+    gratuitas?: number;
     igv: number;
     payable: number;
   };
@@ -37,34 +38,25 @@ export class SummaryPoolService {
     companyId: string;
     referenceDate: string;
     documentIds?: string[];
-    lineOverrides?: Array<{
+    lineOverrides?: {
       document_id?: string;
       status?: "1" | "2" | "3";
-    }>;
+    }[];
   }): Promise<SummaryPoolLine[]> {
-    let rows =
-      input.documentIds?.length
-        ? await this.documents.listByIds(
-            input.organizationId,
-            input.companyId,
-            input.documentIds,
-          )
-        : await this.documents.listPendingSummaryPool({
-            organizationId: input.organizationId,
-            companyId: input.companyId,
-            referenceDate: input.referenceDate,
-          });
+    let rows = input.documentIds?.length
+      ? await this.documents.listByIds(input.organizationId, input.companyId, input.documentIds)
+      : await this.documents.listPendingSummaryPool({
+          organizationId: input.organizationId,
+          companyId: input.companyId,
+          referenceDate: input.referenceDate,
+        });
 
     if (input.lineOverrides?.length && !input.documentIds?.length) {
       const overrideIds = input.lineOverrides
         .map((l) => l.document_id)
         .filter((id): id is string => Boolean(id));
       if (overrideIds.length) {
-        rows = await this.documents.listByIds(
-          input.organizationId,
-          input.companyId,
-          overrideIds,
-        );
+        rows = await this.documents.listByIds(input.organizationId, input.companyId, overrideIds);
       }
     }
 
@@ -86,27 +78,32 @@ export class SummaryPoolService {
     return rows.map((row) => {
       const docType = row.documentType as "03" | "07" | "08";
       if (!["03", "07", "08"].includes(docType)) {
-        throw AppError.validation("Invalid document type in RC pool", [
-          { path: "document_ids", issue: `type ${row.documentType}` },
-        ], { httpStatus: 422 });
+        throw AppError.validation(
+          "Invalid document type in RC pool",
+          [{ path: "document_ids", issue: `type ${row.documentType}` }],
+          { httpStatus: 422 },
+        );
       }
       const totals = (row.totals ?? {}) as Record<string, number>;
-      const lineExtension =
-        Number(totals.line_extension_amount ?? totals.gravadas ?? 0) || 0;
-      const igv = Number(totals.tax_amount ?? totals.igv ?? 0) || 0;
-      const payable =
-        Number(totals.payable_amount ?? totals.payable ?? lineExtension + igv) ||
-        0;
+      if ((row.currency && row.currency !== "PEN") || Number(totals.export_amount ?? 0) > 0) {
+        throw AppError.validation(
+          "RC does not yet support foreign currency or export",
+          [{ path: "document_ids", issue: row.id }],
+          { httpStatus: 422 },
+        );
+      }
+      const lineExtension = Number(totals.line_extension_amount ?? totals.gravadas ?? 0) || 0;
+      const igv =
+        (Number(totals.tax_amount ?? totals.igv ?? 0) || 0) -
+        (Number(totals.free_tax_amount ?? 0) || 0);
+      const payable = Number(totals.payable_amount ?? totals.payable ?? lineExtension + igv) || 0;
 
       let affectedDocument: SummaryPoolLine["affectedDocument"];
       if (docType === "07" || docType === "08") {
         const payload = (row.payload ?? {}) as {
           affected_document?: { document_type?: string; serie_number?: string };
         };
-        if (
-          payload.affected_document?.document_type &&
-          payload.affected_document?.serie_number
-        ) {
+        if (payload.affected_document?.document_type && payload.affected_document?.serie_number) {
           affectedDocument = {
             document_type: payload.affected_document.document_type,
             serie_number: payload.affected_document.serie_number,
@@ -124,9 +121,10 @@ export class SummaryPoolService {
           identity_number: row.customerIdentityNumber ?? "00000000",
         },
         totals: {
-          gravadas: lineExtension,
-          exoneradas: 0,
-          inafectas: 0,
+          gravadas: Number(totals.taxed_amount ?? lineExtension),
+          exoneradas: Number(totals.exempt_amount ?? 0),
+          inafectas: Number(totals.unaffected_amount ?? 0),
+          gratuitas: Number(totals.free_amount ?? 0),
           igv,
           payable,
         },

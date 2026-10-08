@@ -1,3 +1,4 @@
+import { validateCpeInput, supplierParty } from "./cpe-input";
 import { Injectable } from "@nestjs/common";
 import {
   hydrateNoteFromFixtureRequest,
@@ -35,6 +36,7 @@ export class EmitCreditNoteUseCase {
 
     this.assertSerieFamily(input.body.serie, affected.documentType);
 
+    validateCpeInput(input.body);
     return this.orchestrator.execute({
       organizationId: input.organizationId,
       companyId: input.body.company_id,
@@ -48,6 +50,7 @@ export class EmitCreditNoteUseCase {
       relatedDocumentId: affected.id,
       build: async ({ company, allocated, pfx, password }) => {
         const noteRequest: NoteFixtureRequest = {
+          ...input.body,
           company_id: company.id,
           document_type: "07",
           serie: input.body.serie.toUpperCase(),
@@ -60,30 +63,12 @@ export class EmitCreditNoteUseCase {
             serie_number: input.body.affected_document.serie_number,
           },
           totals_mode: input.body.totals_mode ?? "auto",
-          customer: {
-            identity_type: input.body.customer.identity_type,
-            identity_number: input.body.customer.identity_number,
-            name: input.body.customer.name,
-          },
-          lines: input.body.lines.map((l) => ({
-            id: l.id,
-            quantity: l.quantity,
-            unit_code: l.unit_code,
-            description: l.description,
-            unit_value: l.unit_value,
-            unit_price: l.unit_price,
-            tax_affectation: l.tax_affectation,
-            igv_percent: l.igv_percent,
-            tax_scheme_id: l.tax_scheme_id,
-          })),
+          customer: input.body.customer,
+          lines: input.body.lines,
         };
 
         const canonical = hydrateNoteFromFixtureRequest(noteRequest, "07", {
-          supplier: {
-            identity_type: "6",
-            identity_number: company.ruc,
-            name: company.legalName,
-          },
+          supplier: supplierParty(company),
           number: allocated.number,
         });
 
@@ -105,6 +90,7 @@ export class EmitCreditNoteUseCase {
           serie: canonical.serie,
           number: canonical.number,
           padded: allocated.padded,
+          canonicalSnapshot: canonical as unknown as Record<string, unknown>,
           totals: canonical.totals as unknown as Record<string, unknown>,
           signedXml,
           zipBytes: packed.zipBytes,
@@ -154,6 +140,7 @@ export class EmitDebitNoteUseCase {
 
     this.assertSerieFamily(input.body.serie, affected.documentType);
 
+    validateCpeInput(input.body);
     return this.orchestrator.execute({
       organizationId: input.organizationId,
       companyId: input.body.company_id,
@@ -167,6 +154,7 @@ export class EmitDebitNoteUseCase {
       relatedDocumentId: affected.id,
       build: async ({ company, allocated, pfx, password }) => {
         const noteRequest: NoteFixtureRequest = {
+          ...input.body,
           company_id: company.id,
           document_type: "08",
           serie: input.body.serie.toUpperCase(),
@@ -179,30 +167,12 @@ export class EmitDebitNoteUseCase {
             serie_number: input.body.affected_document.serie_number,
           },
           totals_mode: input.body.totals_mode ?? "auto",
-          customer: {
-            identity_type: input.body.customer.identity_type,
-            identity_number: input.body.customer.identity_number,
-            name: input.body.customer.name,
-          },
-          lines: input.body.lines.map((l) => ({
-            id: l.id,
-            quantity: l.quantity,
-            unit_code: l.unit_code,
-            description: l.description,
-            unit_value: l.unit_value,
-            unit_price: l.unit_price,
-            tax_affectation: l.tax_affectation,
-            igv_percent: l.igv_percent,
-            tax_scheme_id: l.tax_scheme_id,
-          })),
+          customer: input.body.customer,
+          lines: input.body.lines,
         };
 
         const canonical = hydrateNoteFromFixtureRequest(noteRequest, "08", {
-          supplier: {
-            identity_type: "6",
-            identity_number: company.ruc,
-            name: company.legalName,
-          },
+          supplier: supplierParty(company),
           number: allocated.number,
         });
 
@@ -224,6 +194,7 @@ export class EmitDebitNoteUseCase {
           serie: canonical.serie,
           number: canonical.number,
           padded: allocated.padded,
+          canonicalSnapshot: canonical as unknown as Record<string, unknown>,
           totals: canonical.totals as unknown as Record<string, unknown>,
           signedXml,
           zipBytes: packed.zipBytes,

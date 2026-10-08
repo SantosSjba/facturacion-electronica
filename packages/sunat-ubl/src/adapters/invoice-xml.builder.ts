@@ -1,15 +1,16 @@
 import { create } from "xmlbuilder2";
+import {
+  appendCpeParty,
+  appendDocumentTaxes,
+  appendCpeLineTaxes,
+  appendCpeItem,
+  appendLegends,
+  formatUnit,
+} from "./cpe-xml";
 
 import { ListUri } from "../attributes/listuri-injector";
-import type {
-  BuildInvoiceXmlPort,
-  BuildInvoiceXmlResult,
-} from "../ports/build-invoice-xml.port";
-import {
-  documentId,
-  fileStem,
-  formatMoney,
-} from "../totals/auto-totals";
+import type { BuildInvoiceXmlPort, BuildInvoiceXmlResult } from "../ports/build-invoice-xml.port";
+import { documentId, fileStem, formatMoney } from "../totals/auto-totals";
 import type { InvoiceCanonical } from "../types/invoice-canonical";
 import { assertInvoiceCanonical } from "../types/invoice-canonical";
 
@@ -35,11 +36,6 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
       canonical.number,
     );
     const cur = canonical.currency;
-    const line = canonical.lines[0];
-    if (!line) {
-      throw new Error("InvoiceCanonical requires at least one line");
-    }
-
     const root = create({ version: "1.0", encoding: "UTF-8" }).ele("Invoice", {
       xmlns: NS.invoice,
       "xmlns:cac": NS.cac,
@@ -56,6 +52,8 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
     root.ele("cbc:ProfileID", ListUri.profileId()).txt(canonical.operation_type).up();
     root.ele("cbc:ID").txt(id).up();
     root.ele("cbc:IssueDate").txt(canonical.issue_date).up();
+    if (canonical.issue_time) root.ele("cbc:IssueTime").txt(canonical.issue_time);
+    if (canonical.due_date) root.ele("cbc:DueDate").txt(canonical.due_date);
     root
       .ele("cbc:InvoiceTypeCode", {
         ...ListUri.invoiceTypeCode(),
@@ -63,45 +61,20 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
       })
       .txt(canonical.document_type)
       .up();
+    appendLegends(root, canonical);
     root.ele("cbc:DocumentCurrencyCode", ListUri.currency()).txt(cur).up();
 
-    appendParty(root, "cac:AccountingSupplierParty", canonical.supplier, {
-      establishmentCode: "0000",
-    });
-    appendParty(root, "cac:AccountingCustomerParty", canonical.customer);
+    if (canonical.purchase_order)
+      root.ele("cac:OrderReference").ele("cbc:ID").txt(canonical.purchase_order);
+    appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
+    appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
 
     // SUNAT FormaPago (MIGE-Factoring / cat. PaymentTerms) — Contado default for MVP golden
     const paymentTerms = root.ele("cac:PaymentTerms");
     paymentTerms.ele("cbc:ID").txt("FormaPago").up();
     paymentTerms.ele("cbc:PaymentMeansID").txt("Contado").up();
 
-    // Document TaxTotal
-    const taxTotal = root.ele("cac:TaxTotal");
-    taxTotal
-      .ele("cbc:TaxAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.tax_amount))
-      .up();
-    const sub = taxTotal.ele("cac:TaxSubtotal");
-    sub
-      .ele("cbc:TaxableAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.line_extension_amount))
-      .up();
-    sub
-      .ele("cbc:TaxAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.tax_amount))
-      .up();
-    const cat = sub.ele("cac:TaxCategory");
-    cat
-      .ele("cbc:ID", ListUri.docTaxCategory())
-      .txt(canonical.totals.tax_category_id)
-      .up();
-    const scheme = cat.ele("cac:TaxScheme");
-    scheme
-      .ele("cbc:ID", ListUri.docTaxScheme())
-      .txt(canonical.totals.tax_scheme_id)
-      .up();
-    scheme.ele("cbc:Name").txt(canonical.totals.tax_scheme_name).up();
-    scheme.ele("cbc:TaxTypeCode").txt("VAT").up();
+    appendDocumentTaxes(root, canonical.totals, cur);
 
     const monetary = root.ele("cac:LegalMonetaryTotal");
     monetary
@@ -117,104 +90,39 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
       .txt(formatMoney(canonical.totals.payable_amount))
       .up();
 
-    // Single InvoiceLine
-    const invLine = root.ele("cac:InvoiceLine");
-    invLine.ele("cbc:ID").txt(String(line.id)).up();
-    invLine
-      .ele("cbc:InvoicedQuantity", ListUri.invoicedQuantity(line.unit_code))
-      .txt(String(line.quantity))
-      .up();
-    invLine
-      .ele("cbc:LineExtensionAmount", { currencyID: cur })
-      .txt(formatMoney(line.line_extension_amount))
-      .up();
+    for (const line of canonical.lines) {
+      const invLine = root.ele("cac:InvoiceLine");
+      invLine.ele("cbc:ID").txt(String(line.id)).up();
+      invLine
+        .ele("cbc:InvoicedQuantity", ListUri.invoicedQuantity(line.unit_code))
+        .txt(formatUnit(line.quantity, 0))
+        .up();
+      invLine
+        .ele("cbc:LineExtensionAmount", { currencyID: cur })
+        .txt(formatMoney(line.line_extension_amount))
+        .up();
 
-    const pricing = invLine.ele("cac:PricingReference").ele("cac:AlternativeConditionPrice");
-    pricing
-      .ele("cbc:PriceAmount", { currencyID: cur })
-      .txt(formatMoney(line.unit_price))
-      .up();
-    pricing.ele("cbc:PriceTypeCode", ListUri.priceTypeCode()).txt("01").up();
+      const pricing = invLine.ele("cac:PricingReference").ele("cac:AlternativeConditionPrice");
+      pricing
+        .ele("cbc:PriceAmount", { currencyID: cur })
+        .txt(formatUnit(line.is_free ? line.unit_value : line.unit_price))
+        .up();
+      pricing
+        .ele("cbc:PriceTypeCode", ListUri.priceTypeCode())
+        .txt(line.is_free ? "02" : "01")
+        .up();
 
-    const lineTax = invLine.ele("cac:TaxTotal");
-    lineTax
-      .ele("cbc:TaxAmount", { currencyID: cur })
-      .txt(formatMoney(line.tax_amount))
-      .up();
-    const lineSub = lineTax.ele("cac:TaxSubtotal");
-    lineSub
-      .ele("cbc:TaxableAmount", { currencyID: cur })
-      .txt(formatMoney(line.line_extension_amount))
-      .up();
-    lineSub
-      .ele("cbc:TaxAmount", { currencyID: cur })
-      .txt(formatMoney(line.tax_amount))
-      .up();
-    const lineCat = lineSub.ele("cac:TaxCategory");
-    lineCat.ele("cbc:ID", ListUri.lineTaxCategory()).txt("S").up();
-    lineCat.ele("cbc:Percent").txt(String(line.igv_percent)).up();
-    lineCat
-      .ele("cbc:TaxExemptionReasonCode", ListUri.taxExemptionReason())
-      .txt(line.tax_affectation)
-      .up();
-    const lineScheme = lineCat.ele("cac:TaxScheme");
-    lineScheme
-      .ele("cbc:ID", ListUri.lineTaxScheme())
-      .txt(line.tax_scheme_id)
-      .up();
-    lineScheme.ele("cbc:Name").txt(canonical.totals.tax_scheme_name).up();
-    lineScheme.ele("cbc:TaxTypeCode").txt("VAT").up();
-
-    invLine.ele("cac:Item").ele("cbc:Description").txt(line.description).up().up();
-    invLine
-      .ele("cac:Price")
-      .ele("cbc:PriceAmount", { currencyID: cur })
-      .txt(formatMoney(line.unit_value))
-      .up()
-      .up();
+      appendCpeLineTaxes(invLine, line, cur);
+      appendCpeItem(invLine, line);
+      invLine
+        .ele("cac:Price")
+        .ele("cbc:PriceAmount", { currencyID: cur })
+        .txt(formatUnit(line.is_free ? 0 : line.unit_value))
+        .up()
+        .up();
+    }
 
     const xml = root.end({ prettyPrint: true, indent: "  ", newline: "\n" });
     return { xml, fileStem: stem };
-  }
-}
-
-function appendParty(
-  root: ReturnType<ReturnType<typeof create>["ele"]>,
-  tag: "cac:AccountingSupplierParty" | "cac:AccountingCustomerParty",
-  party: InvoiceCanonical["supplier"],
-  opts: { establishmentCode?: string } = {},
-): void {
-  const node = root.ele(tag).ele("cac:Party");
-  node
-    .ele("cac:PartyIdentification")
-    .ele("cbc:ID", { schemeID: party.identity_type })
-    .txt(party.identity_number)
-    .up()
-    .up();
-  // UBL PartyType: PartyTaxScheme precedes PartyLegalEntity
-  const taxScheme = node.ele("cac:PartyTaxScheme");
-  taxScheme
-    .ele("cbc:CompanyID", ListUri.companyId(party.identity_type))
-    .txt(party.identity_number)
-    .up();
-  taxScheme
-    .ele("cac:TaxScheme")
-    .ele("cbc:ID")
-    .txt("1000")
-    .up()
-    .up();
-  const legal = node.ele("cac:PartyLegalEntity");
-  legal.ele("cbc:RegistrationName").txt(party.name).up();
-  if (opts.establishmentCode) {
-    legal
-      .ele("cac:RegistrationAddress")
-      .ele("cbc:AddressTypeCode", {
-        listAgencyName: "PE:SUNAT",
-        listName: "SUNAT:Identificador de establecimiento",
-        listURI: "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo54",
-      })
-      .txt(opts.establishmentCode)
-      .up()
-      .up();
   }
 }

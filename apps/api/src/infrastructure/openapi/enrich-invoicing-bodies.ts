@@ -39,20 +39,20 @@ function zodToOpenApiSchema(schema: z.ZodType): Record<string, unknown> {
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 
-const REQUEST_BODIES: Array<{
+const REQUEST_BODIES: {
   path: string;
   method: HttpMethod;
   schema: z.ZodType;
   required?: boolean;
   description: string;
   example?: Record<string, unknown>;
-}> = [
+}[] = [
   {
     path: "/v1/invoices",
     method: "post",
     schema: invoiceCreateSchema,
     description:
-      "Datos de la factura (01). Requiere `company_id`, cliente, líneas y moneda. Con `totals_mode: auto` el backend calcula totales IGV.",
+      "Factura (01) con múltiples líneas y totales por categoría/tributo/tasa. `auto` calcula los importes; `strict` requiere `totals` y compara exactamente a dos decimales. Se admiten direcciones tipadas, códigos de producto, leyendas, hora, vencimiento y orden de compra. Correlativo automático: omitir `number`. Detracción, medios de pago/crédito, ISC e IVAP aún devuelven 422. Ver docs/phase0-cpe-integrity.md.",
     example: {
       company_id: "00000000-0000-4000-8000-000000000001",
       serie: "F001",
@@ -85,42 +85,39 @@ const REQUEST_BODIES: Array<{
     method: "post",
     schema: receiptCreateSchema,
     description:
-      "Datos de la boleta (03). Misma estructura base que factura; serie suele ser B###.",
+      "Boleta (03), serie B###, mismo contrato y totales auto/strict que factura. RC conserva gravadas/exoneradas/inafectas/gratuitas. RC en moneda distinta de PEN o exportación aún no soportado: usar envío individual.",
   },
   {
     path: "/v1/credit-notes",
     method: "post",
     schema: creditNoteCreateSchema,
     description:
-      "Nota de crédito (07) referenciando el comprobante afectado (factura/boleta).",
+      "Nota de crédito (07) con todas sus líneas, totales auto/strict y referencia al comprobante aceptado. Admite direcciones, códigos, hora, leyendas y orden de compra. Vencimiento y ajuste de cuotas (tipo 13) aún no soportados.",
   },
   {
     path: "/v1/debit-notes",
     method: "post",
     schema: debitNoteCreateSchema,
     description:
-      "Nota de débito (08) referenciando el comprobante afectado.",
+      "Nota de débito (08) con todas sus líneas y totales auto/strict, referenciando el comprobante aceptado. Admite direcciones, códigos, hora, leyendas y orden de compra. Vencimiento aún no soportado.",
   },
   {
     path: "/v1/voided-documents",
     method: "post",
     schema: voidedDocumentCreateSchema,
-    description:
-      "Comunicación de baja (RA). Incluye los documentos a dar de baja y el motivo.",
+    description: "Comunicación de baja (RA). Incluye los documentos a dar de baja y el motivo.",
   },
   {
     path: "/v1/daily-summaries",
     method: "post",
     schema: dailySummaryCreateSchema,
-    description:
-      "Resumen diario (RC). Puede agrupar boletas del día según reglas de pool.",
+    description: "Resumen diario (RC). Puede agrupar boletas del día según reglas de pool.",
   },
   {
     path: "/v1/despatch-advices",
     method: "post",
     schema: despatchAdviceCreateSchema,
-    description:
-      "Guía de remisión electrónica (09/31). Requiere datos de traslado y destinatario.",
+    description: "Guía de remisión electrónica (09/31). Requiere datos de traslado y destinatario.",
   },
   {
     path: "/v1/webhook-endpoints",
@@ -153,9 +150,7 @@ const REQUEST_BODIES: Array<{
  * Nest + Zod pipes no emiten requestBody en OpenAPI automáticamente.
  * Adjunta JSON Schema (+ examples) para docs Scalar completas.
  */
-export function enrichInvoicingRequestBodies(
-  document: OpenAPIObject,
-): OpenAPIObject {
+export function enrichInvoicingRequestBodies(document: OpenAPIObject): OpenAPIObject {
   for (const entry of REQUEST_BODIES) {
     const pathItem = document.paths?.[entry.path];
     if (!pathItem) continue;
