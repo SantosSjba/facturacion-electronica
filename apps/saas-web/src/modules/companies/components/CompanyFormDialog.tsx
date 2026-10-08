@@ -29,6 +29,7 @@ import { toast } from "@/shared/ui/toaster";
 import { createCompany, fetchCompany, patchCompany } from "../api";
 import { DEFAULT_COMPANY_SERIES } from "../default-series";
 import type { CompanyEnvironment } from "../types";
+import { useCompanyCapacity } from "../use-company-capacity";
 
 const companySchema = z.object({
   ruc: z.string().regex(/^\d{11}$/, "El RUC debe contener exactamente 11 dígitos"),
@@ -75,6 +76,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const hydratedOpenRef = useRef(false);
+  const capacity = useCompanyCapacity(open && mode === "create");
 
   const existingQuery = useQuery({
     queryKey: ["company", companyId],
@@ -90,7 +92,6 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
   const [ubigeo, setUbigeo] = useState("");
   const [timezone, setTimezone] = useState("America/Lima");
   const [seedDefaultSeries, setSeedDefaultSeries] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<CompanyField, string>>>({});
 
   function resetForm() {
@@ -102,7 +103,6 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
     setUbigeo("");
     setTimezone("America/Lima");
     setSeedDefaultSeries(true);
-    setError(null);
     setFieldErrors({});
   }
 
@@ -131,7 +131,6 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
     setAddressLine(typeof addr.line === "string" ? addr.line : "");
     setUbigeo(typeof addr.ubigeo === "string" ? addr.ubigeo : "");
     setTimezone(existing.timezone || "America/Lima");
-    setError(null);
     setFieldErrors({});
     hydratedOpenRef.current = true;
   }, [open, mode, existingQuery.data]);
@@ -162,6 +161,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
     },
     onSuccess: async (company) => {
       await qc.invalidateQueries({ queryKey: ["companies"] });
+      await qc.invalidateQueries({ queryKey: ["org-plan"] });
       await qc.invalidateQueries({ queryKey: ["company", company.id] });
       toast.success(mode === "create" ? "Empresa creada" : "Empresa actualizada", {
         description:
@@ -180,8 +180,8 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
     },
     onError: (err) => {
       const message = err instanceof ApiError ? err.message : "Error al guardar";
-      setError(message);
       toast.error(message);
+      if (mode === "create") void qc.invalidateQueries({ queryKey: ["org-plan"] });
     },
   });
 
@@ -192,7 +192,7 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (mutation.isPending || (mode === "create" && capacity.blocked)) return;
     const result = companySchema.safeParse({
       ruc,
       legalName,
@@ -396,7 +396,9 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
                 </div>
               ) : null}
 
-              {error ? <ErrorState title="Error" message={error} /> : null}
+              {mode === "create" && capacity.blocked && capacity.message ? (
+                <MutedText>{capacity.message}</MutedText>
+              ) : null}
             </>
           ) : null}
         </DialogBody>
@@ -416,7 +418,12 @@ export function CompanyFormDialog(props: CompanyFormDialogProps) {
             type="submit"
             size="icon-label-sm"
             aria-label={mode === "create" ? "Crear" : "Guardar"}
-            disabled={mutation.isPending || loadingEdit || Boolean(editError)}
+            disabled={
+              mutation.isPending ||
+              loadingEdit ||
+              Boolean(editError) ||
+              (mode === "create" && capacity.blocked)
+            }
           >
             {mutation.isPending ? (
               <Spinner className={buttonIconClassName} />

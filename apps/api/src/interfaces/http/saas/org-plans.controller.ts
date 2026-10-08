@@ -58,6 +58,7 @@ export class OrgPlansController {
       organizationId: body.organization_id,
       planId: body.plan_id,
       status: body.status,
+      reviewedByUserId: user.userId,
     });
 
     const actor = actorFromAuth(user);
@@ -72,6 +73,7 @@ export class OrgPlansController {
         plan_id: assigned.plan_id,
         plan_code: assigned.plan_code,
         status: assigned.status,
+        resolved_change_request_ids: assigned.resolved_change_request_ids ?? [],
       },
     });
 

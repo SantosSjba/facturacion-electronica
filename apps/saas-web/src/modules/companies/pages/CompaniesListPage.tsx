@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { useSession } from "@/shared/auth/session-context";
 import {
@@ -20,10 +21,12 @@ import { CompanyFilters } from "../components/CompanyFilters";
 import { CompanyFormDialog } from "../components/CompanyFormDialog";
 import { CompaniesTable } from "../components/CompaniesTable";
 import { filterCompanies, type CompanyFiltersState } from "../filters";
+import { useCompanyCapacity } from "../use-company-capacity";
 
 export function CompaniesListPage() {
   const { hasPermission } = useSession();
   const canWrite = hasPermission("companies:write");
+  const capacity = useCompanyCapacity(canWrite);
   const [createOpen, setCreateOpen] = useState(false);
   const [filters, setFilters] = useState<CompanyFiltersState>({
     ruc: "",
@@ -57,6 +60,8 @@ export function CompaniesListPage() {
               type="button"
               size="icon-label-sm"
               aria-label="Crear empresa"
+              disabled={capacity.blocked}
+              aria-describedby={capacity.message ? "company-capacity" : undefined}
               onClick={() => setCreateOpen(true)}
             >
               <Plus className={buttonIconClassName} />
@@ -65,6 +70,29 @@ export function CompaniesListPage() {
           ) : null
         }
       />
+
+      {canWrite && capacity.message ? (
+        <div
+          id="company-capacity"
+          className="mb-6 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+        >
+          <span>{capacity.message}</span>
+          {capacity.reached ? (
+            <Link to="/app/plan" className="font-medium text-brand-500 hover:underline">
+              Solicitar cambio de plan
+            </Link>
+          ) : null}
+          {capacity.query.isError ? (
+            <button
+              type="button"
+              onClick={() => void capacity.query.refetch()}
+              className="font-medium text-brand-500 hover:underline"
+            >
+              Reintentar
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {query.isLoading ? <LoadingState variant="table" label="Cargando empresas…" /> : null}
 

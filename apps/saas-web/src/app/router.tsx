@@ -25,6 +25,7 @@ import { LegalDocumentsPage } from "@/modules/platform/pages/LegalDocumentsPage"
 import { OrganizationDetailPage } from "@/modules/platform/pages/OrganizationDetailPage";
 import { OrganizationsListPage } from "@/modules/platform/pages/OrganizationsListPage";
 import { PlansListPage } from "@/modules/platform/pages/PlansListPage";
+import { PlanChangeRequestsPage } from "@/modules/platform/pages/PlanChangeRequestsPage";
 import { SignupRequestDetailPage } from "@/modules/platform/pages/SignupRequestDetailPage";
 import { SignupRequestsListPage } from "@/modules/platform/pages/SignupRequestsListPage";
 
@@ -76,6 +77,7 @@ export function AppRouter() {
           <Route path="/platform/organizations" element={<OrganizationsListPage />} />
           <Route path="/platform/organizations/:id" element={<OrganizationDetailPage />} />
           <Route path="/platform/plans" element={<PlansListPage />} />
+          <Route path="/platform/plan-change-requests" element={<PlanChangeRequestsPage />} />
           <Route path="/platform/legal" element={<LegalDocumentsPage />} />
           <Route path="/platform/audit" element={<AuditListPage />} />
         </Route>

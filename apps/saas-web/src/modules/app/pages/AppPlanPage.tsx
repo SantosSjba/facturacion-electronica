@@ -43,6 +43,7 @@ export function AppPlanPage() {
     queryKey: ["org-plan", user?.organizationId],
     queryFn: fetchOrgPlan,
     enabled: Boolean(user),
+    refetchInterval: 30_000,
   });
   const catalogQuery = useQuery({
     queryKey: ["public-plans"],
@@ -51,6 +52,7 @@ export function AppPlanPage() {
   const requestsQuery = useQuery({
     queryKey: ["plan-change-requests"],
     queryFn: fetchPlanChangeRequests,
+    refetchInterval: 15_000,
   });
 
   const mutation = useMutation({
@@ -73,6 +75,9 @@ export function AppPlanPage() {
   const plan = planQuery.data;
   const catalog = (catalogQuery.data?.items ?? []).filter((p) => p.code !== plan?.plan?.code);
   const requests = requestsQuery.data?.items ?? [];
+  const hasPendingRequest = requests.some(
+    (request) => request.status === "pending" || request.status === "acknowledged",
+  );
 
   function submit() {
     setFormError(null);
@@ -174,10 +179,16 @@ export function AppPlanPage() {
               type="button"
               onClick={submit}
               loading={mutation.isPending}
-              disabled={mutation.isPending || catalog.length === 0}
+              disabled={mutation.isPending || catalog.length === 0 || hasPendingRequest}
             >
               <ButtonLabel>{mutation.isPending ? "Enviando…" : "Solicitar cambio"}</ButtonLabel>
             </Button>
+            {hasPendingRequest ? (
+              <p className="text-sm text-gray-500">
+                Tu solicitud está pendiente de revisión. Verás el resultado en el historial y en tus
+                notificaciones.
+              </p>
+            ) : null}
           </>
         )}
       </Card>
@@ -202,6 +213,7 @@ export function AppPlanPage() {
                 <TH>Plan solicitado</TH>
                 <TH>Actual</TH>
                 <TH>Estado</TH>
+                <TH>Respuesta</TH>
                 <TH>Fecha</TH>
               </TR>
             </THead>
@@ -213,7 +225,34 @@ export function AppPlanPage() {
                   </TD>
                   <TD label="Actual">{r.current_plan_code ?? "—"}</TD>
                   <TD label="Estado">
-                    <Badge variant="outline">{r.status}</Badge>
+                    <Badge
+                      color={
+                        r.resolution === "approved"
+                          ? "success"
+                          : r.resolution === "rejected"
+                            ? "error"
+                            : "warning"
+                      }
+                    >
+                      {r.resolution === "approved"
+                        ? "Aprobada"
+                        : r.resolution === "rejected"
+                          ? "Rechazada"
+                          : r.status === "pending"
+                            ? "Pendiente"
+                            : r.status === "acknowledged"
+                              ? "En revisión"
+                              : "Cerrada"}
+                    </Badge>
+                  </TD>
+                  <TD label="Respuesta">
+                    {r.resolution_note ??
+                      (r.resolution === "approved" ? "El plan solicitado fue aplicado." : "—")}
+                    {r.resolved_at ? (
+                      <div className="text-xs text-gray-500">
+                        {new Date(r.resolved_at).toLocaleString("es-PE")}
+                      </div>
+                    ) : null}
                   </TD>
                   <TD label="Fecha">{new Date(r.created_at).toLocaleString()}</TD>
                 </TR>

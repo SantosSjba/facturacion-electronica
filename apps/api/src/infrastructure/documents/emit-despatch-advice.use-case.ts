@@ -1,3 +1,4 @@
+import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
@@ -5,11 +6,7 @@ import { ConfigService } from "@nestjs/config";
 import { documents, newId, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 import { XmlCryptoSignAdapter } from "@factosys/sunat-sign";
-import {
-  createGreClientsFromEnv,
-  packGreZip,
-  type GreDespatchPort,
-} from "@factosys/sunat-gre";
+import { createGreClientsFromEnv, packGreZip, type GreDespatchPort } from "@factosys/sunat-gre";
 import {
   XmlDespatchAdviceBuilder,
   assertDespatchCanonical,
@@ -59,13 +56,12 @@ export class EmitDespatchAdviceUseCase {
     body: DespatchAdviceCreate;
     idempotencyKey: string;
   }): Promise<DocumentPublic> {
+    await assertPlanCapacity(this.db, input.organizationId, "documents_this_month");
     const company = await this.companies.requireActiveCompany(
       input.organizationId,
       input.body.company_id,
     );
-    const { pfx, password } = await this.credentials.resolveCertificate(
-      company.id,
-    );
+    const { pfx, password } = await this.credentials.resolveCertificate(company.id);
     // Ensure GRE + SOL are configured (token cache will fetch)
     await this.credentials.resolveGre(company.id);
     await this.credentials.resolveSol(company.id);
@@ -120,8 +116,7 @@ export class EmitDespatchAdviceUseCase {
                   identity_type: input.body.shipment.carrier.identity_type,
                   identity_number: input.body.shipment.carrier.identity_number,
                   name: input.body.shipment.carrier.name,
-                  mtc_registration:
-                    input.body.shipment.carrier.mtc_registration,
+                  mtc_registration: input.body.shipment.carrier.mtc_registration,
                 }
               : undefined,
         },
@@ -146,27 +141,29 @@ export class EmitDespatchAdviceUseCase {
       const serieNumber = `${serie}-${allocated.padded}`;
       const payload = input.body;
 
-      await this.db.insert(documents).values({
-        id: documentId,
-        organizationId: input.organizationId,
-        companyId: company.id,
-        documentType: input.body.document_type,
-        serie,
-        number: allocated.number,
-        serieNumber,
-        status: "draft",
-        environment: company.environment,
-        issueDate: input.body.issue_date,
-        currency: null,
-        customerIdentityType: input.body.delivery_customer.identity_type,
-        customerIdentityNumber: input.body.delivery_customer.identity_number,
-        customerName: input.body.delivery_customer.name,
-        totals: {},
-        payload,
-        payloadHash: hashRequestBody(payload),
-        idempotencyKey: input.idempotencyKey,
-        ublProfile: "2.1",
-      });
+      await withPlanCapacity(this.db, input.organizationId, "documents_this_month", async (tx) =>
+        tx.insert(documents).values({
+          id: documentId,
+          organizationId: input.organizationId,
+          companyId: company.id,
+          documentType: input.body.document_type,
+          serie,
+          number: allocated.number,
+          serieNumber,
+          status: "draft",
+          environment: company.environment,
+          issueDate: input.body.issue_date,
+          currency: null,
+          customerIdentityType: input.body.delivery_customer.identity_type,
+          customerIdentityNumber: input.body.delivery_customer.identity_number,
+          customerName: input.body.delivery_customer.name,
+          totals: {},
+          payload,
+          payloadHash: hashRequestBody(payload),
+          idempotencyKey: input.idempotencyKey,
+          ublProfile: "2.1",
+        }),
+      );
 
       await this.documents.appendEvent({
         organizationId: input.organizationId,
@@ -252,15 +249,10 @@ export class EmitDespatchAdviceUseCase {
         });
       }
 
-      await this.documents.transitionStatus(
-        documentId,
-        "validated",
-        "ticket_pending",
-        {
-          sunatTicket: sent.ticket,
-          sentAt: new Date(),
-        },
-      );
+      await this.documents.transitionStatus(documentId, "validated", "ticket_pending", {
+        sunatTicket: sent.ticket,
+        sentAt: new Date(),
+      });
       await this.documents.appendEvent({
         organizationId: input.organizationId,
         companyId: company.id,
@@ -278,18 +270,14 @@ export class EmitDespatchAdviceUseCase {
         documentId,
       });
 
-      const row = await this.documents.getById(
-        input.organizationId,
-        documentId,
-      );
+      const row = await this.documents.getById(input.organizationId, documentId);
       return this.documents.toPublic(row);
     } catch (cause) {
       await liberate();
       if (cause instanceof AppError) throw cause;
-      throw AppError.internal(
-        cause instanceof Error ? cause.message : "Emit GRE failed",
-        { cause },
-      );
+      throw AppError.internal(cause instanceof Error ? cause.message : "Emit GRE failed", {
+        cause,
+      });
     }
   }
 }

@@ -1,12 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
-
-import { Inject, Injectable, forwardRef } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
-  inviteTokens,
   newId,
-  organizations,
   permissions,
   rolePermissions,
   roles,
@@ -16,27 +11,16 @@ import {
 } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
-import type { Env } from "../config/env.schema";
 import { Argon2Hasher } from "../crypto/argon2-hasher";
-import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
-import { InAppNotificationsService } from "../notifications/in-app-notifications.service";
 import { DB } from "../persistence/db.tokens";
+import { withPlanCapacity } from "../saas/plan-capacity";
 import type { UserAuthContext } from "../../interfaces/http/auth/auth-context";
-
-function sha256Hex(value: string): string {
-  return createHash("sha256").update(value, "utf8").digest("hex");
-}
 
 @Injectable()
 export class UsersAdminService {
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly hasher: Argon2Hasher,
-    private readonly config: ConfigService<Env, true>,
-    @Inject(forwardRef(() => NotificationDispatchService))
-    private readonly notifications: NotificationDispatchService,
-    @Inject(forwardRef(() => InAppNotificationsService))
-    private readonly inApp: InAppNotificationsService,
   ) {}
 
   async listRoles() {
@@ -100,134 +84,38 @@ export class UsersAdminService {
     input: {
       email: string;
       name: string;
-      password?: string;
-      invite?: boolean;
+      password: string;
       roleCodes: string[];
       status?: "active" | "disabled";
     },
   ) {
-    const invite = Boolean(input.invite);
-    if (!invite) {
-      if (!input.password || input.password.length < 8) {
-        throw AppError.validation("password must be at least 8 characters");
-      }
-    }
-    if (!input.roleCodes.length) {
-      throw AppError.validation("roles must not be empty");
-    }
-
-    const existing = await this.db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.organizationId, actor.organizationId),
-          eq(users.email, input.email),
-        ),
-      )
-      .limit(1);
-    if (existing[0]) {
-      throw AppError.conflict("User email already exists in organization");
-    }
-
+    if (input.password.length < 8)
+      throw AppError.validation("password must be at least 8 characters");
+    if (!input.roleCodes.length) throw AppError.validation("roles must not be empty");
     const roleRows = await this.resolveRoles(input.roleCodes);
     this.assertCanAssignRoles(actor, input.roleCodes);
-
-    const orgRows = await this.db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, actor.organizationId))
-      .limit(1);
-    const org = orgRows[0];
-    if (!org) {
-      throw AppError.notFound("Organization not found");
-    }
-
+    const passwordHash = await this.hasher.hash(input.password);
     const id = newId();
-    const now = new Date();
-
-    if (invite) {
-      const inviteId = newId();
-      const inviteRaw = randomBytes(32).toString("base64url");
-      const ttlHours = this.config.get("INVITE_TOKEN_TTL_HOURS", { infer: true });
-      const inviteExpiresAt = new Date(now.getTime() + ttlHours * 3600_000);
-      const placeholderPassword = await this.hasher.hash(
-        randomBytes(32).toString("base64url"),
-      );
-
-      await this.db.insert(users).values({
-        id,
-        organizationId: actor.organizationId,
-        email: input.email,
-        name: input.name,
-        passwordHash: placeholderPassword,
-        status: "disabled",
-        createdAt: now,
-        updatedAt: now,
-      });
-      await this.db.insert(userRoles).values(
-        roleRows.map((r) => ({ userId: id, roleId: r.id })),
-      );
-      await this.db.insert(inviteTokens).values({
-        id: inviteId,
-        userId: id,
-        tokenHash: sha256Hex(inviteRaw),
-        expiresAt: inviteExpiresAt,
-        consumedAt: null,
-        createdAt: now,
-      });
-
-      await this.notifications.memberInvite({
-        inviteId,
-        userId: id,
-        contactName: input.name,
-        contactEmail: input.email,
-        organizationName: org.name,
-        organizationSlug: org.slug ?? "",
-        inviteToken: inviteRaw,
-        expiresAt: inviteExpiresAt,
-      });
-
-      await this.inApp.createForUser({
-        organizationId: actor.organizationId,
-        userId: actor.userId,
-        eventCode: "invite.member",
-        title: "Invitación enviada",
-        body: `Se envió una invitación a ${input.email}.`,
-        payload: { invited_user_id: id, invited_email: input.email },
-      });
-
-      return {
-        id,
-        email: input.email,
-        name: input.name,
-        status: "disabled" as const,
-        roles: input.roleCodes,
-        invited: true,
-      };
-    }
-
-    const passwordHash = await this.hasher.hash(input.password!);
-    await this.db.insert(users).values({
-      id,
-      organizationId: actor.organizationId,
-      email: input.email,
-      name: input.name,
-      passwordHash,
-      status: input.status ?? "active",
+    await withPlanCapacity(this.db, actor.organizationId, "users", async (tx) => {
+      const [existing] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.organizationId, actor.organizationId), eq(users.email, input.email)))
+        .limit(1);
+      if (existing) throw AppError.conflict("User email already exists in organization");
+      await tx
+        .insert(users)
+        .values({
+          id,
+          organizationId: actor.organizationId,
+          email: input.email,
+          name: input.name,
+          passwordHash,
+          status: input.status ?? "active",
+        });
+      await tx.insert(userRoles).values(roleRows.map((r) => ({ userId: id, roleId: r.id })));
     });
-    await this.db.insert(userRoles).values(
-      roleRows.map((r) => ({ userId: id, roleId: r.id })),
-    );
-
-    return {
-      id,
-      email: input.email,
-      name: input.name,
-      status: input.status ?? "active",
-      roles: input.roleCodes,
-      invited: false,
-    };
+    return this.getUserDetail(actor.organizationId, id);
   }
 
   async updateUser(
@@ -237,68 +125,57 @@ export class UsersAdminService {
       name?: string;
       status?: "active" | "disabled";
       password?: string;
+      roleCodes?: string[];
     },
   ) {
-    const target = await this.getOrgUser(actor.organizationId, userId);
-    if (input.status === "disabled") {
-      await this.assertNotLastOwner(actor.organizationId, userId);
+    const roleRows = input.roleCodes ? await this.resolveRoles(input.roleCodes) : undefined;
+    if (input.roleCodes) {
+      if (!input.roleCodes.length) throw AppError.validation("roles must not be empty");
+      this.assertCanAssignRoles(actor, input.roleCodes);
     }
-
-    const patch: {
-      name?: string;
-      status?: string;
-      passwordHash?: string;
-      updatedAt: Date;
-    } = { updatedAt: new Date() };
-    if (input.name !== undefined) patch.name = input.name;
-    if (input.status !== undefined) patch.status = input.status;
-    if (input.password !== undefined) {
-      if (input.password.length < 8) {
-        throw AppError.validation("password must be at least 8 characters");
+    if (input.password !== undefined && input.password.length < 8)
+      throw AppError.validation("password must be at least 8 characters");
+    const passwordHash =
+      input.password === undefined ? undefined : await this.hasher.hash(input.password);
+    await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select id from organizations where id = ${actor.organizationId} for update`,
+      );
+      const target = await this.getOrgUser(actor.organizationId, userId);
+      const targetRoles = await tx
+        .select({ code: roles.code })
+        .from(userRoles)
+        .innerJoin(roles, eq(roles.id, userRoles.roleId))
+        .where(eq(userRoles.userId, userId));
+      if (targetRoles.some((r) => r.code.startsWith("platform_")))
+        throw AppError.forbidden("Platform users cannot be managed via organization users API");
+      if (input.status === "disabled" || (input.roleCodes && !input.roleCodes.includes("owner"))) {
+        await this.assertNotLastOwner(actor.organizationId, userId);
       }
-      patch.passwordHash = await this.hasher.hash(input.password);
-    }
-
-    await this.db.update(users).set(patch).where(eq(users.id, target.id));
+      await tx
+        .update(users)
+        .set({ name: input.name, status: input.status, passwordHash, updatedAt: new Date() })
+        .where(eq(users.id, target.id));
+      if (roleRows) {
+        await tx.delete(userRoles).where(eq(userRoles.userId, userId));
+        await tx.insert(userRoles).values(roleRows.map((r) => ({ userId, roleId: r.id })));
+      }
+    });
     return this.getUserDetail(actor.organizationId, userId);
   }
 
-  async assignRoles(
-    actor: UserAuthContext,
-    userId: string,
-    roleCodes: string[],
-  ) {
-    if (!roleCodes.length) {
-      throw AppError.validation("roles must not be empty");
-    }
-    await this.getOrgUser(actor.organizationId, userId);
-    this.assertCanAssignRoles(actor, roleCodes);
-    const roleRows = await this.resolveRoles(roleCodes);
-
-    const current = await this.db
-      .select({ code: roles.code })
-      .from(userRoles)
-      .innerJoin(roles, eq(roles.id, userRoles.roleId))
-      .where(eq(userRoles.userId, userId));
-    const hadOwner = current.some((r) => r.code === "owner");
-    const willHaveOwner = roleCodes.includes("owner");
-    if (hadOwner && !willHaveOwner) {
-      await this.assertNotLastOwner(actor.organizationId, userId);
-    }
-
-    await this.db.delete(userRoles).where(eq(userRoles.userId, userId));
-    await this.db.insert(userRoles).values(
-      roleRows.map((r) => ({ userId, roleId: r.id })),
-    );
-    return this.getUserDetail(actor.organizationId, userId);
+  async assignRoles(actor: UserAuthContext, userId: string, roleCodes: string[]) {
+    return this.updateUser(actor, userId, { roleCodes });
   }
 
   private assertCanAssignRoles(actor: UserAuthContext, roleCodes: string[]) {
-    const elevated = actor.roles.includes("owner") || actor.roles.includes("admin");
+    const platformAdmin = actor.ctx === "platform" && actor.permissions.includes("platform:admin");
+    const elevated =
+      platformAdmin || actor.roles.includes("owner") || actor.roles.includes("admin");
     if (!elevated) {
       throw AppError.forbidden("Only owner/admin can assign roles");
     }
-    if (roleCodes.includes("owner") && !actor.roles.includes("owner")) {
+    if (roleCodes.includes("owner") && !actor.roles.includes("owner") && !platformAdmin) {
       throw AppError.forbidden("Only owner can assign the owner role");
     }
     if (roleCodes.some((c) => c.startsWith("platform_"))) {
@@ -307,10 +184,7 @@ export class UsersAdminService {
   }
 
   private async resolveRoles(codes: string[]) {
-    const roleRows = await this.db
-      .select()
-      .from(roles)
-      .where(inArray(roles.code, codes));
+    const roleRows = await this.db.select().from(roles).where(inArray(roles.code, codes));
     if (roleRows.length !== codes.length) {
       const found = new Set(roleRows.map((r) => r.code));
       const missing = codes.filter((c) => !found.has(c));

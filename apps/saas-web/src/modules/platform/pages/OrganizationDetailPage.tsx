@@ -1,3 +1,4 @@
+import { UsersManager } from "@/modules/app/components/UsersManager";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,6 +85,8 @@ export function OrganizationDetailPage() {
       setError(null);
       await qc.invalidateQueries({ queryKey: ["organization", id] });
       await qc.invalidateQueries({ queryKey: ["organizations"] });
+      await qc.invalidateQueries({ queryKey: ["platform", "plan-change-requests"] });
+      await qc.invalidateQueries({ queryKey: ["org-plan", id] });
     },
     onError: (err) => {
       setError(
@@ -309,6 +312,11 @@ export function OrganizationDetailPage() {
                   Suplantar
                 </Button>
               </div>
+            </Card>
+          ) : null}
+          {canImpersonate && !org.is_platform ? (
+            <Card>
+              <UsersManager organizationId={id} />
             </Card>
           ) : null}
         </div>

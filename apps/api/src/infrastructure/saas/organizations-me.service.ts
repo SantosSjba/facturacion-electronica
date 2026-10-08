@@ -52,6 +52,9 @@ export interface OrgPlanMePublic {
 export interface PlanChangeRequestPublic {
   id: string;
   status: string;
+  resolution: string | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
   message: string | null;
   current_plan_id: string | null;
   current_plan_code: string | null;
@@ -175,6 +178,9 @@ export class OrganizationsMeService {
       items: rows.map((r) => ({
         id: r.req.id,
         status: r.req.status,
+        resolution: r.req.resolution,
+        resolution_note: r.req.resolutionNote,
+        resolved_at: r.req.resolvedAt?.toISOString() ?? null,
         message: r.req.message,
         current_plan_id: r.req.currentPlanId,
         current_plan_code: r.req.currentPlanId
@@ -217,7 +223,7 @@ export class OrganizationsMeService {
       .where(
         and(
           eq(planChangeRequests.organizationId, actor.organizationId),
-          eq(planChangeRequests.status, "pending"),
+          inArray(planChangeRequests.status, ["pending", "acknowledged"]),
         ),
       )
       .limit(1);

@@ -9,38 +9,29 @@ import { RequirePermissions } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-const createSchema = z
-  .object({
-    email: z.string().email(),
-    name: z.string().min(1),
-    password: z.string().min(8).optional(),
-    invite: z.boolean().optional(),
-    roles: z.array(z.string().min(1)).min(1),
-    status: z.enum(["active", "disabled"]).optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (!data.invite && !data.password) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["password"],
-        message: "password is required unless invite is true",
-      });
-    }
-  });
+export const createUserSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  name: z.string().trim().min(2).max(120),
+  password: z.string().min(8),
+  invite: z.literal(false).optional(),
+  roles: z.array(z.string().min(1)).min(1),
+  status: z.enum(["active", "disabled"]).optional(),
+});
 
-const patchSchema = z.object({
+export const patchUserSchema = z.object({
   name: z.string().min(1).optional(),
   status: z.enum(["active", "disabled"]).optional(),
   password: z.string().min(8).optional(),
+  roles: z.array(z.string().min(1)).min(1).optional(),
 });
 
-const rolesSchema = z.object({
+export const userRolesSchema = z.object({
   roles: z.array(z.string().min(1)).min(1),
 });
 
-type CreateBody = z.infer<typeof createSchema>;
-type PatchBody = z.infer<typeof patchSchema>;
-type RolesBody = z.infer<typeof rolesSchema>;
+type CreateBody = z.infer<typeof createUserSchema>;
+type PatchBody = z.infer<typeof patchUserSchema>;
+type RolesBody = z.infer<typeof userRolesSchema>;
 
 @ApiTags("users")
 @ApiBearerAuth()
@@ -69,18 +60,17 @@ export class UsersController {
   @Post("users")
   @RequirePermissions("users:write")
   @ApiOperation({
-    summary: "Create organization user (password) or invite (invite:true)",
+    summary: "Create organization user with password",
   })
   create(
     @CurrentAuth() auth: UserAuthContext,
-    @Body(new ZodValidationPipe(createSchema)) body: CreateBody,
+    @Body(new ZodValidationPipe(createUserSchema)) body: CreateBody,
   ) {
     this.assertUser(auth);
     return this.users.createUser(auth, {
       email: body.email,
       name: body.name,
       password: body.password,
-      invite: body.invite,
       roleCodes: body.roles,
       status: body.status,
     });
@@ -92,10 +82,10 @@ export class UsersController {
   update(
     @CurrentAuth() auth: UserAuthContext,
     @Param("id") id: string,
-    @Body(new ZodValidationPipe(patchSchema)) body: PatchBody,
+    @Body(new ZodValidationPipe(patchUserSchema)) body: PatchBody,
   ) {
     this.assertUser(auth);
-    return this.users.updateUser(auth, id, body);
+    return this.users.updateUser(auth, id, { ...body, roleCodes: body.roles });
   }
 
   @Put("users/:id/roles")
@@ -104,7 +94,7 @@ export class UsersController {
   assignRoles(
     @CurrentAuth() auth: UserAuthContext,
     @Param("id") id: string,
-    @Body(new ZodValidationPipe(rolesSchema)) body: RolesBody,
+    @Body(new ZodValidationPipe(userRolesSchema)) body: RolesBody,
   ) {
     this.assertUser(auth);
     return this.users.assignRoles(auth, id, body.roles);

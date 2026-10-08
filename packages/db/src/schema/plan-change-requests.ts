@@ -1,15 +1,10 @@
 import { sql } from "drizzle-orm";
-import {
-  check,
-  index,
-  pgTable,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, idColumn, updatedAt } from "./columns";
 import { organizations } from "./organizations";
 import { plans } from "./plans";
+import { orgPlans } from "./org-plans";
 import { users } from "./users";
 
 export const planChangeRequests = pgTable(
@@ -30,6 +25,15 @@ export const planChangeRequests = pgTable(
       .references(() => plans.id, { onDelete: "restrict" }),
     message: text("message"),
     status: text("status").notNull().default("pending"),
+    resolution: text("resolution"),
+    resolutionNote: text("resolution_note"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true, mode: "date" }),
+    resolvedByUserId: uuid("resolved_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    assignedOrgPlanId: uuid("assigned_org_plan_id").references(() => orgPlans.id, {
+      onDelete: "set null",
+    }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -39,6 +43,10 @@ export const planChangeRequests = pgTable(
     check(
       "plan_change_requests_status_check",
       sql`${t.status} in ('pending', 'acknowledged', 'closed')`,
+    ),
+    check(
+      "plan_change_requests_resolution_check",
+      sql`${t.resolution} is null or (${t.status} = 'closed' and ${t.resolution} in ('approved', 'rejected'))`,
     ),
   ],
 );

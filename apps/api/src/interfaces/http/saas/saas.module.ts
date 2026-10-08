@@ -8,6 +8,7 @@ import {
 import { Worker, type ConnectionOptions } from "bullmq";
 
 import { AuthModule } from "../auth/auth.module";
+import { OrganizationUsersController } from "./organization-users.controller";
 
 import { LegalDocumentsService } from "../../../infrastructure/legal/legal-documents.service";
 import { EmailService } from "../../../infrastructure/notifications/email.service";
@@ -26,6 +27,8 @@ import { OnboardingService } from "../../../infrastructure/saas/onboarding.servi
 import { OrganizationsMeService } from "../../../infrastructure/saas/organizations-me.service";
 import { OrgsService } from "../../../infrastructure/saas/orgs.service";
 import { PlansService } from "../../../infrastructure/saas/plans.service";
+import { PlanChangeRequestsService } from "../../../infrastructure/saas/plan-change-requests.service";
+import { PlanChangeRequestsController } from "./plan-change-requests.controller";
 import { PlatformStatsService } from "../../../infrastructure/saas/platform-stats.service";
 import { SignupRequestsService } from "../../../infrastructure/saas/signup-requests.service";
 import { LegalController } from "./legal.controller";
@@ -42,6 +45,8 @@ import { SignupRequestsController } from "./signup-requests.controller";
 @Module({
   imports: [forwardRef(() => AuthModule)],
   controllers: [
+    OrganizationUsersController,
+    PlanChangeRequestsController,
     PlansController,
     OrgPlansController,
     OrgsController,
@@ -54,6 +59,7 @@ import { SignupRequestsController } from "./signup-requests.controller";
     OrganizationsMeController,
   ],
   providers: [
+    PlanChangeRequestsService,
     LegalDocumentsService,
     SignupRequestsService,
     PlansService,

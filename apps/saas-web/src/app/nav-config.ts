@@ -48,6 +48,12 @@ export const PLATFORM_NAV_ITEMS: NavItem[] = [
     icon: Layers,
   },
   {
+    id: "plan-change-requests",
+    label: "Cambios de plan",
+    to: "/platform/plan-change-requests",
+    icon: ClipboardList,
+  },
+  {
     id: "legal",
     label: "Legal",
     to: "/platform/legal",

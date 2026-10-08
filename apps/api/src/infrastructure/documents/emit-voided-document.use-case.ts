@@ -1,3 +1,4 @@
+import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
@@ -24,11 +25,16 @@ import { CredentialsResolver } from "./credentials-resolver";
 import { DocumentsService, type DocumentPublic } from "./documents.service";
 
 function parseSerieNumber(raw: string): { serie: string; number: number } {
-  const m = raw.trim().toUpperCase().match(/^([A-Z0-9]+)-(\d+)$/);
+  const m = raw
+    .trim()
+    .toUpperCase()
+    .match(/^([A-Z0-9]+)-(\d+)$/);
   if (!m?.[1] || !m[2]) {
-    throw AppError.validation("Invalid serie_number", [
-      { path: "serie_number", issue: "expected SERIE-NUMBER" },
-    ], { httpStatus: 422 });
+    throw AppError.validation(
+      "Invalid serie_number",
+      [{ path: "serie_number", issue: "expected SERIE-NUMBER" }],
+      { httpStatus: 422 },
+    );
   }
   return { serie: m[1], number: Number(m[2]) };
 }
@@ -57,17 +63,15 @@ export class EmitVoidedDocumentUseCase {
     body: VoidedDocumentCreate;
     idempotencyKey: string;
   }): Promise<DocumentPublic> {
+    await assertPlanCapacity(this.db, input.organizationId, "documents_this_month");
     const company = await this.companies.requireActiveCompany(
       input.organizationId,
       input.body.company_id,
     );
-    const { pfx, password } = await this.credentials.resolveCertificate(
-      company.id,
-    );
+    const { pfx, password } = await this.credentials.resolveCertificate(company.id);
     const sol = await this.credentials.resolveSol(company.id);
 
-    const issueDate =
-      input.body.issue_date ?? new Date().toISOString().slice(0, 10);
+    const issueDate = input.body.issue_date ?? new Date().toISOString().slice(0, 10);
     const dateCompact = input.body.reference_date.replace(/-/g, "");
 
     const affectedIds: string[] = [];
@@ -85,9 +89,11 @@ export class EmitVoidedDocumentUseCase {
         number = doc.number ?? 0;
       }
       if (!serie || !number) {
-        throw AppError.validation("Missing serie/number", [
-          { path: "documents", issue: "serie_number or serie+number required" },
-        ], { httpStatus: 422 });
+        throw AppError.validation(
+          "Missing serie/number",
+          [{ path: "documents", issue: "serie_number or serie+number required" }],
+          { httpStatus: 422 },
+        );
       }
       const serieNumber = `${serie}-${String(number).padStart(8, "0")}`;
       // Also try unpadded forms used by emit (padding from series)
@@ -109,9 +115,11 @@ export class EmitVoidedDocumentUseCase {
         });
       }
       if (!["01", "07", "08"].includes(origin.documentType)) {
-        throw AppError.validation("RA only for 01/07/08", [
-          { path: "documents", issue: `type ${origin.documentType}` },
-        ], { httpStatus: 422 });
+        throw AppError.validation(
+          "RA only for 01/07/08",
+          [{ path: "documents", issue: `type ${origin.documentType}` }],
+          { httpStatus: 422 },
+        );
       }
       affectedIds.push(origin.id);
       lines.push({
@@ -177,27 +185,29 @@ export class EmitVoidedDocumentUseCase {
         affected_document_ids: affectedIds,
       };
 
-      await this.db.insert(documents).values({
-        id: documentId,
-        organizationId: input.organizationId,
-        companyId: company.id,
-        documentType: "RA",
-        serie: dateCompact,
-        number: allocated.number,
-        serieNumber: ublId,
-        status: "draft",
-        environment: company.environment,
-        issueDate,
-        currency: "PEN",
-        customerIdentityType: null,
-        customerIdentityNumber: null,
-        customerName: null,
-        totals: {},
-        payload,
-        payloadHash: hashRequestBody(payload),
-        idempotencyKey: input.idempotencyKey,
-        ublProfile: "2.0",
-      });
+      await withPlanCapacity(this.db, input.organizationId, "documents_this_month", async (tx) =>
+        tx.insert(documents).values({
+          id: documentId,
+          organizationId: input.organizationId,
+          companyId: company.id,
+          documentType: "RA",
+          serie: dateCompact,
+          number: allocated.number,
+          serieNumber: ublId,
+          status: "draft",
+          environment: company.environment,
+          issueDate,
+          currency: "PEN",
+          customerIdentityType: null,
+          customerIdentityNumber: null,
+          customerName: null,
+          totals: {},
+          payload,
+          payloadHash: hashRequestBody(payload),
+          idempotencyKey: input.idempotencyKey,
+          ublProfile: "2.0",
+        }),
+      );
 
       await this.documents.appendEvent({
         organizationId: input.organizationId,
@@ -262,15 +272,10 @@ export class EmitVoidedDocumentUseCase {
         solPassword: sol.password,
       });
 
-      await this.documents.transitionStatus(
-        documentId,
-        "validated",
-        "ticket_pending",
-        {
-          sunatTicket: summary.ticket,
-          sentAt: new Date(),
-        },
-      );
+      await this.documents.transitionStatus(documentId, "validated", "ticket_pending", {
+        sunatTicket: summary.ticket,
+        sentAt: new Date(),
+      });
       await this.documents.appendEvent({
         organizationId: input.organizationId,
         companyId: company.id,
@@ -288,18 +293,12 @@ export class EmitVoidedDocumentUseCase {
         documentId,
       });
 
-      const row = await this.documents.getById(
-        input.organizationId,
-        documentId,
-      );
+      const row = await this.documents.getById(input.organizationId, documentId);
       return this.documents.toPublic(row);
     } catch (cause) {
       await liberate();
       if (cause instanceof AppError) throw cause;
-      throw AppError.internal(
-        cause instanceof Error ? cause.message : "Emit RA failed",
-        { cause },
-      );
+      throw AppError.internal(cause instanceof Error ? cause.message : "Emit RA failed", { cause });
     }
   }
 }

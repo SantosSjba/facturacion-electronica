@@ -1,3 +1,5 @@
+import { usePlanCapacity } from "@/shared/plan/use-plan-capacity";
+import { PlanCapacityNotice } from "@/shared/plan/PlanCapacityNotice";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -20,6 +22,7 @@ import { CreateApiKeyDialog } from "../components/CreateApiKeyDialog";
 export function ApiKeysListPage() {
   const { hasPermission } = useSession();
   const canManage = hasPermission("apikeys:manage");
+  const capacity = usePlanCapacity("api_keys", canManage);
   const [createOpen, setCreateOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -32,6 +35,7 @@ export function ApiKeysListPage() {
     mutationFn: revokeApiKey,
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["api-keys"] });
+      await qc.invalidateQueries({ queryKey: ["org-plan"] });
     },
   });
 
@@ -46,6 +50,7 @@ export function ApiKeysListPage() {
               type="button"
               size="icon-label-sm"
               aria-label="Nueva API key"
+              disabled={capacity.blocked}
               onClick={() => setCreateOpen(true)}
             >
               <Plus className={buttonIconClassName} />
@@ -54,6 +59,10 @@ export function ApiKeysListPage() {
           ) : null
         }
       />
+
+      <div className="mb-6">
+        <PlanCapacityNotice capacity={capacity} />
+      </div>
 
       {query.isLoading ? <LoadingState variant="table" label="Cargando API keys…" /> : null}
 
@@ -75,6 +84,7 @@ export function ApiKeysListPage() {
                   type="button"
                   size="icon-label-sm"
                   aria-label="Nueva API key"
+                  disabled={capacity.blocked}
                   onClick={() => setCreateOpen(true)}
                 >
                   <Plus className={buttonIconClassName} />

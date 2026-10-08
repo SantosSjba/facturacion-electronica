@@ -136,6 +136,10 @@ async function preparePortal(
         requires_reaccept: false,
       };
     else if (pathname === "/saas/platform/audit-events") json = { items: [], next_cursor: null };
+    else if (pathname === "/organizations/me/plan") json = {
+      organization_id: "portal-org", plan: { name: "Starter" },
+      limits: { max_companies: 3, max_users: 2, max_documents_per_month: 100, max_api_keys: 1 }, usage: { companies: 1, users: 1, documents_this_month: 0, api_keys: 0 },
+    };
     else if (pathname === "/companies") json = req.method() === "POST" ? company : [company];
     else if (pathname === `/companies/${companyId}`) json = company;
     else if (pathname.endsWith("/series")) json = [];
@@ -166,6 +170,62 @@ async function preparePortal(
     await route.fulfill({ json, headers });
   });
   return writes;
+}
+
+for (const decision of ["approve", "reject"] as const) {
+  test(`platform reviews and resolves a plan change: ${decision}`, async ({ page }, testInfo) => {
+    await preparePortal(page, ["platform:admin"], "platform");
+    const item = {
+      id: "plan-change-1", organization_id: company.organization_id,
+      organization_name: "Empresa API SAC", organization_slug: "empresa-api",
+      requested_by_email: "cliente@factosysperu.com", current_plan_name: null,
+      requested_plan_name: "Starter", requested_plan_code: "starter",
+      message: "Necesitamos activar el plan", status: "pending", created_at: company.created_at,
+      resolution: null as string | null, resolution_note: null as string | null, resolved_at: null as string | null,
+    };
+    const headers = { "access-control-allow-origin": "http://localhost:5184", "access-control-allow-headers": "authorization,content-type", "access-control-allow-methods": "GET,POST,OPTIONS" };
+    await page.route("http://localhost:3000/saas/platform/plan-change-requests**", async (route) => {
+      const req = route.request();
+      if (req.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+      if (req.method() === "POST") {
+        const body = req.postDataJSON() as { decision: string; note: string };
+        expect(body.decision).toBe(decision);
+        item.status = "closed";
+        item.resolution = decision === "approve" ? "approved" : "rejected";
+        item.resolution_note = body.note;
+        item.resolved_at = company.created_at;
+        return route.fulfill({ status: 201, json: { id: item.id }, headers });
+      }
+      const status = new URL(req.url()).searchParams.get("status");
+      const items = !status || status === item.status ? [item] : [];
+      return route.fulfill({ json: { items, total: items.length }, headers });
+    });
+    await page.goto("/platform/plan-change-requests");
+    await expect(page.getByTestId("nav-plan-change-requests")).toHaveAttribute("aria-current", "page");
+    await page.getByRole("button", { name: "Revisar solicitud" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("Necesitamos activar el plan")).toBeVisible();
+    await expect(dialog.getByRole("link", { name: "Ver organización" })).toHaveAttribute("href", "/platform/organizations/portal-org");
+    if (decision === "reject") {
+      await dialog.getByLabel("Decisión").selectOption("reject");
+      await dialog.getByRole("button", { name: "Confirmar rechazo" }).click();
+      await expect(dialog.getByText("Indica el motivo del rechazo para informar al cliente.")).toBeVisible();
+      await dialog.getByLabel("Motivo del rechazo").fill("Debemos verificar la empresa");
+    } else {
+      await dialog.getByLabel("Respuesta al cliente (opcional)").fill("El plan está listo");
+    }
+    await page.setViewportSize({ width: 390, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("plan-review-mobile.png"), fullPage: true });
+    await dialog.getByRole("button", { name: decision === "approve" ? "Aprobar y aplicar" : "Confirmar rechazo" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Sin solicitudes de cambio de plan")).toBeVisible();
+    await page.getByLabel("Estado", { exact: true }).selectOption("closed");
+    await expect(page.getByText(decision === "approve" ? "Aprobada" : "Rechazada", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Ver resultado" }).click();
+    await expect(dialog.getByText(item.resolution_note ?? "")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Aprobar y aplicar" })).toHaveCount(0);
+  });
 }
 
 test("company list shows a skeleton until data arrives", async ({ page }) => {
@@ -340,4 +400,117 @@ test("owner platform uses the shared shell with administrative routes", async ({
   await expect(page.getByTestId("nav-companies")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Abrir menú de usuario" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("platform-desktop.png"), fullPage: true });
+});
+
+for (const limit of [0, 1]) {
+  test('company creation is blocked by plan quota ' + limit + ' regardless of filters', async ({ page }) => {
+    const writes = await preparePortal(page);
+    await page.route('http://localhost:3000/organizations/me/plan', route => route.fulfill({
+      headers: { 'access-control-allow-origin': 'http://localhost:5184' },
+      json: { limits: { max_companies: limit }, usage: { companies: 1 } },
+    }));
+    await page.goto('/app/companies');
+    const button = page.getByRole('button', { name: 'Crear empresa', exact: true });
+    await expect(button).toBeDisabled();
+    await expect(page.getByText('Alcanzaste el límite de tu plan: 1 de ' + limit + ' empresas.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Solicitar cambio de plan' })).toHaveAttribute('href', '/app/plan');
+    await page.getByPlaceholder('Buscar RUC…').fill('99999999999');
+    await expect(page.getByText('Sin empresas', { exact: true })).toBeVisible();
+    await expect(button).toBeDisabled();
+    expect(writes.filter(w => w.path === '/companies')).toHaveLength(0);
+  });
+}
+
+test('company creation waits for quota and stays blocked when quota cannot load', async ({ page }) => {
+  let release;
+  const wait = new Promise<void>(resolve => { release = resolve; });
+  await preparePortal(page, ownerPermissions, 'org', { path: '/organizations/me/plan', wait, fail: true });
+  await page.goto('/app/companies');
+  await expect(page.getByText('Verificando el cupo de empresas…')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Crear empresa', exact: true })).toBeDisabled();
+  release?.();
+  await expect(page.getByText('No se pudo verificar el cupo de empresas.')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: 'Crear empresa', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Reintentar', exact: true })).toBeVisible();
+});
+
+test('company submission errors appear once in Sonner without a form alert', async ({ page }) => {
+  await preparePortal(page);
+  await page.route('http://localhost:3000/companies', async route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    return route.fulfill({ status: 400, headers: { 'access-control-allow-origin': 'http://localhost:5184' },
+      json: { code: 'FACTOSYS_VALIDATION', message: 'Invalid RUC' } });
+  });
+  await page.goto('/app/companies');
+  await page.getByRole('button', { name: 'Crear empresa', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('RUC', { exact: true }).fill('12345678912');
+  await dialog.getByLabel('Razón social').fill('Prueba');
+  await dialog.getByRole('button', { name: 'Crear', exact: true }).click();
+  const message = 'El RUC ingresado no es válido. Revisa sus 11 dígitos.';
+  await expect(page.locator('[data-sonner-toast]')).toContainText(message);
+  await expect(page.getByText(message, { exact: true })).toHaveCount(1);
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(dialog.getByLabel('Razón social')).toHaveValue('Prueba');
+});
+
+for (const platform of [false, true]) {
+  test('users are created directly and can be managed in ' + (platform ? 'platform' : 'client'), async ({ page }) => {
+    await preparePortal(page, platform ? ['platform:admin'] : [...ownerPermissions, 'users:read', 'users:write'], platform ? 'platform' : 'org');
+    const base = platform ? '/saas/organizations/portal-org' : '/organizations/me';
+    const members = [{ id: 'owner', name: 'Propietario', email: 'owner@factosysperu.com', roles: ['owner'], status: 'active', createdAt: company.created_at, lastLoginAt: null }];
+    const headers = { 'access-control-allow-origin': 'http://localhost:5184', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS' };
+    await page.route('http://localhost:3000/**', async route => {
+      const req = route.request(), pathname = new URL(req.url()).pathname;
+      if (req.method() === 'OPTIONS') return route.fallback();
+      const respond = (json: unknown, status = 200) => route.fulfill({ status, headers, json });
+      if (pathname === '/saas/organizations/portal-org') return respond({ id: 'portal-org', name: 'Empresa API SAC', slug: 'empresa-api', status: 'active', is_platform: false, current_plan: null, created_at: company.created_at, updated_at: company.updated_at });
+      if (pathname === '/saas/platform/plans') return respond({ items: [] });
+      if (pathname === (platform ? base + '/plan-usage' : base + '/plan')) return respond({ limits: { max_users: 2 }, usage: { users: members.length } });
+      if (pathname === base + '/roles') return respond([{ id: 'owner', code: 'owner', name: 'Propietario', permissions: [] }, { id: 'admin', code: 'admin', name: 'Administrador', permissions: [] }]);
+      if (pathname === base + '/users') {
+        if (req.method() === 'POST') {
+          const body = req.postDataJSON();
+          expect(body.invite).toBeUndefined(); expect(body.password).toBe('NewUserPass!2026');
+          members.push({ ...body, id: 'member', status: 'active', createdAt: company.created_at, lastLoginAt: null });
+          return respond(members[1], 201);
+        }
+        return respond(members);
+      }
+      if (pathname === base + '/users/member' && req.method() === 'PATCH') {
+        const body = req.postDataJSON(); Object.assign(members[1], body); return respond(members[1]);
+      }
+      return route.fallback();
+    });
+    await page.goto(platform ? '/platform/organizations/portal-org' : '/app/users');
+    await expect(page.getByText('§33')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Invitar usuario' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Crear usuario', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Nombre', { exact: true }).fill('Nuevo usuario');
+    await dialog.getByLabel('Correo electrónico', { exact: true }).fill('nuevo@factosysperu.com');
+    await dialog.getByLabel('Contraseña', { exact: true }).fill('short');
+    await dialog.getByRole('button', { name: 'Crear usuario', exact: true }).click();
+    await expect(dialog.getByText('La contraseña debe tener al menos 8 caracteres')).toBeVisible();
+    await dialog.getByLabel('Contraseña', { exact: true }).fill('NewUserPass!2026');
+    await dialog.getByRole('button', { name: 'Crear usuario', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Crear usuario', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Editar usuario nuevo@factosysperu.com' }).click();
+    await dialog.getByLabel('Nombre', { exact: true }).fill('Nombre actualizado');
+    await dialog.getByLabel('Estado', { exact: true }).selectOption('disabled');
+    await dialog.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText('Nombre actualizado', { exact: true })).toBeVisible();
+    await expect(page.getByText('Desactivado', { exact: true })).toBeVisible();
+  });
+}
+
+test('API key creation is disabled at quota in list and empty-state actions', async ({ page }) => {
+  await preparePortal(page);
+  await page.route('http://localhost:3000/organizations/me/plan', route => route.fulfill({ headers: { 'access-control-allow-origin': 'http://localhost:5184' }, json: { limits: { max_api_keys: 0 }, usage: { api_keys: 0 } } }));
+  await page.goto('/app/developers/api-keys');
+  await expect(page.getByRole('button', { name: 'Nueva API key' })).toHaveCount(2);
+  for (const button of await page.getByRole('button', { name: 'Nueva API key' }).all()) await expect(button).toBeDisabled();
+  await expect(page.getByText('Alcanzaste el límite de tu plan: 0 de 0 API keys.')).toBeVisible();
 });

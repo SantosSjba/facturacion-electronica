@@ -31,6 +31,9 @@ export interface OrgPlanMe {
 export interface PlanChangeRequest {
   id: string;
   status: string;
+  resolution: "approved" | "rejected" | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
   message: string | null;
   current_plan_id: string | null;
   current_plan_code: string | null;

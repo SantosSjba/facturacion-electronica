@@ -1,3 +1,4 @@
+import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
@@ -49,17 +50,15 @@ export class EmitDailySummaryUseCase {
     body: DailySummaryCreate;
     idempotencyKey: string;
   }): Promise<DocumentPublic> {
+    await assertPlanCapacity(this.db, input.organizationId, "documents_this_month");
     const company = await this.companies.requireActiveCompany(
       input.organizationId,
       input.body.company_id,
     );
-    const { pfx, password } = await this.credentials.resolveCertificate(
-      company.id,
-    );
+    const { pfx, password } = await this.credentials.resolveCertificate(company.id);
     const sol = await this.credentials.resolveSol(company.id);
 
-    const issueDate =
-      input.body.issue_date ?? new Date().toISOString().slice(0, 10);
+    const issueDate = input.body.issue_date ?? new Date().toISOString().slice(0, 10);
     const dateCompact = input.body.reference_date.replace(/-/g, "");
 
     const poolLines = await this.pool.resolvePool({
@@ -144,27 +143,29 @@ export class EmitDailySummaryUseCase {
         });
       }
 
-      await this.db.insert(documents).values({
-        id: documentId,
-        organizationId: input.organizationId,
-        companyId: company.id,
-        documentType: "RC",
-        serie: dateCompact,
-        number: allocated.number,
-        serieNumber: ublId,
-        status: "draft",
-        environment: company.environment,
-        issueDate,
-        currency: "PEN",
-        customerIdentityType: null,
-        customerIdentityNumber: null,
-        customerName: null,
-        totals: {},
-        payload,
-        payloadHash: hashRequestBody(payload),
-        idempotencyKey: input.idempotencyKey,
-        ublProfile: "2.0",
-      });
+      await withPlanCapacity(this.db, input.organizationId, "documents_this_month", async (tx) =>
+        tx.insert(documents).values({
+          id: documentId,
+          organizationId: input.organizationId,
+          companyId: company.id,
+          documentType: "RC",
+          serie: dateCompact,
+          number: allocated.number,
+          serieNumber: ublId,
+          status: "draft",
+          environment: company.environment,
+          issueDate,
+          currency: "PEN",
+          customerIdentityType: null,
+          customerIdentityNumber: null,
+          customerName: null,
+          totals: {},
+          payload,
+          payloadHash: hashRequestBody(payload),
+          idempotencyKey: input.idempotencyKey,
+          ublProfile: "2.0",
+        }),
+      );
 
       await this.documents.appendEvent({
         organizationId: input.organizationId,
@@ -227,15 +228,10 @@ export class EmitDailySummaryUseCase {
         solPassword: sol.password,
       });
 
-      await this.documents.transitionStatus(
-        documentId,
-        "validated",
-        "ticket_pending",
-        {
-          sunatTicket: summary.ticket,
-          sentAt: new Date(),
-        },
-      );
+      await this.documents.transitionStatus(documentId, "validated", "ticket_pending", {
+        sunatTicket: summary.ticket,
+        sentAt: new Date(),
+      });
       await this.documents.appendEvent({
         organizationId: input.organizationId,
         companyId: company.id,
@@ -253,18 +249,12 @@ export class EmitDailySummaryUseCase {
         documentId,
       });
 
-      const row = await this.documents.getById(
-        input.organizationId,
-        documentId,
-      );
+      const row = await this.documents.getById(input.organizationId, documentId);
       return this.documents.toPublic(row);
     } catch (cause) {
       await liberate();
       if (cause instanceof AppError) throw cause;
-      throw AppError.internal(
-        cause instanceof Error ? cause.message : "Emit RC failed",
-        { cause },
-      );
+      throw AppError.internal(cause instanceof Error ? cause.message : "Emit RC failed", { cause });
     }
   }
 }

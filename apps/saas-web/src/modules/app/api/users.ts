@@ -18,24 +18,25 @@ export interface OrgRole {
   permissions: string[];
 }
 
-export function fetchOrgUsers(): Promise<OrgUser[]> {
-  return apiRequest("/organizations/me/users");
+function base(organizationId?: string) {
+  return organizationId ? `/saas/organizations/${organizationId}` : "/organizations/me";
 }
-
-export function fetchOrgRoles(): Promise<OrgRole[]> {
-  return apiRequest("/organizations/me/roles");
+export function fetchOrgUsers(organizationId?: string): Promise<OrgUser[]> {
+  return apiRequest(`${base(organizationId)}/users`);
 }
-
-export function inviteOrgUser(input: { email: string; name: string; roles: string[] }): Promise<{
-  id: string;
-  email: string;
-  name: string;
-  status: string;
-  roles: string[];
-  invited: boolean;
-}> {
-  return apiRequest("/organizations/me/users", {
-    method: "POST",
-    body: { ...input, invite: true },
-  });
+export function fetchOrgRoles(organizationId?: string): Promise<OrgRole[]> {
+  return apiRequest(`${base(organizationId)}/roles`);
+}
+export function createOrgUser(
+  input: { email: string; name: string; password: string; roles: string[] },
+  organizationId?: string,
+): Promise<OrgUser> {
+  return apiRequest(`${base(organizationId)}/users`, { method: "POST", body: input });
+}
+export function updateOrgUser(
+  id: string,
+  input: { name?: string; password?: string; roles?: string[]; status?: "active" | "disabled" },
+  organizationId?: string,
+): Promise<OrgUser> {
+  return apiRequest(`${base(organizationId)}/users/${id}`, { method: "PATCH", body: input });
 }

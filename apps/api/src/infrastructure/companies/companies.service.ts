@@ -1,16 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
 import { isValidRuc } from "@factosys/domain";
-import {
-  companies,
-  credentials,
-  documentSeries,
-  newId,
-  type Db,
-} from "@factosys/db";
+import { companies, credentials, documentSeries, newId, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import { DB } from "../persistence/db.tokens";
+import { withPlanCapacity } from "../saas/plan-capacity";
 
 export type CompanyEnvironment = "sandbox" | "production";
 export type CompanyStatus = "active" | "disabled";
@@ -84,50 +79,50 @@ export class CompaniesService {
       ]);
     }
 
-    const existing = await this.db
-      .select({ id: companies.id })
-      .from(companies)
-      .where(
-        and(
-          eq(companies.organizationId, organizationId),
-          eq(companies.ruc, input.ruc),
-          eq(companies.environment, input.environment),
-        ),
-      )
-      .limit(1);
-    if (existing[0]) {
-      throw AppError.conflict(
-        "Company already exists for this RUC and environment",
-      );
-    }
-
     const id = newId();
-    await this.db.insert(companies).values({
-      id,
-      organizationId,
-      ruc: input.ruc,
-      legalName: input.legalName,
-      tradeName: input.tradeName ?? null,
-      environment: input.environment,
-      address: input.address ?? null,
-      timezone: input.timezone ?? "America/Lima",
-      status: "active",
-    });
+    await withPlanCapacity(this.db, organizationId, "companies", async (tx) => {
+      const existing = await tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(
+          and(
+            eq(companies.organizationId, organizationId),
+            eq(companies.ruc, input.ruc),
+            eq(companies.environment, input.environment),
+          ),
+        )
+        .limit(1);
+      if (existing[0]) {
+        throw AppError.conflict("Company already exists for this RUC and environment");
+      }
 
-    if (input.seedDefaultSeries !== false) {
-      await this.db.insert(documentSeries).values(
-        DEFAULT_COMPANY_SERIES.map((s) => ({
-          id: newId(),
-          organizationId,
-          companyId: id,
-          documentType: s.documentType,
-          serie: s.serie,
-          nextNumber: 1,
-          padding: 8,
-          isActive: true,
-        })),
-      );
-    }
+      await tx.insert(companies).values({
+        id,
+        organizationId,
+        ruc: input.ruc,
+        legalName: input.legalName,
+        tradeName: input.tradeName ?? null,
+        environment: input.environment,
+        address: input.address ?? null,
+        timezone: input.timezone ?? "America/Lima",
+        status: "active",
+      });
+
+      if (input.seedDefaultSeries !== false) {
+        await tx.insert(documentSeries).values(
+          DEFAULT_COMPANY_SERIES.map((s) => ({
+            id: newId(),
+            organizationId,
+            companyId: id,
+            documentType: s.documentType,
+            serie: s.serie,
+            nextNumber: 1,
+            padding: 8,
+            isActive: true,
+          })),
+        );
+      }
+    });
 
     return this.get(organizationId, id);
   }
@@ -184,12 +179,7 @@ export class CompaniesService {
     const rows = await this.db
       .select()
       .from(companies)
-      .where(
-        and(
-          eq(companies.id, companyId),
-          eq(companies.organizationId, organizationId),
-        ),
-      )
+      .where(and(eq(companies.id, companyId), eq(companies.organizationId, organizationId)))
       .limit(1);
     const row = rows[0];
     if (!row) {
@@ -209,9 +199,7 @@ export class CompaniesService {
     return row;
   }
 
-  private async toPublic(
-    row: typeof companies.$inferSelect,
-  ): Promise<CompanyPublic> {
+  private async toPublic(row: typeof companies.$inferSelect): Promise<CompanyPublic> {
     const creds = await this.db
       .select({
         kind: credentials.kind,
@@ -225,11 +213,7 @@ export class CompaniesService {
     const cert = creds.find((c) => c.kind === "certificate");
     let certificate_status: CompanyPublic["certificate_status"] = "missing";
     if (cert) {
-      if (
-        cert.status === "active" ||
-        cert.status === "expired" ||
-        cert.status === "revoked"
-      ) {
+      if (cert.status === "active" || cert.status === "expired" || cert.status === "revoked") {
         certificate_status = cert.status;
       } else {
         certificate_status = "missing";
@@ -243,8 +227,7 @@ export class CompaniesService {
     const solMeta = (sol?.publicMetadata ?? {}) as Record<string, unknown>;
     const greMeta = (gre?.publicMetadata ?? {}) as Record<string, unknown>;
 
-    const iso = (d: Date | null | undefined) =>
-      d ? d.toISOString() : null;
+    const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
     return {
       id: row.id,
@@ -266,38 +249,23 @@ export class CompaniesService {
         certificate: cert
           ? {
               status: cert.status,
-              subject_cn:
-                typeof certMeta.subject_cn === "string"
-                  ? certMeta.subject_cn
-                  : null,
-              not_before:
-                typeof certMeta.not_before === "string"
-                  ? certMeta.not_before
-                  : null,
-              not_after:
-                typeof certMeta.not_after === "string"
-                  ? certMeta.not_after
-                  : null,
+              subject_cn: typeof certMeta.subject_cn === "string" ? certMeta.subject_cn : null,
+              not_before: typeof certMeta.not_before === "string" ? certMeta.not_before : null,
+              not_after: typeof certMeta.not_after === "string" ? certMeta.not_after : null,
               rotated_at: iso(cert.rotatedAt),
             }
           : null,
         sol: sol
           ? {
               configured: true,
-              username:
-                typeof solMeta.sol_username === "string"
-                  ? solMeta.sol_username
-                  : null,
+              username: typeof solMeta.sol_username === "string" ? solMeta.sol_username : null,
               rotated_at: iso(sol.rotatedAt),
             }
           : null,
         gre: gre
           ? {
               configured: true,
-              client_id:
-                typeof greMeta.gre_client_id === "string"
-                  ? greMeta.gre_client_id
-                  : null,
+              client_id: typeof greMeta.gre_client_id === "string" ? greMeta.gre_client_id : null,
               rotated_at: iso(gre.rotatedAt),
             }
           : null,

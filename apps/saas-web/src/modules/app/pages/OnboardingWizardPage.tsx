@@ -6,6 +6,8 @@ import { ArrowLeft, ArrowRight, Building2, Check, Scale, Sparkles } from "lucide
 import { toast } from "@factosys/ui";
 
 import { ApiError } from "@/shared/api/errors";
+import { usePlanCapacity } from "@/shared/plan/use-plan-capacity";
+import { PlanCapacityNotice } from "@/shared/plan/PlanCapacityNotice";
 import { useSession } from "@/shared/auth/session-context";
 import {
   Button,
@@ -34,6 +36,7 @@ const STEPS = ["Bienvenida", "Empresa", "Legal", "Listo"] as const;
 
 export function OnboardingWizardPage() {
   const { user, logout } = useSession();
+  const capacity = usePlanCapacity("companies");
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
@@ -91,6 +94,7 @@ export function OnboardingWizardPage() {
       toast.success("Empresa creada");
       setError(null);
       await qc.invalidateQueries({ queryKey: ["onboarding-status"] });
+      await qc.invalidateQueries({ queryKey: ["org-plan"] });
       setStep(2);
     },
     onError: (err) => {
@@ -266,8 +270,14 @@ export function OnboardingWizardPage() {
                   <Button
                     type="button"
                     data-testid="onb-create-company"
-                    disabled={companyMutation.isPending || ruc.length !== 11 || !legalName.trim()}
+                    disabled={
+                      capacity.blocked ||
+                      companyMutation.isPending ||
+                      ruc.length !== 11 ||
+                      !legalName.trim()
+                    }
                     onClick={() => {
+                      if (capacity.blocked || companyMutation.isPending) return;
                       setError(null);
                       companyMutation.mutate();
                     }}
@@ -279,6 +289,7 @@ export function OnboardingWizardPage() {
                   </Button>
                 )}
               </div>
+              {!statusQuery.data?.has_company ? <PlanCapacityNotice capacity={capacity} /> : null}
             </div>
           ) : null}
 
@@ -297,15 +308,17 @@ export function OnboardingWizardPage() {
                 />
               ) : (
                 <>
-                  {[privacyDoc, termsDoc].filter(Boolean).map((doc) => (
-                    <div
-                      key={doc!.id}
-                      className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700 dark:border-gray-700 dark:bg-white/5 dark:text-gray-200"
-                    >
-                      <p className="mb-2 font-medium">{doc!.title}</p>
-                      {doc!.body_md}
-                    </div>
-                  ))}
+                  {[privacyDoc, termsDoc]
+                    .filter((doc) => doc !== undefined)
+                    .map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-700 dark:border-gray-700 dark:bg-white/5 dark:text-gray-200"
+                      >
+                        <p className="mb-2 font-medium">{doc.title}</p>
+                        {doc.body_md}
+                      </div>
+                    ))}
                   <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
                     <Checkbox
                       data-testid="onb-accept-privacy"

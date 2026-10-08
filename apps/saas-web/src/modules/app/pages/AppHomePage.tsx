@@ -18,7 +18,8 @@ import {
 
 function UsageBar({ label, used, limit }: { label: string; used: number; limit: number | null }) {
   const max = limit ?? 0;
-  const pct = max <= 0 ? 0 : Math.min(100, Math.round((used / max) * 100));
+  const reached = limit != null && used >= limit;
+  const pct = max <= 0 ? 100 : Math.min(100, Math.round((used / max) * 100));
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
@@ -28,10 +29,16 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
           {limit != null ? ` / ${limit}` : ""}
         </span>
       </div>
+      {reached ? (
+        <span className="text-theme-xs text-error-500">
+          Límite alcanzado
+          {label === "Documentos (mes)" ? " · el cupo se renueva el próximo mes" : ""}
+        </span>
+      ) : null}
       {limit != null ? (
         <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
           <div
-            className="h-full rounded-full bg-brand-500 transition-all"
+            className={`h-full rounded-full transition-all ${reached ? "bg-error-500" : "bg-brand-500"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -46,6 +53,7 @@ export function AppHomePage() {
     queryKey: ["org-plan", user?.organizationId],
     queryFn: fetchOrgPlan,
     enabled: Boolean(user),
+    refetchInterval: 30_000,
   });
 
   const data = planQuery.data;
@@ -133,7 +141,7 @@ export function AppHomePage() {
               <Users className="size-6 text-brand-500" />
               <CardTitle>Usuarios</CardTitle>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Invita colaboradores a tu organización.
+                Crea usuarios y gestiona los accesos de tu equipo.
               </p>
               <Link to="/app/users">
                 <Button type="button" size="sm">

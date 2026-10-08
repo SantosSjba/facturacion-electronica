@@ -1,9 +1,11 @@
+import { usePlanCapacity } from "@/shared/plan/use-plan-capacity";
+import { toast } from "@factosys/ui";
+import { getErrorMessage } from "@/shared/api/errors";
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Plus, X } from "lucide-react";
 
-import { ApiError } from "@/shared/api/errors";
 import {
   Button,
   ButtonLabel,
@@ -16,7 +18,6 @@ import {
   Input,
   Label,
   Select,
-  ErrorState,
   FieldError,
 } from "@factosys/ui";
 
@@ -29,7 +30,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
   const [name, setName] = useState("");
   const [scopes, setScopes] = useState<string[]>(["documents:read"]);
   const [env, setEnv] = useState<"" | "sandbox" | "production">("");
-  const [error, setError] = useState<string | null>(null);
+  const capacity = usePlanCapacity("api_keys", open);
   const [touched, setTouched] = useState(false);
   const [created, setCreated] = useState<CreateApiKeyResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -41,12 +42,11 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
     onSuccess: async (result) => {
       await qc.invalidateQueries({ queryKey: ["api-keys"] });
       setCreated(result);
-      setError(null);
+      await qc.invalidateQueries({ queryKey: ["org-plan"] });
     },
     onError: (err) => {
-      if (err instanceof ApiError) setError(err.message);
-      else if (err instanceof Error) setError(err.message);
-      else setError("No se pudo crear la API key");
+      toast.error(getErrorMessage(err, "No se pudo crear la API key"));
+      void qc.invalidateQueries({ queryKey: ["org-plan"] });
     },
   });
 
@@ -54,7 +54,6 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
     setName("");
     setScopes(["documents:read"]);
     setEnv("");
-    setError(null);
     setTouched(false);
     setCreated(null);
     setCopied(false);
@@ -69,8 +68,8 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setTouched(true);
+    if (capacity.blocked || mutation.isPending) return;
     if (Object.keys(fieldErrors).length > 0) return;
     mutation.mutate({
       name: name.trim(),
@@ -138,7 +137,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
             onClose={resetAndClose}
           />
           <DialogBody className="space-y-4">
-            {error ? <ErrorState message={error} /> : null}
+            {capacity.blocked ? <p className="text-sm text-gray-500">{capacity.message}</p> : null}
             <div className="space-y-1.5">
               <Label htmlFor="apikey-name">Nombre</Label>
               <Input
@@ -198,7 +197,7 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
               type="submit"
               size="icon-label-sm"
               aria-label="Crear"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || capacity.blocked}
             >
               {mutation.isPending ? (
                 <Spinner className={buttonIconClassName} />

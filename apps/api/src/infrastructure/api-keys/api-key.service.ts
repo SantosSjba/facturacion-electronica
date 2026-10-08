@@ -7,6 +7,7 @@ import { AppError } from "@factosys/shared";
 
 import { Argon2Hasher } from "../crypto/argon2-hasher";
 import { DB } from "../persistence/db.tokens";
+import { withPlanCapacity } from "../saas/plan-capacity";
 import type { ApiKeyAuthContext } from "../../interfaces/http/auth/auth-context";
 
 export const MACHINE_SCOPES = [
@@ -47,16 +48,18 @@ export class ApiKeyService {
     const keyHash = await this.hasher.hash(secret);
     const id = newId();
 
-    await this.db.insert(apiKeys).values({
-      id,
-      organizationId: input.organizationId,
-      name: input.name,
-      keyPrefix,
-      keyHash,
-      scopes: input.scopes,
-      status: "active",
-      environmentConstraint: input.environmentConstraint ?? null,
-    });
+    await withPlanCapacity(this.db, input.organizationId, "api_keys", async (tx) =>
+      tx.insert(apiKeys).values({
+        id,
+        organizationId: input.organizationId,
+        name: input.name,
+        keyPrefix,
+        keyHash,
+        scopes: input.scopes,
+        status: "active",
+        environmentConstraint: input.environmentConstraint ?? null,
+      }),
+    );
 
     return {
       id,
@@ -157,9 +160,7 @@ export class ApiKeyService {
     const allowed = new Set<string>(MACHINE_SCOPES);
     for (const s of scopes) {
       if (!allowed.has(s)) {
-        throw AppError.validation(`Unknown scope: ${s}`, [
-          { path: "scopes", issue: s },
-        ]);
+        throw AppError.validation(`Unknown scope: ${s}`, [{ path: "scopes", issue: s }]);
       }
     }
   }

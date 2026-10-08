@@ -1,3 +1,4 @@
+import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
@@ -73,6 +74,7 @@ export class EmitDocumentOrchestrator {
         "factosys.organization_id": input.organizationId,
       },
       async (rootSpan) => {
+        await assertPlanCapacity(this.db, input.organizationId, "documents_this_month");
         const company = await this.companies.requireActiveCompany(
           input.organizationId,
           input.companyId,
@@ -128,143 +130,125 @@ export class EmitDocumentOrchestrator {
           const serieNumber = `${built.serie.toUpperCase()}-${built.padded}`;
           const payloadHash = hashRequestBody(input.payload);
 
-          await withSpan(
-            "emit.persist",
-            { "factosys.step": "persist_artifacts" },
-            async () => {
-              await this.db.insert(documents).values({
-                id: documentId,
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentType: input.documentType,
-                serie: built.serie.toUpperCase(),
-                number: built.number,
-                serieNumber,
-                status: "draft",
-                environment: company.environment,
-                issueDate: input.issueDate,
-                currency: input.currency,
-                customerIdentityType: input.customer.identity_type,
-                customerIdentityNumber: input.customer.identity_number,
-                customerName: input.customer.name,
-                totals: built.totals,
-                payload: input.payload as Record<string, unknown>,
-                payloadHash,
-                idempotencyKey: input.idempotencyKey,
-                ublProfile: "2.1",
-                relatedDocumentId:
-                  built.relatedDocumentId ?? input.relatedDocumentId ?? null,
-              });
+          await withSpan("emit.persist", { "factosys.step": "persist_artifacts" }, async () => {
+            await withPlanCapacity(
+              this.db,
+              input.organizationId,
+              "documents_this_month",
+              async (tx) =>
+                tx.insert(documents).values({
+                  id: documentId,
+                  organizationId: input.organizationId,
+                  companyId: company.id,
+                  documentType: input.documentType,
+                  serie: built.serie.toUpperCase(),
+                  number: built.number,
+                  serieNumber,
+                  status: "draft",
+                  environment: company.environment,
+                  issueDate: input.issueDate,
+                  currency: input.currency,
+                  customerIdentityType: input.customer.identity_type,
+                  customerIdentityNumber: input.customer.identity_number,
+                  customerName: input.customer.name,
+                  totals: built.totals,
+                  payload: input.payload as Record<string, unknown>,
+                  payloadHash,
+                  idempotencyKey: input.idempotencyKey,
+                  ublProfile: "2.1",
+                  relatedDocumentId: built.relatedDocumentId ?? input.relatedDocumentId ?? null,
+                }),
+            );
 
-              await this.documents.appendEvent({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                status: "draft",
-                detail: "Document created",
-                source: "api",
-              });
+            await this.documents.appendEvent({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              status: "draft",
+              detail: "Document created",
+              source: "api",
+            });
 
-              await this.documents.transitionStatus(
-                documentId,
-                "draft",
-                "validated",
-              );
-              await this.documents.appendEvent({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                status: "validated",
-                fromStatus: "draft",
-                detail: "UBL signed and validated locally",
-                source: "api",
-              });
+            await this.documents.transitionStatus(documentId, "draft", "validated");
+            await this.documents.appendEvent({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              status: "validated",
+              fromStatus: "draft",
+              detail: "UBL signed and validated locally",
+              source: "api",
+            });
 
-              const xmlKey = buildDocumentObjectKey({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                kind: "xml_signed",
-                sha256: createHash("sha256")
-                  .update(built.signedXml, "utf8")
-                  .digest("hex"),
-                ext: "xml",
-              });
-              await this.documents.putArtifact({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                kind: "xml_signed",
-                body: Buffer.from(built.signedXml, "utf8"),
-                contentType: "application/xml",
-                objectKey: xmlKey,
-              });
+            const xmlKey = buildDocumentObjectKey({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              kind: "xml_signed",
+              sha256: createHash("sha256").update(built.signedXml, "utf8").digest("hex"),
+              ext: "xml",
+            });
+            await this.documents.putArtifact({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              kind: "xml_signed",
+              body: Buffer.from(built.signedXml, "utf8"),
+              contentType: "application/xml",
+              objectKey: xmlKey,
+            });
 
-              const zipSha = createHash("sha256")
-                .update(built.zipBytes)
-                .digest("hex");
-              const zipKey = buildDocumentObjectKey({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                kind: "zip",
-                sha256: zipSha,
-                ext: "zip",
-              });
-              await this.documents.putArtifact({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                kind: "zip",
-                body: built.zipBytes,
-                contentType: "application/zip",
-                objectKey: zipKey,
-              });
+            const zipSha = createHash("sha256").update(built.zipBytes).digest("hex");
+            const zipKey = buildDocumentObjectKey({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              kind: "zip",
+              sha256: zipSha,
+              ext: "zip",
+            });
+            await this.documents.putArtifact({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              kind: "zip",
+              body: built.zipBytes,
+              contentType: "application/zip",
+              objectKey: zipKey,
+            });
 
-              await this.documents.transitionStatus(
-                documentId,
-                "validated",
-                "queued",
-                { queuedAt: new Date() },
-              );
-              await this.documents.appendEvent({
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-                status: "queued",
-                fromStatus: "validated",
-                detail: "Enqueued sunat-send",
-                source: "api",
-              });
-            },
-          );
+            await this.documents.transitionStatus(documentId, "validated", "queued", {
+              queuedAt: new Date(),
+            });
+            await this.documents.appendEvent({
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+              status: "queued",
+              fromStatus: "validated",
+              detail: "Enqueued sunat-send",
+              source: "api",
+            });
+          });
 
-          await withSpan(
-            "emit.enqueue",
-            { "factosys.queue": "sunat-send" },
-            async () => {
-              await this.queues.enqueue("sunat-send", {
-                organizationId: input.organizationId,
-                companyId: company.id,
-                documentId,
-              });
-            },
-          );
+          await withSpan("emit.enqueue", { "factosys.queue": "sunat-send" }, async () => {
+            await this.queues.enqueue("sunat-send", {
+              organizationId: input.organizationId,
+              companyId: company.id,
+              documentId,
+            });
+          });
 
-          const row = await this.documents.getById(
-            input.organizationId,
-            documentId,
-          );
+          const row = await this.documents.getById(input.organizationId, documentId);
           return this.documents.toPublic(row);
         } catch (cause) {
           await liberate();
           if (cause instanceof AppError) {
             throw cause;
           }
-          throw AppError.internal(
-            cause instanceof Error ? cause.message : "Emit document failed",
-            { cause },
-          );
+          throw AppError.internal(cause instanceof Error ? cause.message : "Emit document failed", {
+            cause,
+          });
         }
       },
     );

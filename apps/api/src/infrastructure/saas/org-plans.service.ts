@@ -1,17 +1,11 @@
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
-import { and, desc, eq, ne } from "drizzle-orm";
-import {
-  newId,
-  organizations,
-  orgPlans,
-  plans,
-  type Db,
-} from "@factosys/db";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { newId, organizations, orgPlans, planChangeRequests, plans, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import { NotificationDispatchService } from "../notifications/notification-dispatch.service";
+import { InAppNotificationsService } from "../notifications/in-app-notifications.service";
 import { DB } from "../persistence/db.tokens";
-import { PlansService } from "./plans.service";
 
 export type OrgPlanStatus = "trialing" | "active" | "canceled";
 
@@ -25,6 +19,7 @@ export interface OrgPlanPublic {
   starts_at: string;
   ends_at: string | null;
   created_at: string;
+  resolved_change_request_ids?: string[];
 }
 
 @Injectable()
@@ -33,8 +28,8 @@ export class OrgPlansService {
 
   constructor(
     @Inject(DB) private readonly db: Db,
-    private readonly plansService: PlansService,
     @Optional() private readonly notifications?: NotificationDispatchService,
+    @Optional() private readonly inbox?: InAppNotificationsService,
   ) {}
 
   async list(filters: {
@@ -66,9 +61,7 @@ export class OrgPlansService {
           .limit(limit);
 
     return {
-      items: rows.map((r) =>
-        this.toPublic(r.orgPlan, r.planCode, r.planName),
-      ),
+      items: rows.map((r) => this.toPublic(r.orgPlan, r.planCode, r.planName)),
     };
   }
 
@@ -76,44 +69,92 @@ export class OrgPlansService {
     organizationId: string;
     planId: string;
     status?: OrgPlanStatus;
+    changeRequestId?: string;
+    reviewedByUserId?: string;
+    resolutionNote?: string;
   }): Promise<OrgPlanPublic> {
-    const orgRows = await this.db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.id, input.organizationId))
-      .limit(1);
-    const org = orgRows[0];
-    if (!org) {
-      throw AppError.notFound("Organization not found");
-    }
-
-    const plan = await this.plansService.requireActivePlan(input.planId);
     const status: OrgPlanStatus = input.status ?? "active";
-    const now = new Date();
-
-    await this.db
-      .update(orgPlans)
-      .set({
-        status: "canceled",
-        endsAt: now,
-      })
-      .where(
-        and(
-          eq(orgPlans.organizationId, input.organizationId),
-          ne(orgPlans.status, "canceled"),
-        ),
-      );
-
-    const id = newId();
-    await this.db.insert(orgPlans).values({
-      id,
-      organizationId: input.organizationId,
-      planId: input.planId,
-      status,
-      startsAt: now,
-      endsAt: null,
-      createdAt: now,
+    if (input.changeRequestId && status !== "active")
+      throw AppError.validation("Approved requests require an active plan");
+    const result = await this.db.transaction(async (tx) => {
+      // All plan decisions for an organization serialize on the same row.
+      const [org] = await tx
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, input.organizationId))
+        .for("update");
+      if (!org) throw AppError.notFound("Organization not found");
+      if (input.changeRequestId) {
+        const [change] = await tx
+          .select()
+          .from(planChangeRequests)
+          .where(eq(planChangeRequests.id, input.changeRequestId))
+          .for("update");
+        if (!change || change.organizationId !== org.id || change.requestedPlanId !== input.planId)
+          throw AppError.notFound("Plan change request not found");
+        if (change.status === "closed")
+          throw AppError.conflict("Plan change request already resolved");
+      }
+      const [plan] = await tx.select().from(plans).where(eq(plans.id, input.planId)).for("share");
+      if (!plan || !plan.isActive) throw AppError.notFound("Requested plan not found or inactive");
+      const now = new Date();
+      await tx
+        .update(orgPlans)
+        .set({ status: "canceled", endsAt: now })
+        .where(and(eq(orgPlans.organizationId, org.id), ne(orgPlans.status, "canceled")));
+      const id = newId();
+      await tx
+        .insert(orgPlans)
+        .values({
+          id,
+          organizationId: org.id,
+          planId: plan.id,
+          status,
+          startsAt: now,
+          endsAt: null,
+          createdAt: now,
+        });
+      const resolved =
+        status === "active" || status === "trialing"
+          ? await tx
+              .update(planChangeRequests)
+              .set({
+                status: "closed",
+                resolution: "approved",
+                resolutionNote: input.resolutionNote?.trim() || null,
+                resolvedAt: now,
+                resolvedByUserId: input.reviewedByUserId ?? null,
+                assignedOrgPlanId: id,
+                updatedAt: now,
+              })
+              .where(
+                and(
+                  eq(planChangeRequests.organizationId, org.id),
+                  eq(planChangeRequests.requestedPlanId, plan.id),
+                  inArray(planChangeRequests.status, ["pending", "acknowledged"]),
+                ),
+              )
+              .returning()
+          : [];
+      return { org, plan, now, id, resolved };
     });
+    const { org, plan, now, id } = result;
+    for (const change of result.resolved) {
+      try {
+        await this.inbox?.createForUser({
+          organizationId: org.id,
+          userId: change.requestedByUserId,
+          eventCode: "plan.assigned",
+          title: "Cambio de plan aprobado",
+          body: `Tu solicitud del plan ${plan.name} fue aprobada y el plan ya está activo.${change.resolutionNote ? " " + change.resolutionNote : ""}`,
+          payload: { request_id: change.id, resolution: "approved", org_plan_id: id },
+        });
+      } catch (cause) {
+        this.logger.warn(
+          `Plan change notification failed: ${cause instanceof Error ? cause.message : String(cause)}`,
+        );
+      }
+    }
 
     if (this.notifications) {
       try {
@@ -136,19 +177,22 @@ export class OrgPlansService {
       }
     }
 
-    return this.toPublic(
-      {
-        id,
-        organizationId: input.organizationId,
-        planId: input.planId,
-        status,
-        startsAt: now,
-        endsAt: null,
-        createdAt: now,
-      },
-      plan.code,
-      plan.name,
-    );
+    return {
+      ...this.toPublic(
+        {
+          id,
+          organizationId: input.organizationId,
+          planId: input.planId,
+          status,
+          startsAt: now,
+          endsAt: null,
+          createdAt: now,
+        },
+        plan.code,
+        plan.name,
+      ),
+      resolved_change_request_ids: result.resolved.map((change) => change.id),
+    };
   }
 
   private toPublic(
