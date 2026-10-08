@@ -13,6 +13,16 @@ import {
 import { createdAt, idColumn, updatedAt } from "./columns";
 import { organizations } from "./organizations";
 
+export interface CompanyLogo {
+  objectKey: string;
+  contentType: "image/png";
+  sizeBytes: number;
+  width: number;
+  height: number;
+  sha256: string;
+  updatedAt: string;
+}
+
 export const companies = pgTable(
   "companies",
   {
@@ -23,6 +33,7 @@ export const companies = pgTable(
     ruc: char("ruc", { length: 11 }).notNull(),
     legalName: text("legal_name").notNull(),
     tradeName: text("trade_name"),
+    logo: jsonb("logo").$type<CompanyLogo>(),
     environment: text("environment").notNull().default("sandbox"),
     address: jsonb("address"),
     catalogPin: jsonb("catalog_pin")

@@ -2,6 +2,7 @@ import { apiRequest } from "@/shared/api/http-client";
 
 import type {
   Company,
+  CompanyLogoResponse,
   CreateCompanyInput,
   CreateSeriesInput,
   DocumentSeries,
@@ -26,6 +27,20 @@ export function patchCompany(id: string, input: PatchCompanyInput): Promise<Comp
     method: "PATCH",
     body: input,
   });
+}
+
+export function fetchCompanyLogo(companyId: string): Promise<CompanyLogoResponse> {
+  return apiRequest<CompanyLogoResponse>(`/companies/${companyId}/logo`);
+}
+
+export function putCompanyLogo(companyId: string, file: File): Promise<CompanyLogoResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  return apiRequest<CompanyLogoResponse>(`/companies/${companyId}/logo`, { method: "PUT", body: form });
+}
+
+export function deleteCompanyLogo(companyId: string): Promise<undefined> {
+  return apiRequest<undefined>(`/companies/${companyId}/logo`, { method: "DELETE" });
 }
 
 export function putCertificate(

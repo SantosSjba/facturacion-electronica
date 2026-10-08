@@ -1,6 +1,7 @@
 export { organizations } from "./organizations";
 export { apiKeys } from "./api-keys";
 export { companies } from "./companies";
+export type { CompanyLogo } from "./companies";
 export { credentials } from "./credentials";
 export { documentSeries } from "./document-series";
 export { documents } from "./documents";

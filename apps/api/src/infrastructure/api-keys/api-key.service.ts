@@ -11,6 +11,8 @@ import { withPlanCapacity } from "../saas/plan-capacity";
 import type { ApiKeyAuthContext } from "../../interfaces/http/auth/auth-context";
 
 export const MACHINE_SCOPES = [
+  "companies:read",
+  "companies:write",
   "documents:read",
   "documents:write",
   "credentials:manage",

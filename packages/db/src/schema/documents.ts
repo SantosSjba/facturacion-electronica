@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { createdAt, idColumn, updatedAt } from "./columns";
-import { companies } from "./companies";
+import { companies, type CompanyLogo } from "./companies";
 import { organizations } from "./organizations";
 
 export const DOCUMENT_STATUSES = [
@@ -54,6 +54,8 @@ export const documents = pgTable(
     totals: jsonb("totals"),
     payload: jsonb("payload").notNull(),
     payloadHash: text("payload_hash").notNull(),
+    /** Null for legacy records; {logo: null} records emission without a logo. */
+    logoSnapshot: jsonb("logo_snapshot").$type<{ logo: CompanyLogo | null }>(),
     sunatTicket: text("sunat_ticket"),
     sunatResponseCode: text("sunat_response_code"),
     sunatResponseMessage: text("sunat_response_message"),

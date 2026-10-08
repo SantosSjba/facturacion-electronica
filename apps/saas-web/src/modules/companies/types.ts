@@ -28,6 +28,7 @@ export interface Company {
   ruc: string;
   legal_name: string;
   trade_name: string | null;
+  logo?: CompanyLogoMetadata | null;
   environment: CompanyEnvironment | string;
   status: CompanyStatus | string;
   address: Record<string, unknown> | null;
@@ -39,6 +40,20 @@ export interface Company {
   sol_configured: boolean;
   gre_configured: boolean;
   credentials_summary?: CredentialsSummary;
+}
+
+export interface CompanyLogoMetadata {
+  content_type: string;
+  size_bytes: number;
+  width: number;
+  height: number;
+  sha256: string;
+  updated_at: string;
+}
+
+export interface CompanyLogoResponse {
+  logo: CompanyLogoMetadata | null;
+  data_url: string | null;
 }
 
 export interface CreateCompanyInput {

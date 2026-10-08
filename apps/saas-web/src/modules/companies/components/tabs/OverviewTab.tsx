@@ -33,6 +33,7 @@ import {
 
 import { patchCompany } from "../../api";
 import type { Company, CompanyStatus } from "../../types";
+import { CompanyLogoCard } from "../CompanyLogoCard";
 
 export function OverviewTab() {
   const { company, onEdit } = useOutletContext<{
@@ -177,6 +178,7 @@ export function OverviewTab() {
           </InfoGrid>
         </SectionCard>
       </section>
+      <CompanyLogoCard key={company.id} company={company} />
     </div>
   );
 }

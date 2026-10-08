@@ -18,6 +18,7 @@ export interface PdfRenderInput {
     ruc: string;
     legalName: string;
     address?: string;
+    logoDataUrl?: string;
   };
   customer: {
     identityType: string;

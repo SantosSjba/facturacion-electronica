@@ -1,5 +1,5 @@
 import { isRetryable, mapError, type FactosysErrorBody } from "./errors";
-import type { FactosysClientOptions, RequestOptions } from "./types";
+import type { CompanyLogoResponse, FactosysClientOptions, RequestOptions } from "./types";
 
 export class FactosysClient {
   readonly baseUrl: string;
@@ -26,7 +26,7 @@ export class FactosysClient {
   async request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     const url = path.startsWith("http")
       ? path
-      : `${this.baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+      : `${this.baseUrl.replace(/\/v1$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
 
     let attempt = 0;
     // eslint-disable-next-line no-constant-condition
@@ -42,10 +42,14 @@ export class FactosysClient {
         };
         const idem = opts.idempotencyKey ?? this.idempotencyKey;
         if (idem) headers["Idempotency-Key"] = idem;
-        let body: string | undefined;
+        let body: string | FormData | undefined;
         if (opts.body !== undefined) {
-          headers["Content-Type"] = "application/json";
-          body = JSON.stringify(opts.body);
+          if (typeof FormData !== "undefined" && opts.body instanceof FormData) {
+            body = opts.body;
+          } else {
+            headers["Content-Type"] = "application/json";
+            body = JSON.stringify(opts.body);
+          }
         }
 
         const res = await fetch(url, {
@@ -101,6 +105,23 @@ export class FactosysClient {
     },
   };
 
+  companies = {
+    getLogo: (companyId: string) =>
+      this.request<CompanyLogoResponse>(`/v1/companies/${encodeURIComponent(companyId)}/logo`),
+    putLogo: (companyId: string, file: Blob, filename = "logo.png") => {
+      const body = new FormData();
+      body.append("file", file, filename);
+      return this.request<CompanyLogoResponse>(
+        `/v1/companies/${encodeURIComponent(companyId)}/logo`,
+        { method: "PUT", body },
+      );
+    },
+    deleteLogo: (companyId: string) =>
+      this.request<undefined>(`/v1/companies/${encodeURIComponent(companyId)}/logo`, {
+        method: "DELETE",
+      }),
+  };
+
   invoices = {
     create: (body: unknown, idempotencyKey: string) =>
       this.request("/v1/invoices", {
@@ -121,19 +142,15 @@ export class FactosysClient {
 
   documents = {
     get: (id: string) => this.request(`/v1/documents/${id}`),
-    getXml: (id: string) =>
-      this.request<ArrayBuffer>(`/v1/documents/${id}/xml`),
-    getPdf: (id: string) =>
-      this.request<ArrayBuffer>(`/v1/documents/${id}/pdf`),
-    getCdr: (id: string) =>
-      this.request<ArrayBuffer>(`/v1/documents/${id}/cdr`),
+    getXml: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/xml`),
+    getPdf: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/pdf`),
+    getCdr: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/cdr`),
     getTrace: (id: string) => this.request(`/v1/documents/${id}/trace`),
   };
 
   webhooks = {
     list: () => this.request("/v1/webhook-endpoints"),
-    create: (body: unknown) =>
-      this.request("/v1/webhook-endpoints", { method: "POST", body }),
+    create: (body: unknown) => this.request("/v1/webhook-endpoints", { method: "POST", body }),
     rotateSecret: (id: string) =>
       this.request(`/v1/webhook-endpoints/${id}/rotate-secret`, {
         method: "POST",
@@ -141,8 +158,7 @@ export class FactosysClient {
   };
 
   validations = {
-    validateCpe: (body: unknown) =>
-      this.request("/v1/validations/cpe", { method: "POST", body }),
+    validateCpe: (body: unknown) => this.request("/v1/validations/cpe", { method: "POST", body }),
   };
 
   /**
@@ -152,10 +168,10 @@ export class FactosysClient {
     body: unknown,
     opts: { idempotencyKey: string; timeoutMs?: number; pollMs?: number },
   ): Promise<Record<string, unknown>> {
-    const created = (await this.invoices.create(
-      body,
-      opts.idempotencyKey,
-    )) as { id: string; status: string };
+    const created = (await this.invoices.create(body, opts.idempotencyKey)) as {
+      id: string;
+      status: string;
+    };
     const timeout = opts.timeoutMs ?? 60_000;
     const pollMs = opts.pollMs ?? 250;
     const deadline = Date.now() + timeout;

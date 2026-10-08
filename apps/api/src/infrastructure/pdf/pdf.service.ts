@@ -14,6 +14,7 @@ import {
 
 import type { Env } from "../config/env.schema";
 import { CompaniesService } from "../companies/companies.service";
+import { CompanyLogoService } from "../companies/company-logo.service";
 import { DocumentsService } from "../documents/documents.service";
 import { QueueProducer } from "../queues/queue.producer";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
@@ -31,6 +32,7 @@ export class PdfService {
     private readonly companies: CompaniesService,
     private readonly queues: QueueProducer,
     config: ConfigService<Env, true>,
+    private readonly logos: CompanyLogoService,
   ) {
     this.mode = config.get("PDF_RI_MODE", { infer: true });
     this.renderer = createPdfRenderer(this.mode);
@@ -128,6 +130,14 @@ export class PdfService {
       ]);
     }
 
+    // Background retries must also preserve a previously generated PDF.
+    try {
+      const existing = await this.documents.getArtifact(organizationId, documentId, "pdf");
+      if (!(this.mode === "playwright" && isFakeRiPdf(existing.body))) return existing.body;
+    } catch {
+      // No stored PDF yet; continue rendering.
+    }
+
     const xmlArt = await this.documents.getArtifact(
       organizationId,
       documentId,
@@ -143,6 +153,7 @@ export class PdfService {
       organizationId,
       doc.companyId,
     );
+    const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
 
     const serie = doc.serie ?? doc.serieNumber?.split("-")[0] ?? "";
     const number =
@@ -229,6 +240,7 @@ export class PdfService {
       issuer: {
         ruc: company.ruc,
         legalName: company.legalName,
+        logoDataUrl: documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
       },
       customer: {
         identityType: doc.customerIdentityType ?? "",

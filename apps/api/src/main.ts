@@ -13,6 +13,7 @@ import { AppModule } from "./app.module";
 import type { Env } from "./infrastructure/config/env.schema";
 import { startOtelIfEnabled } from "./infrastructure/observability/otel";
 import { MetaModule } from "./interfaces/http/meta/meta.module";
+import { CompaniesModule } from "./interfaces/http/companies/companies.module";
 import { DocumentsModule } from "./interfaces/http/v1/documents.module";
 import { ValidationsModule } from "./interfaces/http/v1/validations.module";
 import { WebhooksModule } from "./interfaces/http/v1/webhooks.module";
@@ -80,6 +81,7 @@ async function bootstrap(): Promise<void> {
         "- CPE: facturas (01), boletas (03), notas de crédito/débito (07/08)",
         "- GRE (09/31), resumen diario (RC) y comunicaciones de baja (RA)",
         "- Consulta de documentos, XML firmado, CDR y PDF de representación impresa",
+        "- Logo por empresa para personalizar los PDF (`/v1/companies/{companyId}/logo`)",
         "- Webhooks firmados (HMAC) y validación de CPE",
         "- Meta ruleset / catálogos (`GET /meta/ruleset`)",
         "",
@@ -88,6 +90,7 @@ async function bootstrap(): Promise<void> {
         "`Authorization: Bearer <api_key>`",
         "",
         "Scope típico de emisión: `documents:write`. Lectura: `documents:read`.",
+        "Logo de empresa: `companies:read` para consultar y `companies:write` para subir o eliminar.",
         "",
         "## Idempotencia",
         "En `POST` de emisión envía siempre `Idempotency-Key` (única por empresa).",
@@ -130,6 +133,7 @@ async function bootstrap(): Promise<void> {
     )
     .addTag("Webhooks", "Endpoints de notificación y entregas firmadas HMAC.")
     .addTag("Validaciones", "Consulta de validez de CPE.")
+    .addTag("Empresas", "Configuración del logo de los comprobantes por empresa.")
     .addTag("Meta / Reglas", "Ruleset y pines de catálogo SUNAT (ADR-005).")
     .addBearerAuth(
       {
@@ -150,6 +154,7 @@ async function bootstrap(): Promise<void> {
           WebhooksModule,
           ValidationsModule,
           MetaModule,
+          CompaniesModule,
         ],
       }),
     ),

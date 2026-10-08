@@ -28,6 +28,66 @@ const ownerPermissions = [
   "webhooks:manage",
 ];
 
+const logoPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64");
+
+test("company logo can be previewed, uploaded, replaced and removed", async ({ page }, testInfo) => {
+  await preparePortal(page);
+  let logo: null | { content_type: string; size_bytes: number; width: number; height: number; sha256: string; updated_at: string } = null;
+  let uploads = 0;
+  const headers = { "access-control-allow-origin": "http://localhost:5184", "access-control-allow-headers": "authorization,content-type", "access-control-allow-methods": "GET,PUT,DELETE,OPTIONS" };
+  await page.route(`http://localhost:3000/companies/${companyId}`, (route) => route.fulfill({ headers, json: { ...company, logo } }));
+  await page.route(`http://localhost:3000/companies/${companyId}/logo`, async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (request.method() === "DELETE") {
+      logo = null;
+      return route.fulfill({ status: 204, headers });
+    }
+    if (request.method() === "PUT") {
+      expect(request.headers()["content-type"]).toContain("multipart/form-data");
+      expect(request.postDataBuffer()?.includes(logoPng)).toBe(true);
+      uploads++;
+      logo = { content_type: "image/png", size_bytes: logoPng.length, width: 1, height: 1, sha256: `logo-${uploads}`, updated_at: company.updated_at };
+    }
+    return route.fulfill({ headers, json: { logo, data_url: logo ? `data:image/png;base64,${logoPng.toString("base64")}` : null } });
+  });
+  await page.goto(`/app/companies/${companyId}/overview`);
+  await expect(page.getByText("Sin logo", { exact: true })).toBeVisible();
+  await page.getByLabel("Subir logo", { exact: true }).setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: logoPng });
+  await expect(page.getByRole("img", { name: "Vista previa del nuevo logo" })).toBeVisible();
+  await page.getByRole("button", { name: "Guardar logo", exact: true }).click();
+  await expect(page.getByRole("img", { name: `Logo de ${company.legal_name}`, exact: true })).toBeVisible();
+  expect(uploads).toBe(1);
+  await page.getByLabel("Reemplazar logo", { exact: true }).setInputFiles({ name: "new.png", mimeType: "image/png", buffer: logoPng });
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+  expect(uploads).toBe(1);
+  await page.getByLabel("Reemplazar logo", { exact: true }).setInputFiles({ name: "new.png", mimeType: "image/png", buffer: logoPng });
+  await page.getByRole("button", { name: "Guardar logo", exact: true }).click();
+  await expect(page.getByRole("img", { name: `Logo de ${company.legal_name}`, exact: true })).toBeVisible();
+  expect(uploads).toBe(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("heading", { name: "Logo de la empresa", exact: true }).scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("company-logo-mobile.png"), animations: "disabled" });
+  await page.getByRole("button", { name: "Eliminar logo", exact: true }).click();
+  await expect(page.getByText("Sin logo", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Eliminar logo", exact: true })).toHaveCount(0);
+});
+
+test("company logo validates selection and respects read-only access", async ({ page }) => {
+  const writes = await preparePortal(page);
+  await page.goto(`/app/companies/${companyId}/overview`);
+  await page.getByLabel("Subir logo", { exact: true }).setInputFiles({ name: "huge.png", mimeType: "image/png", buffer: Buffer.alloc(2 * 1024 * 1024 + 1) });
+  await expect(page.getByRole("alert")).toContainText("hasta 2 MB");
+  await expect(page.getByRole("button", { name: "Guardar logo", exact: true })).toHaveCount(0);
+  expect(writes.filter((write) => write.path.endsWith("/logo"))).toHaveLength(0);
+  await preparePortal(page, ["companies:read"]);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Logo de la empresa", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Subir logo", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Eliminar logo", exact: true })).toHaveCount(0);
+});
+
 for (const scenario of [
   { name: "credentials", status: 401, code: "FACTOSYS_UNAUTHORIZED", message: "Invalid credentials", expected: "El correo o la contraseña son incorrectos." },
   { name: "rate limit", status: 429, code: "FACTOSYS_RATE_LIMITED", message: "Login rate limit exceeded", expected: "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo." },

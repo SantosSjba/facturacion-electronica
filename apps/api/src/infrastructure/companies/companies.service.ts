@@ -33,6 +33,14 @@ export interface CompanyPublic {
   ruc: string;
   legal_name: string;
   trade_name: string | null;
+  logo: null | {
+    content_type: string;
+    size_bytes: number;
+    width: number;
+    height: number;
+    sha256: string;
+    updated_at: string;
+  };
   environment: string;
   status: CompanyStatus;
   address: unknown;
@@ -275,6 +283,14 @@ export class CompaniesService {
       ruc: row.ruc,
       legal_name: row.legalName,
       trade_name: row.tradeName,
+      logo: row.logo ? {
+        content_type: row.logo.contentType,
+        size_bytes: row.logo.sizeBytes,
+        width: row.logo.width,
+        height: row.logo.height,
+        sha256: row.logo.sha256,
+        updated_at: row.logo.updatedAt,
+      } : null,
       environment: row.environment,
       status: (row.status === "disabled" ? "disabled" : "active") as CompanyStatus,
       address: row.address,

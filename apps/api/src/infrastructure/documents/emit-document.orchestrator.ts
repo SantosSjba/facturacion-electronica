@@ -154,6 +154,7 @@ export class EmitDocumentOrchestrator {
                   totals: built.totals,
                   payload: input.payload as Record<string, unknown>,
                   payloadHash,
+                  logoSnapshot: { logo: company.logo ?? null },
                   idempotencyKey: input.idempotencyKey,
                   ublProfile: "2.1",
                   relatedDocumentId: built.relatedDocumentId ?? input.relatedDocumentId ?? null,

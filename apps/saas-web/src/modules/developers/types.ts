@@ -1,4 +1,6 @@
 export const MACHINE_SCOPES = [
+  "companies:read",
+  "companies:write",
   "documents:read",
   "documents:write",
   "credentials:manage",

@@ -44,6 +44,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
   <style>
     body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 11px; color: #111; margin: 24px; }
     h1 { font-size: 16px; margin: 0 0 4px; }
+    .issuer-logo { display: block; max-width: 180px; max-height: 90px; object-fit: contain; margin-bottom: 10px; }
     .header { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
     .box { border: 1px solid #333; padding: 8px 12px; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
@@ -58,6 +59,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
 <body>
   <div class="header">
     <div>
+      ${input.issuer.logoDataUrl && /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(input.issuer.logoDataUrl) ? `<img class="issuer-logo" src="${esc(input.issuer.logoDataUrl)}" alt="Logo de ${esc(input.issuer.legalName)}" />` : ""}
       <h1>${esc(input.issuer.legalName)}</h1>
       <div>RUC ${esc(input.issuer.ruc)}</div>
       ${input.issuer.address ? `<div>${esc(input.issuer.address)}</div>` : ""}

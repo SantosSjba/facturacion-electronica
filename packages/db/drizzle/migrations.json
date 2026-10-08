@@ -96,5 +96,12 @@
     "tag": "plan_change_resolution",
     "up": "0014_plan_change_resolution.sql",
     "down": "0014_plan_change_resolution.down.sql"
+  },
+  {
+    "id": "0015_company_logo",
+    "when": 15,
+    "tag": "company_logo",
+    "up": "0015_company_logo.sql",
+    "down": "0015_company_logo.down.sql"
   }
 ]

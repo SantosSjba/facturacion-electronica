@@ -10,7 +10,7 @@ export {
   type FactosysErrorBody,
 } from "./errors";
 export { verifyWebhookSignature } from "./helpers/webhook-hmac";
-export type { FactosysClientOptions, RequestOptions } from "./types";
+export type { FactosysClientOptions, RequestOptions, CompanyLogoResponse } from "./types";
 
 export const PACKAGE_NAME = "@factosys/sdk" as const;
 
