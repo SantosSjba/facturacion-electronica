@@ -64,8 +64,12 @@ export class IntegratorCompaniesController {
   @ApiOperation({ summary: "Listar empresas propias sin secretos" })
   async list(@CurrentAuth() auth: AuthContext) {
     const rows = await this.companies.list(auth.organizationId);
-    return auth.kind === "api_key" && auth.environmentConstraint
-      ? rows.filter((r) => r.environment === auth.environmentConstraint)
+    return auth.kind === "api_key"
+      ? rows.filter(
+          (r) =>
+            auth.companyIds?.includes(r.id) &&
+            (!auth.environmentConstraint || r.environment === auth.environmentConstraint),
+        )
       : rows;
   }
   @Get(":id")

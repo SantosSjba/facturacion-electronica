@@ -14,6 +14,7 @@ import type {
 function mapApiKey(raw: Record<string, unknown>): ApiKey {
   return {
     id: String(raw.id),
+    companyIds: Array.isArray(raw.companyIds) ? (raw.companyIds as string[]) : [],
     name: String(raw.name),
     keyPrefix: String(raw.keyPrefix ?? raw.key_prefix ?? ""),
     scopes: Array.isArray(raw.scopes) ? (raw.scopes as string[]) : [],
@@ -57,6 +58,19 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<CreateApiK
 
 export function revokeApiKey(id: string): Promise<{ ok: true }> {
   return apiRequest(`/organizations/me/api-keys/${id}`, { method: "DELETE" });
+}
+
+export function fetchApiKeyCompanies(): Promise<
+  { id: string; legal_name: string; ruc: string; environment: string }[]
+> {
+  return apiRequest("/organizations/me/api-keys/companies");
+}
+
+export function assignApiKeyCompanies(id: string, company_ids: string[], multi: boolean) {
+  return apiRequest(`/organizations/me/api-keys/${id}/companies`, {
+    method: "PATCH",
+    body: { company_ids, access_mode: multi ? "multi" : "single" },
+  });
 }
 
 export function fetchWebhooks(): Promise<WebhookEndpoint[]> {

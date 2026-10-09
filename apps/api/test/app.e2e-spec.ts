@@ -53,6 +53,10 @@ describe("API e2e", () => {
       });
     expect(login.status).toBe(200);
     accessToken = login.body.access_token as string;
+    const issuers = await request(server).get("/companies")
+      .set("Authorization", `Bearer ${accessToken}`).expect(200);
+    companyId = issuers.body[0]?.id;
+    if (!companyId) throw new Error("Demo issuer is required for company-scoped API key fixtures");
   });
 
   afterAll(async () => {
@@ -96,6 +100,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: "e2e-key",
+        company_ids: [companyId],
         scopes: ["documents:read", "documents:write"],
       })
       .expect(201);
@@ -121,6 +126,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: "e2e-readonly",
+        company_ids: [companyId],
         scopes: ["documents:read"],
       })
       .expect(201);
@@ -352,6 +358,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `emit-${Date.now()}`,
+        company_ids: [companyId],
         scopes: ["documents:read", "documents:write"],
       })
       .expect(201);
@@ -503,6 +510,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `s5-${Date.now()}`,
+        company_ids: [companyId],
         scopes: ["documents:read", "documents:write"],
       })
       .expect(201);
@@ -773,6 +781,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `s6-${Date.now()}`,
+        company_ids: [companyId],
         scopes: ["documents:read", "documents:write"],
       })
       .expect(201);
@@ -1007,6 +1016,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `s7-${Date.now()}`,
+        company_ids: [companyId],
         scopes: ["documents:read", "documents:write"],
       })
       .expect(201);
@@ -1226,6 +1236,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `s8-${Date.now()}`,
+        company_ids: [companyId],
         scopes: [
           "documents:read",
           "documents:write",
@@ -1658,6 +1669,7 @@ describe("API e2e", () => {
       .set("Authorization", `Bearer ${accessToken}`)
       .send({
         name: `audit-key-${Date.now()}`,
+        company_ids: [companyId],
         scopes: ["documents:read"],
       })
       .expect(201);
@@ -3194,6 +3206,7 @@ describe("API e2e", () => {
         .set("Authorization", `Bearer ${tokenB}`)
         .send({
           name: "sec-xt-key",
+          company_ids: [companyBId],
           scopes: ["documents:read"],
         })
         .expect(201);
@@ -3223,6 +3236,7 @@ describe("API e2e", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           name: `sec-xt-a-${Date.now()}`,
+          company_ids: [companyId],
           scopes: ["documents:read"],
         })
         .expect(201);

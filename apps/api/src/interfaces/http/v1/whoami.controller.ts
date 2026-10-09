@@ -19,6 +19,8 @@ export class WhoamiController {
       organization_id: auth.organizationId,
       api_key_id: auth.apiKeyId,
       scopes: auth.scopes,
+      company_ids: auth.companyIds ?? [],
+      environment_constraint: auth.environmentConstraint ?? null,
     };
   }
 

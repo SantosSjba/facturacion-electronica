@@ -5,6 +5,7 @@ export interface ApiKeyAuthContext {
   organizationId: string;
   apiKeyId: string;
   scopes: string[];
+  companyIds: string[];
   environmentConstraint?: "sandbox" | "production" | null;
 }
 

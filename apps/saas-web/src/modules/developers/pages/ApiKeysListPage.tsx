@@ -19,12 +19,14 @@ import { fetchApiKeys, revokeApiKey } from "../api";
 import type { ApiKey } from "../types";
 import { ApiKeysTable } from "../components/ApiKeysTable";
 import { CreateApiKeyDialog } from "../components/CreateApiKeyDialog";
+import { AssignApiKeyCompaniesDialog } from "../components/AssignApiKeyCompaniesDialog";
 
 export function ApiKeysListPage() {
   const { hasPermission } = useSession();
   const canManage = hasPermission("apikeys:manage");
   const capacity = usePlanCapacity("api_keys", canManage);
   const [createOpen, setCreateOpen] = useState(false);
+  const [assigning, setAssigning] = useState<ApiKey | null>(null);
   const [revoking, setRevoking] = useState<ApiKey | null>(null);
   const qc = useQueryClient();
 
@@ -86,6 +88,7 @@ export function ApiKeysListPage() {
           <ApiKeysTable
             keys={query.data ?? []}
             canManage={canManage}
+            onAssign={setAssigning}
             onRevoke={(key) => {
               revokeMutation.reset();
               setRevoking(key);
@@ -98,6 +101,13 @@ export function ApiKeysListPage() {
       ) : null}
 
       <CreateApiKeyDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      {assigning ? (
+        <AssignApiKeyCompaniesDialog
+          key={assigning.id}
+          apiKey={assigning}
+          onClose={() => setAssigning(null)}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={Boolean(revoking)}

@@ -1,6 +1,8 @@
 import { environmentLabel, formatDateTime, statusLabel } from "@/shared/ui/display-labels";
 import { StatusBadge } from "@/shared/ui/status-badge";
-import { Ban, Globe, KeyRound } from "lucide-react";
+import { Ban, Building2, Globe, KeyRound } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchApiKeyCompanies } from "../api";
 
 import {
   ActionButton,
@@ -22,13 +24,20 @@ export function ApiKeysTable({
   keys,
   canManage,
   onRevoke,
+  onAssign,
   revokingId,
 }: {
   keys: ApiKey[];
   canManage: boolean;
   onRevoke: (key: ApiKey) => void;
+  onAssign: (key: ApiKey) => void;
   revokingId?: string | null;
 }) {
+  const companies = useQuery({
+    queryKey: ["api-key-companies"],
+    queryFn: fetchApiKeyCompanies,
+    enabled: canManage,
+  });
   return (
     <Table>
       <THead>
@@ -36,6 +45,7 @@ export function ApiKeysTable({
           <TH>Nombre</TH>
           <TH>Prefijo</TH>
           <TH>Permisos</TH>
+          <TH>Empresas</TH>
           <TH>Estado</TH>
           <TH>Último uso</TH>
           <TH className="text-end">Acciones</TH>
@@ -73,6 +83,16 @@ export function ApiKeysTable({
                 ))}
               </div>
             </TD>
+            <TD label="Empresas">
+              {k.companyIds.length
+                ? k.companyIds
+                    .map(
+                      (id) =>
+                        companies.data?.find((company) => company.id === id)?.legal_name ?? id,
+                    )
+                    .join(", ")
+                : "Sin asignar: configura el acceso"}
+            </TD>
             <TD label="Estado">
               <StatusBadge status={k.status} label={statusLabel(k.status)} />
             </TD>
@@ -84,6 +104,12 @@ export function ApiKeysTable({
             <TD actions>
               {canManage && k.status === "active" ? (
                 <RowActions>
+                  <ActionButton
+                    size="icon-sm"
+                    icon={Building2}
+                    label="Asignar empresas"
+                    onClick={() => onAssign(k)}
+                  />
                   <ActionButton
                     size="icon-sm"
                     icon={Ban}

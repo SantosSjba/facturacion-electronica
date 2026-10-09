@@ -40,6 +40,7 @@ it("replays a JSON emission retried as TXT and rejects changed content or a miss
     kind: "api_key",
     organizationId: "organization",
     apiKeyId: "key",
+    companyIds: ["00000000-0000-4000-8000-000000000001"],
     scopes: ["documents:write"],
   };
   const res = { status: vi.fn() } as unknown as Response;

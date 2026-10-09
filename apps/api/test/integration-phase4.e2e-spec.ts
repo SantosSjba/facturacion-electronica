@@ -81,6 +81,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     pdf: PdfService;
   const enqueue = vi.fn().mockResolvedValue({ jobId: "fixture" });
   const encryptedKeys = new Set<string>();
+  const authorizedCompanies: string[] = [];
   const allScopes = [
     "companies:read",
     "companies:write",
@@ -175,6 +176,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
               kind: "api_key",
               organizationId: secret === "foreign" ? newId() : org,
               apiKeyId: "phase4-fixture",
+              companyIds: authorizedCompanies,
               scopes: secret === "reader" ? ["documents:read", "companies:read"] : allScopes,
               environmentConstraint: secret === "sandbox" ? "sandbox" : null,
             };
@@ -190,11 +192,15 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     app.useGlobalFilters(new AppExceptionFilter());
     await app.init();
     companyId = (
-      await api("post", "/v1/companies")
-        .send({ ruc: "20100070970", legal_name: "Fixture only", environment: "sandbox" })
-        .expect(201)
-    ).body.id;
+      await companyService.create(org, {
+        ruc: "20100070970",
+        legalName: "Fixture only",
+        environment: "sandbox",
+      })
+    ).id;
+    authorizedCompanies.push(companyId);
     productionCompany = newId();
+    authorizedCompanies.push(productionCompany);
     await db.insert(companies).values({
       id: productionCompany,
       organizationId: org,
@@ -244,7 +250,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     } as Job<QueueJobData>;
   }
   it("isolates onboarding and environment-constrained keys; preserves series numbers and history", async () => {
-    await api("get", `/v1/companies/${companyId}`, "foreign").expect(404);
+    await api("get", `/v1/companies/${companyId}`, "foreign").expect(403);
     await api("put", `/v1/companies/${companyId}/sol-credentials`, "reader")
       .send({ username: "20100070970MODDATOS", password: "fixture-only" })
       .expect(403);
@@ -331,7 +337,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
       await db.select().from(documentSeries).where(eq(documentSeries.companyId, companyId)),
     ).toEqual(before);
     expect(enqueue.mock.calls.length).toBe(queuedBefore);
-    await api("post", `/v1/documents/${id}/recover-cdr`, "foreign").expect(404);
+    await api("post", `/v1/documents/${id}/recover-cdr`, "foreign").expect(403);
   });
   it("reuses summary tickets and recovers missing CDR on already accepted summaries without reemission", async () => {
     const id = await makeDoc("failed");
@@ -530,7 +536,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     await request(app.getHttpServer())
       .get(share.url + "/pdf")
       .expect(404);
-    await api("delete", `/v1/documents/${id}/shares/${share.id}`, "foreign").expect(404);
+    await api("delete", `/v1/documents/${id}/shares/${share.id}`, "foreign").expect(403);
     const [stored] = await db.select().from(documentShares).where(eq(documentShares.id, share.id));
     expect(stored?.tokenHash).not.toContain(share.url.split("/").at(-1));
     expect(JSON.stringify((await api("get", `/v1/documents/${id}/shares`)).body)).not.toContain(
@@ -593,7 +599,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     expect((await api("get", `/v1/document-status?${query}`, "reader").expect(200)).body.id).toBe(
       id,
     );
-    await api("get", `/v1/document-status?${query}`, "foreign").expect(404);
+    await api("get", `/v1/document-status?${query}`, "foreign").expect(403);
     await api(
       "get",
       `/v1/document-status?${new URLSearchParams({ company_id: productionCompany, tipo: "01", serie: row.serie ?? "", numero: String(row.number) })}`,
@@ -622,12 +628,12 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     expect(
       (await api("get", `/v1/document-status/ticket?${ticket}`, "reader").expect(200)).body.id,
     ).toBe(id);
-    await api("get", `/v1/document-status/ticket?${ticket}`, "foreign").expect(404);
+    await api("get", `/v1/document-status/ticket?${ticket}`, "foreign").expect(403);
   });
   it("deletes empty companies but preserves fiscal history when disabling an issuer", async () => {
     const id = await makeDoc();
     await api("delete", `/v1/companies/${companyId}?permanent=true`, "reader").expect(403);
-    await api("delete", `/v1/companies/${companyId}?permanent=true`, "foreign").expect(404);
+    await api("delete", `/v1/companies/${companyId}?permanent=true`, "foreign").expect(403);
     await api("delete", `/v1/companies/${companyId}?permanent=true`).expect(409);
     const empty = newId();
     await db.insert(companies).values({
@@ -637,6 +643,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
       legalName: "Empty deletion fixture",
       environment: "sandbox",
     });
+    authorizedCompanies.push(empty);
     await api("delete", `/v1/companies/${empty}?permanent=true`).expect(204);
     expect(await db.select().from(companies).where(eq(companies.id, empty))).toEqual([]);
     expect(

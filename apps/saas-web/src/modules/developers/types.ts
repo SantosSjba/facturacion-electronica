@@ -17,6 +17,7 @@ export type MachineScope = (typeof MACHINE_SCOPES)[number];
 export type ApiKeyStatus = "active" | "revoked";
 
 export interface ApiKey {
+  companyIds: string[];
   id: string;
   name: string;
   keyPrefix: string;
@@ -29,6 +30,8 @@ export interface ApiKey {
 }
 
 export interface CreateApiKeyInput {
+  company_ids: string[];
+  access_mode: "single" | "multi";
   name: string;
   scopes: string[];
   environment_constraint?: "sandbox" | "production" | null;

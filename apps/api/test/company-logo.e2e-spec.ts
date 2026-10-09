@@ -137,6 +137,7 @@ describe("company logo HTTP integration", () => {
             kind: "api_key",
             organizationId: orgId,
             apiKeyId: "fixture",
+            companyIds: [companyId],
             scopes: scopes[secret],
           };
         },
@@ -145,6 +146,7 @@ describe("company logo HTTP integration", () => {
       jwt,
       config,
       { buildUserContext: async () => user } as unknown as AuthService,
+      db,
     );
     app.useGlobalGuards(guard);
     app.useGlobalFilters(new AppExceptionFilter());
@@ -266,7 +268,7 @@ describe("company logo HTTP integration", () => {
         [method](`/v1/companies/${otherCompanyId}/logo`)
         .auth("fsys_logo_owner", { type: "bearer" });
       if (method === "put") req.attach("file", png, "logo.png");
-      await req.expect(404);
+      await req.expect(403);
     }
     expect(await app.get(CompanyLogoService).get(orgId, companyId)).toEqual(current);
   });

@@ -140,6 +140,7 @@ describe("phase 5 isolated tax-agent lifecycle", () => {
               kind: "api_key",
               organizationId: secret === "foreign" ? newId() : org,
               apiKeyId: "phase5-fixture",
+              companyIds: [companyId],
               scopes:
                 secret === "reader" ? ["documents:read"] : ["documents:read", "documents:write"],
               environmentConstraint: secret === "prod" ? "production" : null,
@@ -208,7 +209,7 @@ describe("phase 5 isolated tax-agent lifecycle", () => {
   });
   it("enforces scopes, organization, key environment and missing idempotency", async () => {
     await post("20", body("20"), newId(), "reader").expect(403);
-    await post("20", body("20"), newId(), "foreign").expect(404);
+    await post("20", body("20"), newId(), "foreign").expect(403);
     await post("20", body("20"), newId(), "prod").expect(403);
     await request(app.getHttpServer())
       .post("/v1/retentions")

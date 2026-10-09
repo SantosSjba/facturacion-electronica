@@ -6,6 +6,7 @@ import { ConfigService } from "@nestjs/config";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { loadPfx } from "@factosys/sunat-sign";
+import type { Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 import { CompanyToolsController, decodeBase64 } from "./company-tools.controller";
 import { SaleQrController } from "../v1/sale-qr.controller";
@@ -36,6 +37,7 @@ beforeAll(async () => {
       kind: "api_key",
       organizationId: "org",
       apiKeyId: "key",
+      companyIds: [companyId],
       scopes:
         key === "read"
           ? ["companies:read"]
@@ -50,6 +52,11 @@ beforeAll(async () => {
       new JwtService(),
       new ConfigService<Env, true>(envSchema.parse({ NODE_ENV: "test" })),
       {} as AuthService,
+      {
+        select: () => ({
+          from: () => ({ where: async () => [{ id: companyId, environment: "sandbox" }] }),
+        }),
+      } as unknown as Db,
     ),
   );
   app.useGlobalFilters(new AppExceptionFilter());
@@ -144,7 +151,7 @@ it("generates PNG from supplied sale data and rejects other companies", async ()
     .post("/v1/sale/qr")
     .auth("full", { type: "bearer" })
     .send({ ...body, company_id: "00000000-0000-4000-8000-000000000002" })
-    .expect(404);
+    .expect(403);
   await request(app.getHttpServer())
     .post("/v1/sale/qr")
     .auth("full", { type: "bearer" })

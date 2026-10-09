@@ -151,6 +151,7 @@ describe("phase 3 isolated GRE HTTP, persistence and rendering", () => {
               kind: "api_key",
               organizationId: secret === "foreign" ? newId() : orgId,
               apiKeyId: "fixture",
+              companyIds: [companyId],
               scopes:
                 secret === "reader" ? ["documents:read"] : ["documents:read", "documents:write"],
             };
@@ -160,6 +161,7 @@ describe("phase 3 isolated GRE HTTP, persistence and rendering", () => {
         new JwtService(),
         config,
         {} as AuthService,
+        db,
       ),
     );
     app.useGlobalFilters(new AppExceptionFilter());
@@ -211,7 +213,7 @@ describe("phase 3 isolated GRE HTTP, persistence and rendering", () => {
       .auth("foreign", { type: "bearer" })
       .set("Idempotency-Key", "gre-test-foreign")
       .send(body())
-      .expect(404);
+      .expect(403);
     expect(resolveCertificate.mock.calls.length).toBe(signed);
     expect(sendDespatch).not.toHaveBeenCalled();
     expect(
@@ -298,7 +300,7 @@ describe("phase 3 isolated GRE HTTP, persistence and rendering", () => {
       .post("/v1/despatch-advices/" + failed.id + "/reconcile-ticket")
       .auth("foreign", { type: "bearer" })
       .send({ ticket })
-      .expect(404);
+      .expect(403);
     const concurrent = await Promise.all(
       Array.from({ length: 2 }, () =>
         request(app.getHttpServer())

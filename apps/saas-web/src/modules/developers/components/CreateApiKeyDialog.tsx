@@ -24,10 +24,13 @@ import {
 import { createApiKey } from "../api";
 import { MACHINE_SCOPES, type CreateApiKeyResult } from "../types";
 import { apiKeyFormSchema, zodFieldErrors } from "../validation";
+import { ApiKeyCompanies } from "./ApiKeyCompanies";
 
 export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
+  const [companyIds, setCompanyIds] = useState<string[]>([]);
+  const [multi, setMulti] = useState(false);
   const [scopes, setScopes] = useState<string[]>(["documents:read"]);
   const [env, setEnv] = useState<"" | "sandbox" | "production">("");
   const capacity = usePlanCapacity("api_keys", open);
@@ -52,6 +55,8 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
 
   function resetAndClose() {
     setName("");
+    setCompanyIds([]);
+    setMulti(false);
     setScopes(["documents:read"]);
     setEnv("");
     setTouched(false);
@@ -71,9 +76,12 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
     setTouched(true);
     if (capacity.blocked || mutation.isPending) return;
     if (Object.keys(fieldErrors).length > 0) return;
+    if (!companyIds.length) return;
     mutation.mutate({
       name: name.trim(),
       scopes,
+      company_ids: companyIds,
+      access_mode: multi ? "multi" : "single",
       environment_constraint: env === "" ? null : env,
     });
   }
@@ -137,6 +145,15 @@ export function CreateApiKeyDialog({ open, onClose }: { open: boolean; onClose: 
             onClose={resetAndClose}
           />
           <DialogBody className="space-y-4">
+            <ApiKeyCompanies
+              ids={companyIds}
+              multi={multi}
+              onChange={setCompanyIds}
+              onMultiChange={setMulti}
+            />
+            {touched && !companyIds.length ? (
+              <FieldError message="Selecciona al menos una empresa" />
+            ) : null}
             {capacity.blocked ? <p className="text-sm text-gray-500">{capacity.message}</p> : null}
             <div className="space-y-1.5">
               <Label htmlFor="apikey-name">Nombre</Label>

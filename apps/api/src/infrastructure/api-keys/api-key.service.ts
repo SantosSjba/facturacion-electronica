@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
-import { apiKeys, newId, organizations, type Db } from "@factosys/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { apiKeys, companies, newId, organizations, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import { Argon2Hasher } from "../crypto/argon2-hasher";
@@ -39,6 +39,7 @@ export class ApiKeyService {
     organizationId: string;
     name: string;
     scopes: string[];
+    companyIds: string[];
     environmentConstraint?: "sandbox" | "production" | null;
   }): Promise<{
     id: string;
@@ -47,8 +48,10 @@ export class ApiKeyService {
     secret: string;
     scopes: string[];
     environmentConstraint: string | null;
+    companyIds: string[];
   }> {
     this.assertScopes(input.scopes);
+    await this.assertCompanies(input.organizationId, input.companyIds, input.environmentConstraint);
     const secret = `fsys_${randomBytes(32).toString("base64url")}`;
     const keyPrefix = secret.slice(0, KEY_PREFIX_LEN);
     const keyHash = await this.hasher.hash(secret);
@@ -62,6 +65,7 @@ export class ApiKeyService {
         keyPrefix,
         keyHash,
         scopes: input.scopes,
+        companyIds: input.companyIds,
         status: "active",
         environmentConstraint: input.environmentConstraint ?? null,
       }),
@@ -73,6 +77,7 @@ export class ApiKeyService {
       keyPrefix,
       secret,
       scopes: input.scopes,
+      companyIds: input.companyIds,
       environmentConstraint: input.environmentConstraint ?? null,
     };
   }
@@ -84,6 +89,7 @@ export class ApiKeyService {
         name: apiKeys.name,
         keyPrefix: apiKeys.keyPrefix,
         scopes: apiKeys.scopes,
+        companyIds: apiKeys.companyIds,
         status: apiKeys.status,
         environmentConstraint: apiKeys.environmentConstraint,
         lastUsedAt: apiKeys.lastUsedAt,
@@ -113,6 +119,50 @@ export class ApiKeyService {
       .where(eq(apiKeys.id, apiKeyId));
   }
 
+  async assignCompanies(organizationId: string, id: string, companyIds: string[]) {
+    const [key] = await this.db
+      .select()
+      .from(apiKeys)
+      .where(and(eq(apiKeys.id, id), eq(apiKeys.organizationId, organizationId)));
+    if (!key) throw AppError.notFound("API key not found");
+    if (key.status !== "active") throw AppError.forbidden("Revoked API key cannot be changed");
+    await this.assertCompanies(organizationId, companyIds, key.environmentConstraint);
+    await this.db
+      .update(apiKeys)
+      .set({ companyIds })
+      .where(and(eq(apiKeys.id, id), eq(apiKeys.organizationId, organizationId)));
+    return { id, companyIds };
+  }
+
+  async availableCompanies(organizationId: string) {
+    return this.db
+      .select({
+        id: companies.id,
+        legal_name: companies.legalName,
+        ruc: companies.ruc,
+        environment: companies.environment,
+      })
+      .from(companies)
+      .where(eq(companies.organizationId, organizationId));
+  }
+
+  private async assertCompanies(
+    organizationId: string,
+    ids: string[],
+    environment?: string | null,
+  ) {
+    if (!ids.length || new Set(ids).size !== ids.length)
+      throw AppError.validation("Select distinct authorized companies");
+    const rows = await this.db
+      .select()
+      .from(companies)
+      .where(and(eq(companies.organizationId, organizationId), inArray(companies.id, ids)));
+    if (rows.length !== ids.length)
+      throw AppError.validation("Company does not belong to this organization");
+    if (environment && rows.some((row) => row.environment !== environment))
+      throw AppError.validation("Company environment does not match API key environment");
+  }
+
   /**
    * Validate Bearer API key secret → auth context.
    */
@@ -127,6 +177,7 @@ export class ApiKeyService {
         organizationId: apiKeys.organizationId,
         keyHash: apiKeys.keyHash,
         scopes: apiKeys.scopes,
+        companyIds: apiKeys.companyIds,
         status: apiKeys.status,
         orgStatus: organizations.status,
         environmentConstraint: apiKeys.environmentConstraint,
@@ -158,6 +209,7 @@ export class ApiKeyService {
       environmentConstraint: row.environmentConstraint as "sandbox" | "production" | null,
       apiKeyId: row.id,
       scopes: row.scopes,
+      companyIds: row.companyIds,
     };
   }
 

@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  Patch,
-  Post,
-  Req,
-} from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { z } from "zod";
@@ -16,10 +7,7 @@ import { AppError } from "@factosys/shared";
 import { AuditService } from "../../../infrastructure/audit/audit.service";
 import { WebhooksService } from "../../../infrastructure/webhooks/webhooks.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 import { actorFromAuth, requestMeta } from "../audit/audit-request.util";
@@ -52,8 +40,11 @@ export class WebhookEndpointsController {
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")
   @ApiOperation({ summary: "Listar endpoints de webhook" })
-  list(@CurrentAuth() auth: AuthContext) {
-    return this.webhooks.list(this.orgId(auth));
+  async list(@CurrentAuth() auth: AuthContext) {
+    const rows = await this.webhooks.list(this.orgId(auth));
+    return auth.kind === "api_key"
+      ? rows.filter((row) => row.company_id && auth.companyIds?.includes(row.company_id))
+      : rows;
   }
 
   @Post()
@@ -142,11 +133,7 @@ export class WebhookEndpointsController {
   @ApiOperation({
     summary: "Rotar secreto del webhook — se devuelve una sola vez",
   })
-  async rotate(
-    @CurrentAuth() auth: AuthContext,
-    @Param("id") id: string,
-    @Req() req: Request,
-  ) {
+  async rotate(@CurrentAuth() auth: AuthContext, @Param("id") id: string, @Req() req: Request) {
     const rotated = await this.webhooks.rotateSecret(this.orgId(auth), id);
     const actor = actorFromAuth(auth);
     await this.audit.append({

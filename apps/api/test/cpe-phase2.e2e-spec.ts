@@ -181,6 +181,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
               kind: "api_key",
               organizationId: secret === "foreign" ? newId() : orgId,
               apiKeyId: "fixture",
+              companyIds: [companyId],
               scopes:
                 secret === "reader" ? ["documents:read"] : ["documents:read", "documents:write"],
             };
@@ -190,6 +191,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
         new JwtService(),
         config,
         {} as AuthService,
+        db,
       ),
     );
     app.useGlobalFilters(new AppExceptionFilter());
@@ -242,7 +244,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
       .post("/v1/previews/validate")
       .auth("foreign", { type: "bearer" })
       .send(body)
-      .expect(404);
+      .expect(403);
     await request(app.getHttpServer())
       .post("/v1/previews/validate")
       .auth("writer", { type: "bearer" })
@@ -333,7 +335,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
         .post("/v1/previews/xml")
         .auth("foreign", { type: "bearer" })
         .send(body)
-        .expect(404);
+        .expect(403);
       const rendered = await request(app.getHttpServer())
         .post("/v1/previews/pdf")
         .auth("writer", { type: "bearer" })
@@ -421,7 +423,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
     await request(app.getHttpServer())
       .get(`/v1/documents/${doc.id}/qr`)
       .auth("foreign", { type: "bearer" })
-      .expect(404);
+      .expect(403);
   }, 30000);
 
   it("notes reuse accepted-document validation and cannot exceed the source amount", async () => {

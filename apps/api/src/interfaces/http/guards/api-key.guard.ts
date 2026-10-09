@@ -15,6 +15,7 @@ import { ApiKeyService } from "../../../infrastructure/api-keys/api-key.service"
 import { RateLimitService } from "../../../infrastructure/redis/rate-limit.service";
 import { AUTH_CONTEXT_KEY, type AuthContext } from "../auth/auth-context";
 import { IS_API_KEY_AUTH_KEY, REQUIRE_SCOPES_KEY } from "../decorators/auth.decorators";
+import { enforceApiKeyCompanies } from "./api-key-company-access";
 
 /**
  * Routes marked `@ApiKeyAuth()` accept either:
@@ -67,6 +68,7 @@ export class ApiKeyGuard implements CanActivate {
     try {
       const auth = await this.apiKeys.authenticate(secret);
       req[AUTH_CONTEXT_KEY] = auth;
+      await enforceApiKeyCompanies(this.db, req, auth);
       await this.checkEnvironment(req, auth);
       await this.rateLimit.consumeOrg(auth.organizationId);
       if (requiredScopes.length > 0) {

@@ -205,16 +205,28 @@ it("last owner and platform roles remain protected", async () => {
 });
 
 it("key quota blocks another key and revocation releases capacity", async () => {
+  const issuer = await request(app.getHttpServer())
+    .post("/companies")
+    .set("Authorization", `Bearer ${ownerToken}`)
+    .send({ ruc: "20100070970", legal_name: "Quota company", environment: "sandbox" })
+    .expect(201);
+  companyId = issuer.body.id;
+
   const created = await request(app.getHttpServer())
     .post("/organizations/me/api-keys")
     .set("Authorization", `Bearer ${ownerToken}`)
-    .send({ name: "Quota key", scopes: ["documents:read"] })
+    .send({ name: "Quota key", company_ids: [companyId], scopes: ["documents:read"] })
     .expect(201);
   keyId = created.body.id;
+  const identity = await request(app.getHttpServer())
+    .get("/v1/whoami")
+    .set("Authorization", `Bearer ${created.body.secret}`)
+    .expect(200);
+  expect(identity.body.company_ids).toEqual([companyId]);
   await request(app.getHttpServer())
     .post("/organizations/me/api-keys")
     .set("Authorization", `Bearer ${ownerToken}`)
-    .send({ name: "Extra key", scopes: ["documents:read"] })
+    .send({ name: "Extra key", company_ids: [companyId], scopes: ["documents:read"] })
     .expect(403);
   await request(app.getHttpServer())
     .delete(`/organizations/me/api-keys/${keyId}`)
@@ -223,17 +235,11 @@ it("key quota blocks another key and revocation releases capacity", async () => 
   await request(app.getHttpServer())
     .post("/organizations/me/api-keys")
     .set("Authorization", `Bearer ${ownerToken}`)
-    .send({ name: "Replacement key", scopes: ["documents:read"] })
+    .send({ name: "Replacement key", company_ids: [companyId], scopes: ["documents:read"] })
     .expect(201);
 });
 
 it("monthly document quota ignores last month and serializes concurrent inserts", async () => {
-  const created = await request(app.getHttpServer())
-    .post("/companies")
-    .set("Authorization", `Bearer ${ownerToken}`)
-    .send({ ruc: "20100070970", legal_name: "Quota company", environment: "sandbox" })
-    .expect(201);
-  companyId = created.body.id;
   const row = {
     organizationId: orgId,
     companyId,

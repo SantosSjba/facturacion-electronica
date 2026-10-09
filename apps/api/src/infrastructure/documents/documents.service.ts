@@ -62,6 +62,7 @@ export interface DocumentPublicError {
 export interface DocumentListFilters {
   environment?: "sandbox" | "production";
   companyId?: string;
+  allowedCompanyIds?: string[];
   /** Single type or multiple (e.g. GRE list 09+31). */
   documentType?: string;
   documentTypes?: string[];
@@ -170,6 +171,8 @@ export class DocumentsService {
   ): Promise<DocumentListResult> {
     const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
     const conditions = [eq(documents.organizationId, organizationId)];
+    if (filters.allowedCompanyIds)
+      conditions.push(inArray(documents.companyId, filters.allowedCompanyIds));
     if (filters.environment) conditions.push(eq(documents.environment, filters.environment));
 
     if (filters.companyId) {

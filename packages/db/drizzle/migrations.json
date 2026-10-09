@@ -124,5 +124,12 @@
     "tag": "tax_agent",
     "up": "0018_tax_agent.sql",
     "down": "0018_tax_agent.down.sql"
+  },
+  {
+    "id": "0019_api_key_companies",
+    "when": 19,
+    "tag": "api_key_companies",
+    "up": "0019_api_key_companies.sql",
+    "down": "0019_api_key_companies.down.sql"
   }
 ]

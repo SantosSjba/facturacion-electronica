@@ -82,6 +82,7 @@ export class DocumentsController {
     const typeFilter = parseDocumentTypes(query.document_type);
     const page = await this.documents.list(orgId, {
       companyId: query.company_id,
+      allowedCompanyIds: auth.kind === "api_key" ? (auth.companyIds ?? []) : undefined,
       environment: auth.kind === "api_key" ? (auth.environmentConstraint ?? undefined) : undefined,
       ...typeFilter,
       status: query.status,

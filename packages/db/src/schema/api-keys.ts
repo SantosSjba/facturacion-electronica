@@ -1,13 +1,5 @@
 import { sql } from "drizzle-orm";
-import {
-  check,
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, idColumn } from "./columns";
 import { organizations } from "./organizations";
@@ -23,6 +15,10 @@ export const apiKeys = pgTable(
     keyPrefix: text("key_prefix").notNull(),
     keyHash: text("key_hash").notNull(),
     scopes: text("scopes").array().notNull(),
+    companyIds: uuid("company_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
     status: text("status").notNull(),
     environmentConstraint: text("environment_constraint"),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true, mode: "date" }),
