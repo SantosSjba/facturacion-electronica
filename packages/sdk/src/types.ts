@@ -15,6 +15,8 @@ export interface FactosysClientOptions {
 export interface RequestOptions {
   method?: string;
   body?: unknown;
+  /** Send a UTF-8 TXT body without JSON encoding. Mutually exclusive with body. */
+  textBody?: string;
   idempotencyKey?: string;
   headers?: Record<string, string>;
 }

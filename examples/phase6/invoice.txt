@@ -1,0 +1,10 @@
+FACTOSYS|1|01
+FIELD|company_id|"00000000-0000-4000-8000-000000000001"
+FIELD|serie|"F001"
+FIELD|operation_type|"0101"
+FIELD|issue_date|"2026-10-09"
+FIELD|currency|"PEN"
+FIELD|totals_mode|"auto"
+FIELD|customer|{"identity_type":"6","identity_number":"20123456789","name":"Cliente de prueba"}
+LINE|{"id":1,"quantity":1,"unit_code":"NIU","description":"Servicio | instalación","unit_value":100,"tax_affectation":"10"}
+LINE|{"id":2,"quantity":2,"unit_code":"NIU","description":"Soporte técnico","unit_value":50,"tax_affectation":"10"}

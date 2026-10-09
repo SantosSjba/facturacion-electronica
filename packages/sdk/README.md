@@ -97,3 +97,11 @@ Ver [contrato y ejemplos](../../docs/phase1-commercial-cpe.md). El cambio se pro
 ## PDFs, QR y vistas previas
 
 Consulta [el contrato de Fase 2](../../docs/phase2-print-preview.md). `client.previews.validate/getXml/getPdf` acepta el tipo de comprobante y su payload sin reservar correlativos. `client.documents.getQr/getQrImage` obtiene el QR definitivo. La emisión admite `pdf_format` y `observations`.
+
+## Compatibilidad TXT
+
+`encodeCpeTxt("01", input)` convierte un contrato canónico a Factosys TXT v1.
+`client.txt.create("01", text, idempotencyKey)` envía el archivo UTF-8 por la misma
+ruta de emisión. También admite tipos `03`, `07`, `08`. La respuesta es JSON y
+la autorización, validación e idempotencia se comparten con la emisión JSON.
+Ver [contrato y límites](../../docs/phase6-compatibility.md).

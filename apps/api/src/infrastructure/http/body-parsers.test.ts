@@ -8,6 +8,18 @@ import { AppExceptionFilter } from "../../interfaces/http/filters/app-exception.
 import { AuthService } from "../auth/auth.service";
 import { RateLimitService } from "../redis/rate-limit.service";
 import { configureBodyParsers } from "./body-parsers";
+import { CpeInputPipe } from "../../interfaces/http/pipes/cpe-input.pipe";
+import { invoiceCreateSchema } from "../../interfaces/http/dto/invoice-create.schema";
+import { loadGravadaFixtureRequest } from "@factosys/sunat-ubl";
+import { encodeCpeTxt } from "../../../../../packages/sdk/src/helpers/cpe-txt";
+
+@Controller("v1/invoices")
+class InvoiceController {
+  @Post()
+  create(@Body(new CpeInputPipe(invoiceCreateSchema, "01")) body: unknown) {
+    return body;
+  }
+}
 
 @Controller("v1/previews")
 class PreviewController {
@@ -21,7 +33,7 @@ let app: INestApplication;
 const login = vi.fn().mockResolvedValue({ kind: "org_selection", organizations: [] });
 beforeAll(async () => {
   const module = await Test.createTestingModule({
-    controllers: [AuthController, PreviewController],
+    controllers: [AuthController, PreviewController, InvoiceController],
     providers: [
       { provide: AuthService, useValue: { login } },
       { provide: RateLimitService, useValue: {} },
@@ -83,4 +95,42 @@ it("returns a safe validation error for malformed JSON", async () => {
     .expect(400);
   expect(result.body.retryable).toBe(false);
   expect(JSON.stringify(result.body)).not.toContain('{"email":');
+});
+
+it("parses TXT and JSON into the same HTTP payload without disturbing existing parsers", async () => {
+  const fixture = { ...loadGravadaFixtureRequest() };
+  delete fixture.document_type;
+  delete fixture.number;
+  const body = { ...fixture, company_id: "00000000-0000-4000-8000-000000000001" };
+  const json = await request(app.getHttpServer()).post("/v1/invoices").send(body).expect(201);
+  const txt = await request(app.getHttpServer())
+    .post("/v1/invoices")
+    .set("Content-Type", "text/plain; charset=utf-8")
+    .send(encodeCpeTxt("01", body))
+    .expect(201);
+  expect(txt.body).toEqual(json.body);
+  const invalid = await request(app.getHttpServer())
+    .post("/v1/invoices")
+    .set("Content-Type", "text/plain")
+    .send("FACTOSYS|1|01\nFIELD|currency|1,2")
+    .expect(422);
+  expect(invalid.body.details[0].path).toBe("rows.2.currency");
+});
+it("rejects oversized TXT and invalid UTF-8 before emission", async () => {
+  await request(app.getHttpServer())
+    .post("/v1/invoices")
+    .set("Content-Type", "text/plain")
+    .send("x".repeat(210000))
+    .expect(413);
+  const invalid = await request(app.getHttpServer())
+    .post("/v1/invoices")
+    .set("Content-Type", "text/plain")
+    .send(Buffer.from([0xc3, 0x28]))
+    .expect(400);
+  expect(invalid.body.message).toBe("TXT requires valid UTF-8");
+  await request(app.getHttpServer())
+    .post("/v1/invoices")
+    .set("Content-Type", "text/plain; charset=iso-8859-1")
+    .send("FACTOSYS|1|01")
+    .expect(400);
 });

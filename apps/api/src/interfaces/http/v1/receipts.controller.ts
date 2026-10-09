@@ -1,33 +1,15 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  Post,
-  Res,
-} from "@nestjs/common";
-import {
-  ApiBearerAuth,
-  ApiHeader,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { Body, Controller, Headers, Post, Res } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { AppError } from "@factosys/shared";
 
 import { EmitReceiptUseCase } from "../../../infrastructure/documents/emit-receipt.use-case";
 import { IdempotencyService } from "../../../infrastructure/idempotency/idempotency.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
-import {
-  receiptCreateSchema,
-  type ReceiptCreate,
-} from "../dto/receipt-create.schema";
-import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
+import { receiptCreateSchema, type ReceiptCreate } from "../dto/receipt-create.schema";
+import { CpeInputPipe, withCpeSource } from "../pipes/cpe-input.pipe";
 
 @ApiTags("Boletas")
 @ApiBearerAuth()
@@ -65,7 +47,7 @@ export class ReceiptsController {
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,
-    @Body(new ZodValidationPipe(receiptCreateSchema, 422)) body: ReceiptCreate,
+    @Body(new CpeInputPipe(receiptCreateSchema, "03")) body: ReceiptCreate,
     @Res({ passthrough: true }) res: Response,
   ) {
     if (auth.kind !== "api_key" && auth.kind !== "user") {
@@ -114,7 +96,7 @@ export class ReceiptsController {
         companyId: body.company_id,
         key,
       });
-      throw cause;
+      throw withCpeSource(cause, body);
     }
   }
 }

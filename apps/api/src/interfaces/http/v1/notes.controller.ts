@@ -1,17 +1,5 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  Post,
-  Res,
-} from "@nestjs/common";
-import {
-  ApiBearerAuth,
-  ApiHeader,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { Body, Controller, Headers, Post, Res } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { AppError } from "@factosys/shared";
 
@@ -21,20 +9,11 @@ import {
 } from "../../../infrastructure/documents/emit-note.use-case";
 import { IdempotencyService } from "../../../infrastructure/idempotency/idempotency.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
-import {
-  creditNoteCreateSchema,
-  type CreditNoteCreate,
-} from "../dto/credit-note-create.schema";
-import {
-  debitNoteCreateSchema,
-  type DebitNoteCreate,
-} from "../dto/debit-note-create.schema";
-import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
+import { creditNoteCreateSchema, type CreditNoteCreate } from "../dto/credit-note-create.schema";
+import { debitNoteCreateSchema, type DebitNoteCreate } from "../dto/debit-note-create.schema";
+import { CpeInputPipe, withCpeSource } from "../pipes/cpe-input.pipe";
 
 @ApiTags("Notas de crédito")
 @ApiBearerAuth()
@@ -63,7 +42,7 @@ export class CreditNotesController {
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,
-    @Body(new ZodValidationPipe(creditNoteCreateSchema, 422))
+    @Body(new CpeInputPipe(creditNoteCreateSchema, "07"))
     body: CreditNoteCreate,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -113,7 +92,7 @@ export class CreditNotesController {
         companyId: body.company_id,
         key,
       });
-      throw cause;
+      throw withCpeSource(cause, body);
     }
   }
 }
@@ -145,7 +124,7 @@ export class DebitNotesController {
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,
-    @Body(new ZodValidationPipe(debitNoteCreateSchema, 422))
+    @Body(new CpeInputPipe(debitNoteCreateSchema, "08"))
     body: DebitNoteCreate,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -195,7 +174,7 @@ export class DebitNotesController {
         companyId: body.company_id,
         key,
       });
-      throw cause;
+      throw withCpeSource(cause, body);
     }
   }
 }

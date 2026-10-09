@@ -59,13 +59,21 @@ export class AppExceptionFilter implements ExceptionFilter {
   ): { status: number; body: ApiErrorBody } {
     if (exception instanceof Error && "type" in exception) {
       const parserType = exception.type;
-      if (parserType === "entity.too.large" || parserType === "entity.parse.failed") {
+      if (
+        parserType === "entity.too.large" ||
+        parserType === "entity.parse.failed" ||
+        parserType === "entity.verify.failed"
+      ) {
         return {
           status: parserType === "entity.too.large" ? 413 : 400,
           body: {
             code: "FACTOSYS_VALIDATION",
             message:
-              parserType === "entity.too.large" ? "Request body too large" : "Invalid JSON body",
+              parserType === "entity.too.large"
+                ? "Request body too large"
+                : parserType === "entity.verify.failed"
+                  ? "TXT requires valid UTF-8"
+                  : "Invalid JSON body",
             stage: "request",
             retryable: false,
             request_id: requestId,

@@ -16,7 +16,8 @@ Primero consultar `GET /v1/capabilities` y OpenAPI `/docs`; crear una API key de
 | Acceso temporal revocable                                                      | Implementado           | Token por documento/archivo; MinIO privado                   |
 | Empresas/series/certificados/SOL/OAuth/logo por API                            | Implementado           | Scopes, organización, ambiente, cifrado y auditoría          |
 | Retención/percepción electrónicas independientes y reversión                   | No habilitado          | Fase 5                                                       |
-| TXT, contingencia, offline/reseller                                            | No habilitado          | Fase 6                                                       |
+| Factosys TXT v1 (01/03/07/08)                                                  | Implementado           | Fase 6; mismo motor e idempotencia JSON                      |
+| Contingencia física, nuevas extensiones sectoriales, offline/reseller          | No habilitado          | Fase 6; diseño separado y demanda pendiente                  |
 | Baja GRE mediante RA/RC                                                        | No habilitado          | No prometer una operación oficial inexistente en el contrato |
 
 Implementado no significa homologado ni aceptado oficialmente. Ver [contrato completo Fase 4](../phase4-integration.md).
@@ -55,3 +56,13 @@ Rechazo SUNAT es un estado fiscal persistido con código/mensaje; no confundirlo
 Los lenguajes son ejemplos de cliente; no se conectan a SUNAT directamente. El checklist distingue pruebas locales de aceptación real y de entrega real al buzón.
 
 Validación local de ejemplos: `pnpm exec tsx scripts/validate-integration-examples.mjs`; TypeScript y C# compilados, PHP/Java revisados sin runtime instalado. Antes de exportar Postman borrar variables SOL/OAuth/API key.
+
+## Compatibilidad TXT (fase 6)
+
+Facturas, boletas y notas 01/03/07/08 también aceptan Factosys TXT v1 mediante
+`text/plain; charset=utf-8`, conservando scopes, idempotencia y respuestas JSON.
+Ver [contrato, límites y evidencia](../phase6-compatibility.md),
+[archivo de factura](../../examples/phase6/invoice.txt) y
+[colección Postman TXT](../../examples/phase6/factosys-txt.postman_collection.json).
+Contingencia física y nuevas extensiones sectoriales permanecen sin habilitar;
+offline/reseller tienen [diseño separado](../phase6-optional-design.md).

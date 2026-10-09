@@ -250,6 +250,20 @@ export function enrichInvoicingRequestBodies(document: OpenAPIObject): OpenAPIOb
       required: entry.required !== false,
       description: entry.description,
       content: {
+        ...(["/v1/invoices", "/v1/receipts", "/v1/credit-notes", "/v1/debit-notes"].includes(
+          entry.path,
+        )
+          ? {
+              "text/plain": {
+                schema: {
+                  type: "string" as const,
+                  maxLength: 204800,
+                  description:
+                    "Factosys TXT v1: UTF-8, 200 KiB, header FACTOSYS|1|document-type, FIELD|field|JSON-value and LINE|JSON-object. See docs/phase6-compatibility.md and examples/phase6/invoice.txt.",
+                },
+              },
+            }
+          : {}),
         "application/json": {
           schema,
           ...(entry.example ? { example: entry.example } : {}),

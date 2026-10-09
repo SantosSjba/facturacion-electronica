@@ -1,33 +1,15 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  Post,
-  Res,
-} from "@nestjs/common";
-import {
-  ApiBearerAuth,
-  ApiHeader,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
+import { Body, Controller, Headers, Post, Res } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { AppError } from "@factosys/shared";
 
 import { EmitInvoiceUseCase } from "../../../infrastructure/documents/emit-invoice.use-case";
 import { IdempotencyService } from "../../../infrastructure/idempotency/idempotency.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
-import {
-  invoiceCreateSchema,
-  type InvoiceCreate,
-} from "../dto/invoice-create.schema";
-import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
+import { invoiceCreateSchema, type InvoiceCreate } from "../dto/invoice-create.schema";
+import { CpeInputPipe, withCpeSource } from "../pipes/cpe-input.pipe";
 
 @ApiTags("Facturas")
 @ApiBearerAuth()
@@ -70,7 +52,7 @@ export class InvoicesController {
   async create(
     @CurrentAuth() auth: AuthContext,
     @Headers("idempotency-key") key: string | undefined,
-    @Body(new ZodValidationPipe(invoiceCreateSchema, 422)) body: InvoiceCreate,
+    @Body(new CpeInputPipe(invoiceCreateSchema, "01")) body: InvoiceCreate,
     @Res({ passthrough: true }) res: Response,
   ) {
     if (auth.kind !== "api_key" && auth.kind !== "user") {
@@ -119,7 +101,7 @@ export class InvoicesController {
         companyId: body.company_id,
         key,
       });
-      throw cause;
+      throw withCpeSource(cause, body);
     }
   }
 }

@@ -100,7 +100,7 @@ async function bootstrap(): Promise<void> {
         "- **422** — validación de cuerpo o `Idempotency-Key` faltante",
         "- **429** — rate limit (revisa `Retry-After`)",
         "",
-        "Integración: **REST + JSON** (curl, Postman o el HTTP client de tu stack).",
+        "Integración: **REST + JSON**; 01/03/07/08 también aceptan **Factosys TXT v1** con `text/plain; charset=utf-8` por las mismas rutas e idempotencia (ver contrato Fase 6).",
         "No hace falta instalar un paquete npm: `@factosys/sdk` es interno del monorepo y aún no está publicado.",
         "",
         "**Fuera de alcance:** endpoints SaaS, plataforma y panel administrativo.",

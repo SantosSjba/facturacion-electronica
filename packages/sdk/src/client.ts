@@ -48,6 +48,9 @@ export class FactosysClient {
   }
 
   async request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+    if (opts.textBody !== undefined && opts.body !== undefined) {
+      throw new Error("body and textBody are mutually exclusive");
+    }
     const url = path.startsWith("http")
       ? path
       : `${this.baseUrl.replace(/\/v1$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
@@ -66,6 +69,10 @@ export class FactosysClient {
         const idem = opts.idempotencyKey ?? this.idempotencyKey;
         if (idem) headers["Idempotency-Key"] = idem;
         let body: string | FormData | undefined;
+        if (opts.textBody !== undefined) {
+          headers["Content-Type"] = "text/plain; charset=utf-8";
+          body = opts.textBody;
+        }
         if (opts.body !== undefined) {
           if (typeof FormData !== "undefined" && opts.body instanceof FormData) {
             body = opts.body;
@@ -76,7 +83,9 @@ export class FactosysClient {
         }
 
         const res = await fetch(url, {
-          method: opts.method ?? (opts.body !== undefined ? "POST" : "GET"),
+          method:
+            opts.method ??
+            (opts.body !== undefined || opts.textBody !== undefined ? "POST" : "GET"),
           headers,
           body,
           signal: controller.signal,
@@ -102,7 +111,9 @@ export class FactosysClient {
           };
         }
         const err = mapError(res.status, errBody);
-        const method = (opts.method ?? (opts.body !== undefined ? "POST" : "GET")).toUpperCase();
+        const method = (
+          opts.method ?? (opts.body !== undefined || opts.textBody !== undefined ? "POST" : "GET")
+        ).toUpperCase();
         const safeRetry = ["GET", "PUT", "DELETE"].includes(method) || !!idem;
         if (safeRetry && isRetryable(err) && attempt <= this.maxRetries) {
           await sleep(Math.min(1000 * attempt, 5000));
@@ -114,6 +125,22 @@ export class FactosysClient {
       }
     }
   }
+
+  txt = {
+    create: (documentType: "01" | "03" | "07" | "08", textBody: string, key?: string) => {
+      const routes = {
+        "01": "invoices",
+        "03": "receipts",
+        "07": "credit-notes",
+        "08": "debit-notes",
+      };
+      return this.request<CpeDocument>(`/v1/${routes[documentType]}`, {
+        method: "POST",
+        textBody,
+        idempotencyKey: key,
+      });
+    },
+  };
 
   meta = {
     getRuleset: async () => {

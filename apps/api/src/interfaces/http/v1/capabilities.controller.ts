@@ -16,7 +16,17 @@ export class CapabilitiesController {
   })
   get() {
     return {
-      version: "phase5",
+      version: "phase6",
+      txt: {
+        version: 1,
+        media_type: "text/plain; charset=utf-8",
+        document_types: ["01", "03", "07", "08"],
+        max_bytes: 204800,
+        max_records: 2000,
+        max_lines: 1000,
+        shared_json_idempotency: true,
+        format: "Factosys; not NubeFact TXT",
+      },
       emission: ["01", "03", "07", "08", "09", "31", "RC", "RA", "20", "40", "RR"],
       cdr_recovery_by_identifiers: {
         document_types: ["01", "07", "08"],
@@ -56,7 +66,15 @@ export class CapabilitiesController {
         hard_delete: false,
       },
       formats: ["A4", "A5", "TICKET80", "TICKET58"],
-      unsupported: ["GRE_void_REST", "CDR_identifier_recovery_for_boletas", "TXT", "offline"],
+      unsupported: [
+        "GRE_void_REST",
+        "CDR_identifier_recovery_for_boletas",
+        "physical_contingency_communication",
+        "Tax_Free",
+        "specialized_sector_extensions",
+        "offline",
+        "reseller",
+      ],
       modes: {
         tax_agent: this.config.get("SUNAT_AGENT_MODE", { infer: true }),
         bill: this.config.get("SUNAT_BILL_MODE", { infer: true }),

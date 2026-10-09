@@ -1,0 +1,57 @@
+{
+  "variable": [
+    {
+      "value": "http://localhost:3000",
+      "key": "base_url"
+    },
+    {
+      "value": "00000000-0000-4000-8000-000000000001",
+      "key": "company_id"
+    },
+    {
+      "value": "",
+      "key": "api_key"
+    },
+    {
+      "value": "phase6-txt-001",
+      "key": "idempotency_key"
+    }
+  ],
+  "info": {
+    "description": "Emisión TXT por el mismo motor JSON. Configurar empresa y API key de sandbox; no acredita aceptación SUNAT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "name": "Factosys TXT v1"
+  },
+  "item": [
+    {
+      "name": "Factura TXT v1",
+      "request": {
+        "body": {
+          "raw": "FACTOSYS|1|01\nFIELD|company_id|\"{{company_id}}\"\nFIELD|serie|\"F001\"\nFIELD|operation_type|\"0101\"\nFIELD|issue_date|\"2026-10-09\"\nFIELD|currency|\"PEN\"\nFIELD|totals_mode|\"auto\"\nFIELD|customer|{\"identity_type\":\"6\",\"identity_number\":\"20123456789\",\"name\":\"Cliente de prueba\"}\nLINE|{\"id\":1,\"quantity\":1,\"unit_code\":\"NIU\",\"description\":\"Servicio | instalación\",\"unit_value\":100,\"tax_affectation\":\"10\"}\nLINE|{\"id\":2,\"quantity\":2,\"unit_code\":\"NIU\",\"description\":\"Soporte técnico\",\"unit_value\":50,\"tax_affectation\":\"10\"}\n",
+          "mode": "raw",
+          "options": {
+            "raw": {
+              "language": "text"
+            }
+          }
+        },
+        "method": "POST",
+        "header": [
+          {
+            "value": "Bearer {{api_key}}",
+            "key": "Authorization"
+          },
+          {
+            "value": "{{idempotency_key}}",
+            "key": "Idempotency-Key"
+          },
+          {
+            "value": "text/plain; charset=utf-8",
+            "key": "Content-Type"
+          }
+        ],
+        "url": "{{base_url}}/v1/invoices"
+      }
+    }
+  ]
+}

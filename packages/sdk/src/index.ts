@@ -1,4 +1,5 @@
 import { FactosysClient } from "./client";
+export { encodeCpeTxt } from "./helpers/cpe-txt";
 export { FactosysClient } from "./client";
 export {
   FactosysError,
