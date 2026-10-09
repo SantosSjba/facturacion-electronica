@@ -4,7 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
-import { json } from "express";
+import { configureBodyParsers } from "./infrastructure/http/body-parsers";
 
 import { AppModule } from "./app.module";
 import type { Env } from "./infrastructure/config/env.schema";
@@ -50,7 +50,7 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
 
-  app.use("/v1/previews", json({ limit: "200kb" }));
+  configureBodyParsers(app);
   app.useLogger(app.get(Logger));
 
   const config = app.get(ConfigService<Env, true>);

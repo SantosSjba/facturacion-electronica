@@ -57,6 +57,22 @@ export class AppExceptionFilter implements ExceptionFilter {
     exception: unknown,
     requestId: string | undefined,
   ): { status: number; body: ApiErrorBody } {
+    if (exception instanceof Error && "type" in exception) {
+      const parserType = exception.type;
+      if (parserType === "entity.too.large" || parserType === "entity.parse.failed") {
+        return {
+          status: parserType === "entity.too.large" ? 413 : 400,
+          body: {
+            code: "FACTOSYS_VALIDATION",
+            message:
+              parserType === "entity.too.large" ? "Request body too large" : "Invalid JSON body",
+            stage: "request",
+            retryable: false,
+            request_id: requestId,
+          },
+        };
+      }
+    }
     if (exception instanceof AppError) {
       return {
         status: exception.httpStatus,
