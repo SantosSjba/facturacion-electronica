@@ -6,7 +6,6 @@ import type {
   GreGetStatusResult,
   GreSendDespatchInput,
   GreSendDespatchResult,
-  GreTicketStatus,
 } from "../ports/gre-despatch.port";
 import { greTransportError } from "../errors";
 import type { FetchLike } from "./rest-gre-oauth.adapter";
@@ -37,9 +36,7 @@ export class RestGreDespatchAdapter implements GreDespatchPort {
     this.timeoutMs = options.timeoutMs ?? 60_000;
   }
 
-  async sendDespatch(
-    input: GreSendDespatchInput,
-  ): Promise<GreSendDespatchResult> {
+  async sendDespatch(input: GreSendDespatchInput): Promise<GreSendDespatchResult> {
     assertToken(input.accessToken);
     if (!input.zipBytes?.length) {
       throw greTransportError("zipBytes is empty");
@@ -49,9 +46,7 @@ export class RestGreDespatchAdapter implements GreDespatchPort {
     const url = `${this.apiBase}/v1/contribuyente/gem/comprobantes/${pathId}`;
 
     const hashZip = createHash("sha256").update(input.zipBytes).digest("hex");
-    const nomArchivo = input.fileName.endsWith(".zip")
-      ? input.fileName
-      : `${input.fileName}.zip`;
+    const nomArchivo = input.fileName.endsWith(".zip") ? input.fileName : `${input.fileName}.zip`;
 
     const payload = {
       archivo: {
@@ -61,12 +56,7 @@ export class RestGreDespatchAdapter implements GreDespatchPort {
       },
     };
 
-    const { response, text } = await this.postJson(
-      url,
-      input.accessToken,
-      payload,
-      "sendDespatch",
-    );
+    const { response, text } = await this.postJson(url, input.accessToken, payload, "sendDespatch");
 
     let rawBody: unknown = text;
     try {
@@ -111,19 +101,15 @@ export class RestGreDespatchAdapter implements GreDespatchPort {
       }
     } catch (cause) {
       const aborted =
-        cause instanceof Error &&
-        (cause.name === "AbortError" || cause.message.includes("abort"));
-      throw greTransportError(
-        aborted ? "GRE getStatus timed out" : "GRE getStatus network error",
-        { cause },
-      );
+        cause instanceof Error && (cause.name === "AbortError" || cause.message.includes("abort"));
+      throw greTransportError(aborted ? "GRE getStatus timed out" : "GRE getStatus network error", {
+        cause,
+      });
     }
 
     const text = await response.text();
     if (!response.ok) {
-      throw greTransportError(`GRE getStatus HTTP ${response.status}`, {
-        details: [{ path: "http", issue: text.slice(0, 200) }],
-      });
+      throw responseError(text, "getStatus", response.status);
     }
 
     let rawBody: unknown = text;
@@ -162,21 +148,16 @@ export class RestGreDespatchAdapter implements GreDespatchPort {
       }
     } catch (cause) {
       const aborted =
-        cause instanceof Error &&
-        (cause.name === "AbortError" || cause.message.includes("abort"));
+        cause instanceof Error && (cause.name === "AbortError" || cause.message.includes("abort"));
       throw greTransportError(
-        aborted
-          ? `GRE ${operation} timed out`
-          : `GRE ${operation} network error`,
+        aborted ? `GRE ${operation} timed out` : `GRE ${operation} network error`,
         { cause },
       );
     }
 
     const text = await response.text();
     if (!response.ok) {
-      throw greTransportError(`GRE ${operation} HTTP ${response.status}`, {
-        details: [{ path: "http", issue: text.slice(0, 200) }],
-      });
+      throw responseError(text, operation, response.status);
     }
     return { response, text };
   }
@@ -192,77 +173,43 @@ function extractTicket(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
   const o = body as Record<string, unknown>;
   const t =
-    o.numTicket ??
-    o.ticket ??
-    (o.archivo as Record<string, unknown> | undefined)?.numTicket;
+    o.numTicket ?? o.ticket ?? (o.archivo as Record<string, unknown> | undefined)?.numTicket;
   return typeof t === "string" && t.trim() ? t.trim() : null;
 }
 
-function mapStatusResponse(
-  body: unknown,
-  httpStatus: number,
-): GreGetStatusResult {
-  const o =
-    body && typeof body === "object"
-      ? (body as Record<string, unknown>)
-      : {};
-
-  const code = String(
-    o.codRespuesta ?? o.codigo ?? o.responseCode ?? o.codEstado ?? "",
-  );
-  const message = String(
-    o.descripcion ?? o.message ?? o.error ?? "",
-  ).trim();
-
-  let status: GreTicketStatus = "ticket_pending";
-  if (code === "0" || code === "99") {
-    status = code === "99" ? "accepted_with_observation" : "accepted";
-  } else if (code === "98" || code === "" || code === "1") {
-    // 98 = still processing in some GRE responses
-    status = code === "98" || code === "1" ? "ticket_pending" : "ticket_pending";
-  } else if (code && code !== "0") {
-    // numeric error codes → rejected when not pending
-    const n = Number(code);
-    if (!Number.isNaN(n) && n >= 2000) {
-      status = "rejected";
-    } else if (code === "98") {
-      status = "ticket_pending";
-    } else if (o.indEstado === "0" || o.indEstado === 0) {
-      status = "accepted";
-    } else if (o.indEstado === "98" || o.indEstado === 98) {
-      status = "ticket_pending";
-    } else if (typeof o.arcCdr === "string" && o.arcCdr) {
-      status = "accepted";
-    } else if (message.toLowerCase().includes("acept")) {
-      status = "accepted";
-    } else if (message.toLowerCase().includes("rechaz")) {
-      status = "rejected";
-    }
-  }
-
-  // Prefer explicit indEstado when present
-  if (o.indEstado === "0" || o.indEstado === 0) status = "accepted";
-  if (o.indEstado === "98" || o.indEstado === 98) status = "ticket_pending";
-  if (o.indEstado === "99" || o.indEstado === 99) {
-    status = "accepted_with_observation";
-  }
-
-  let rawCdrZip: Buffer | undefined;
-  const cdrB64 = o.arcCdr ?? o.cdrZip ?? o.applicationResponse;
-  if (typeof cdrB64 === "string" && cdrB64.length > 0) {
-    try {
-      rawCdrZip = Buffer.from(cdrB64, "base64");
-    } catch {
-      rawCdrZip = undefined;
-    }
-  }
-
+function mapStatusResponse(body: unknown, httpStatus: number): GreGetStatusResult {
+  const o = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const code = String(o.codRespuesta ?? "");
+  const error = o.error && typeof o.error === "object" ? (o.error as Record<string, unknown>) : {};
+  // SUNAT REST2: 98 = processing, 99 = ERROR, 0 = delivery OK (read actual CDR).
+  const status = code === "0" ? "accepted" : code === "99" ? "rejected" : "ticket_pending";
+  const cdr = o.arcCdr;
+  const rawCdrZip =
+    typeof cdr === "string" && cdr.length > 0 ? Buffer.from(cdr, "base64") : undefined;
   return {
     status,
-    sunatCode: code || undefined,
-    sunatMessage: message || undefined,
     httpStatus,
     rawBody: body,
     rawCdrZip,
+    sunatCode: String(error.numError ?? code) || undefined,
+    sunatMessage: String(error.desError ?? o.descripcion ?? "") || undefined,
   };
+}
+
+function responseError(text: string, operation: string, status: number) {
+  let body: Record<string, unknown> = {};
+  try {
+    body = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    /* no raw response leakage */
+  }
+  const errors = Array.isArray(body.errors) ? (body.errors as Record<string, unknown>[]) : [];
+  const first = errors[0];
+  const code = first?.codError ?? first?.cod;
+  const message = first?.desError ?? first?.msg;
+  return greTransportError("GRE " + operation + " HTTP " + status, {
+    sunatCode: code == null ? undefined : String(code),
+    sunatMessage: typeof message === "string" ? message : undefined,
+    retryable: status >= 500 || status === 429,
+  });
 }

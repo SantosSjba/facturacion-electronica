@@ -5,7 +5,10 @@ export function greTransportError(
   message: string,
   extras?: {
     cause?: unknown;
-    details?: Array<{ path?: string; issue: string }>;
+    sunatCode?: string;
+    sunatMessage?: string;
+    retryable?: boolean;
+    details?: { path?: string; issue: string }[];
   },
 ): AppError {
   return new AppError({
@@ -13,7 +16,9 @@ export function greTransportError(
     message,
     httpStatus: 502,
     stage: "transport",
-    retryable: true,
+    retryable: extras?.retryable ?? true,
+    sunatCode: extras?.sunatCode,
+    sunatMessage: extras?.sunatMessage,
     cause: extras?.cause,
     details: extras?.details,
   });

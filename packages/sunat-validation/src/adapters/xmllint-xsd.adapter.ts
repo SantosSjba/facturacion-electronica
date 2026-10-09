@@ -36,17 +36,14 @@ function loadSchemaBundle(documentType: SupportedXsdDocumentType): {
   const commonDir = resolveCommonXsdDir();
 
   if (!existsSync(rootPath) || !existsSync(commonDir)) {
-    throw validationError(
-      "XSD cache missing. Run `pnpm sunat:unpack-schemas` first.",
-      {
-        details: [
-          {
-            path: rootPath,
-            issue: "Invoice root XSD or common/ directory not found",
-          },
-        ],
-      },
-    );
+    throw validationError("XSD cache missing. Run `pnpm sunat:unpack-schemas` first.", {
+      details: [
+        {
+          path: rootPath,
+          issue: "Invoice root XSD or common/ directory not found",
+        },
+      ],
+    });
   }
 
   const schemaContents = readFileSync(rootPath, "utf8");
@@ -73,9 +70,7 @@ function loadSchemaBundle(documentType: SupportedXsdDocumentType): {
  * Preferable to native libxmljs2 on Windows / varying Node ABIs.
  */
 export class XmllintXsdValidationAdapter implements SunatValidationPort {
-  async validateXml(
-    input: SunatValidationInput,
-  ): Promise<SunatValidationResult> {
+  async validateXml(input: SunatValidationInput): Promise<SunatValidationResult> {
     const stages = input.stages ?? (["xsd"] as const);
     if (!stages.includes("xsd")) {
       return {
@@ -89,16 +84,16 @@ export class XmllintXsdValidationAdapter implements SunatValidationPort {
       input.documentType !== "01" &&
       input.documentType !== "03" &&
       input.documentType !== "07" &&
-      input.documentType !== "08"
+      input.documentType !== "08" &&
+      input.documentType !== "09" &&
+      input.documentType !== "31"
     ) {
       throw validationError(
-        `documentType '${input.documentType}' is not supported (use 01, 03, 07, 08)`,
+        `documentType '${input.documentType}' is not supported (use 01, 03, 07, 08, 09, 31)`,
       );
     }
 
-    const { schema, preload, rulesetVersion } = loadSchemaBundle(
-      input.documentType,
-    );
+    const { schema, preload, rulesetVersion } = loadSchemaBundle(input.documentType);
 
     let result;
     try {
@@ -110,19 +105,14 @@ export class XmllintXsdValidationAdapter implements SunatValidationPort {
         maxMemoryPages: 4096,
       });
     } catch (cause) {
-      throw validationInternal(
-        "xmllint-wasm failed to validate XML against XSD",
-        { cause },
-      );
+      throw validationInternal("xmllint-wasm failed to validate XML against XSD", { cause });
     }
 
     const issues: SunatValidationIssue[] = result.errors.map((err) => ({
       severity: "error" as const,
       stage: "xsd" as const,
       message: err.message,
-      path: err.loc
-        ? `${err.loc.fileName}:${err.loc.lineNumber}`
-        : undefined,
+      path: err.loc ? `${err.loc.fileName}:${err.loc.lineNumber}` : undefined,
     }));
 
     return {

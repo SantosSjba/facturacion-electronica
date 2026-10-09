@@ -49,6 +49,13 @@ const REQUEST_BODIES: {
   description: string;
   example?: Record<string, unknown>;
 }[] = [
+  {
+    path: "/v1/despatch-advices/{id}/reconcile-ticket",
+    method: "post",
+    schema: z.object({ ticket: z.string().uuid() }).strict(),
+    description:
+      "Reanuda consultarTicket de una GRE pendiente de reconciliación. Sin reenvío ni correlativo nuevo; máximo tres ciclos manuales. Se verifica identidad del CDR.",
+  },
   ...["validate", "xml", "pdf"].map((output) => ({
     path: `/v1/previews/${output}`,
     method: "post" as const,
@@ -126,7 +133,8 @@ const REQUEST_BODIES: {
     path: "/v1/despatch-advices",
     method: "post",
     schema: despatchAdviceCreateSchema,
-    description: "Guía de remisión electrónica (09/31). Requiere datos de traslado y destinatario.",
+    description:
+      "GRE 09/31 con roles de transporte, entrega e inicio del traslado, indicadores y referencias aduaneras. Numeración automática; 201 indica registro local. PDF/QR requieren aceptación y URL oficial del CDR. Consultar gre para disponibilidad y reconciliación.",
   },
   {
     path: "/v1/webhook-endpoints",

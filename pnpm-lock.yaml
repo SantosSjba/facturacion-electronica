@@ -80,6 +80,9 @@ importers:
       '@factosys/sunat-ubl':
         specifier: workspace:*
         version: link:../../packages/sunat-ubl
+      '@factosys/sunat-validation':
+        specifier: workspace:*
+        version: link:../../packages/sunat-validation
       '@nestjs/common':
         specifier: ^11.1.6
         version: 11.2.5(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -364,6 +367,9 @@ importers:
       '@factosys/shared':
         specifier: workspace:*
         version: link:../shared
+      '@xmldom/xmldom':
+        specifier: ^0.9.12
+        version: 0.9.12
       adm-zip:
         specifier: ^0.6.1
         version: 0.6.1

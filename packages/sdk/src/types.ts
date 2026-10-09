@@ -1,4 +1,9 @@
-import type { InvoiceFixtureRequest, NoteFixtureRequest, InvoiceTotals } from "@factosys/sunat-ubl";
+import type {
+  InvoiceFixtureRequest,
+  NoteFixtureRequest,
+  InvoiceTotals,
+  DespatchCanonical,
+} from "@factosys/sunat-ubl";
 export interface FactosysClientOptions {
   apiKey: string;
   /** Base URL including /v1 or origin only — paths are absolute from host root. */
@@ -70,4 +75,29 @@ export interface CpeQr {
   module_mm: number;
   quiet_zone_mm: number;
   error_correction: "Q";
+}
+
+export type DespatchInput = Omit<DespatchCanonical, "number" | "supplier" | "supplier_party"> & {
+  company_id: string;
+  supplier?: DespatchCanonical["supplier_party"];
+};
+export interface GreDocument {
+  id: string;
+  company_id: string;
+  document_type: "09" | "31";
+  serie_number: string;
+  status: string;
+  sunat_ticket: string | null;
+  sunat_code: string | null;
+  sunat_message: string | null;
+  gre: {
+    qr_status: string;
+    pdf_status: string;
+    cdr_status: string;
+    reconciliation_required: boolean;
+    reason?: string;
+    simulated: boolean;
+  };
+  printing?: CpeDocument["printing"];
+  links: CpeDocument["links"];
 }

@@ -96,9 +96,7 @@ describe("builder unsigned (FE-70 / FE-76)", () => {
     const canonical = hydrateGravadaFixture();
     const { xml, fileStem } = new XmlInvoiceBuilder().build(canonical);
     const doc = new DOMParser().parseFromString(xml, "text/xml");
-    expect(doc.documentElement?.localName || doc.documentElement?.nodeName).toMatch(
-      /Invoice/,
-    );
+    expect(doc.documentElement?.localName || doc.documentElement?.nodeName).toMatch(/Invoice/);
     expect(xml).not.toContain("UBLExtensions");
     expect(xml).toContain(`<cbc:ID>${documentId("F001", 1)}</cbc:ID>`);
     expect(xml).toContain("<cbc:PayableAmount");
@@ -108,10 +106,7 @@ describe("builder unsigned (FE-70 / FE-76)", () => {
 
   it("matches golden unsigned structurally (B3)", () => {
     const { xml } = new XmlInvoiceBuilder().build(hydrateGravadaFixture());
-    const goldenPath = join(
-      process.cwd(),
-      "testdata/golden/01-invoice-gravada.unsigned.xml",
-    );
+    const goldenPath = join(process.cwd(), "testdata/golden/01-invoice-gravada.unsigned.xml");
     const golden = readFileSync(goldenPath, "utf8");
     expect(normalizeXml(xml)).toBe(normalizeXml(golden));
   });
@@ -127,9 +122,7 @@ describe("boleta 03 builder (S5-01)", () => {
   });
 
   it("builds Invoice root with type 03 and B serie stem", () => {
-    const { xml, fileStem } = new XmlInvoiceBuilder().build(
-      hydrateReceiptDniFixture(),
-    );
+    const { xml, fileStem } = new XmlInvoiceBuilder().build(hydrateReceiptDniFixture());
     expect(xml).toContain(">03</cbc:InvoiceTypeCode>");
     expect(xml).toContain("<cbc:ID>B001-00000001</cbc:ID>");
     expect(fileStem).toBe("20601234567-03-B001-1");
@@ -137,10 +130,7 @@ describe("boleta 03 builder (S5-01)", () => {
 
   it("matches golden unsigned boleta structurally", () => {
     const { xml } = new XmlInvoiceBuilder().build(hydrateReceiptDniFixture());
-    const goldenPath = join(
-      process.cwd(),
-      "testdata/golden/03-receipt-dni.unsigned.xml",
-    );
+    const goldenPath = join(process.cwd(), "testdata/golden/03-receipt-dni.unsigned.xml");
     const golden = readFileSync(goldenPath, "utf8");
     expect(normalizeXml(xml)).toBe(normalizeXml(golden));
   });
@@ -148,9 +138,7 @@ describe("boleta 03 builder (S5-01)", () => {
 
 describe("NC/ND builders (S5-03)", () => {
   it("builds CreditNote with BillingReference", () => {
-    const { xml, fileStem } = new XmlCreditNoteBuilder().build(
-      hydrateCreditNoteVoidFixture(),
-    );
+    const { xml, fileStem } = new XmlCreditNoteBuilder().build(hydrateCreditNoteVoidFixture());
     expect(xml).toContain("CreditNote");
     expect(xml).toContain("DiscrepancyResponse");
     expect(xml).toContain("BillingReference");
@@ -160,9 +148,7 @@ describe("NC/ND builders (S5-03)", () => {
   });
 
   it("matches golden credit note structurally", () => {
-    const { xml } = new XmlCreditNoteBuilder().build(
-      hydrateCreditNoteVoidFixture(),
-    );
+    const { xml } = new XmlCreditNoteBuilder().build(hydrateCreditNoteVoidFixture());
     const golden = readFileSync(
       join(process.cwd(), "testdata/golden/07-credit-note-void.unsigned.xml"),
       "utf8",
@@ -171,9 +157,7 @@ describe("NC/ND builders (S5-03)", () => {
   });
 
   it("builds DebitNote with interest line", () => {
-    const { xml, fileStem } = new XmlDebitNoteBuilder().build(
-      hydrateDebitNoteInterestFixture(),
-    );
+    const { xml, fileStem } = new XmlDebitNoteBuilder().build(hydrateDebitNoteInterestFixture());
     expect(xml).toContain("DebitNote");
     expect(xml).toContain("DebitedQuantity");
     expect(xml).toContain(">23.60<");
@@ -181,9 +165,7 @@ describe("NC/ND builders (S5-03)", () => {
   });
 
   it("matches golden debit note structurally", () => {
-    const { xml } = new XmlDebitNoteBuilder().build(
-      hydrateDebitNoteInterestFixture(),
-    );
+    const { xml } = new XmlDebitNoteBuilder().build(hydrateDebitNoteInterestFixture());
     const golden = readFileSync(
       join(process.cwd(), "testdata/golden/08-debit-note-interest.unsigned.xml"),
       "utf8",
@@ -296,6 +278,7 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
       gross_weight: 10.5,
       gross_weight_unit: "KGM",
       start_date: "2026-09-17",
+      handover_date: "2026-09-17",
       carrier: {
         identity_type: "6",
         identity_number: "20600000000",
@@ -310,9 +293,7 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
         address: "Av. Destino 456, Lima",
       },
     },
-    related_documents: [
-      { document_type: "01", serie_number: "F001-00000015" },
-    ],
+    related_documents: [{ document_type: "01", serie_number: "F001-00000015", issuer: supplier09 }],
     lines: [
       {
         id: 1,
@@ -341,6 +322,7 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
       name: "ACME SAC",
     },
     shipment: {
+      freight_payer: "shipper",
       gross_weight: 25,
       gross_weight_unit: "KGM",
       start_date: "2026-09-17",
@@ -350,7 +332,8 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
           job_title: "Principal",
           identity_type: "1",
           identity_number: "12345678",
-          name: "Juan Conductor Perez",
+          name: "Juan",
+          last_name: "Conductor Perez",
           license: "Q12345678",
         },
       ],
@@ -363,9 +346,7 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
         address: "Almacén destino Arequipa",
       },
     },
-    related_documents: [
-      { document_type: "09", serie_number: "T001-00000001" },
-    ],
+    related_documents: [{ document_type: "09", serie_number: "T001-00000001", issuer: supplier09 }],
     lines: [
       {
         id: 1,
@@ -377,15 +358,13 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
   };
 
   it("builds GRE 09 with HandlingCode, CarrierParty, DespatchLine (no tax)", () => {
-    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(
-      gre09Canonical,
-    );
+    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(gre09Canonical);
     expect(xml).toContain("DespatchAdvice");
     expect(xml).not.toContain("UBLExtensions");
-    expect(xml).toContain("<cbc:DespatchAdviceTypeCode>09</cbc:DespatchAdviceTypeCode>");
+    expect(xml).toContain(">09</cbc:DespatchAdviceTypeCode>");
     expect(xml).toContain("<cbc:ID>T001-00000001</cbc:ID>");
-    expect(xml).toContain("<cbc:HandlingCode>01</cbc:HandlingCode>");
-    expect(xml).toContain("<cbc:TransportModeCode>01</cbc:TransportModeCode>");
+    expect(xml).toContain(">01</cbc:HandlingCode>");
+    expect(xml).toContain(">01</cbc:TransportModeCode>");
     expect(xml).toContain('unitCode="KGM">10.5</cbc:GrossWeightMeasure>');
     expect(xml).toContain("<cbc:ID>SUNAT_Envio</cbc:ID>");
     expect(xml).toContain("CarrierParty");
@@ -409,10 +388,8 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
   });
 
   it("builds GRE 31 with shipper DespatchParty, plate and driver license", () => {
-    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(
-      gre31Canonical,
-    );
-    expect(xml).toContain("<cbc:DespatchAdviceTypeCode>31</cbc:DespatchAdviceTypeCode>");
+    const { xml, fileStem } = new XmlDespatchAdviceBuilder().build(gre31Canonical);
+    expect(xml).toContain(">31</cbc:DespatchAdviceTypeCode>");
     expect(xml).toContain("<cbc:ID>V001-00000001</cbc:ID>");
     expect(xml).toContain("DespatchParty");
     expect(xml).toContain("20111111111");
@@ -430,10 +407,7 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
   it("matches golden GRE 31 unsigned structurally", () => {
     const { xml } = new XmlDespatchAdviceBuilder().build(gre31Canonical);
     const golden = readFileSync(
-      join(
-        process.cwd(),
-        "testdata/golden/31-gre-transportista-min.unsigned.xml",
-      ),
+      join(process.cwd(), "testdata/golden/31-gre-transportista-min.unsigned.xml"),
       "utf8",
     );
     expect(normalizeXml(xml)).toBe(normalizeXml(golden));
@@ -441,9 +415,5 @@ describe("GRE DespatchAdvice builder (S7-03/S7-04)", () => {
 });
 
 function normalizeXml(xml: string): string {
-  return xml
-    .replace(/\r\n/g, "\n")
-    .replace(/>\s+</g, "><")
-    .replace(/\s+/g, " ")
-    .trim();
+  return xml.replace(/\r\n/g, "\n").replace(/>\s+</g, "><").replace(/\s+/g, " ").trim();
 }

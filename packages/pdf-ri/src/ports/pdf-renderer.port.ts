@@ -1,4 +1,4 @@
-export type PdfDocumentType = "01" | "03" | "07" | "08" | "RC" | "RA";
+export type PdfDocumentType = "01" | "03" | "07" | "08" | "RC" | "RA" | "09" | "31";
 
 export interface PdfLineItem {
   description: string;

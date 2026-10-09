@@ -2,15 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Job } from "bullmq";
 import { createHash } from "node:crypto";
-import {
-  createBillServiceFromEnv,
-  parseCdrZip,
-  type BillServicePort,
-} from "@factosys/sunat-soap";
-import {
-  createGreClientsFromEnv,
-  type GreDespatchPort,
-} from "@factosys/sunat-gre";
+import { createBillServiceFromEnv, parseCdrZip, type BillServicePort } from "@factosys/sunat-soap";
+import { createGreClientsFromEnv, parseGreCdr, type GreDespatchPort } from "@factosys/sunat-gre";
 import type { DocumentStatus } from "@factosys/domain";
 
 import type { Env } from "../config/env.schema";
@@ -30,6 +23,7 @@ export class SunatPollProcessor {
   private readonly logger = new Logger(SunatPollProcessor.name);
   private readonly bill: BillServicePort;
   private readonly greDespatch: GreDespatchPort;
+  private readonly greFake: boolean;
 
   constructor(
     private readonly documents: DocumentsService,
@@ -45,6 +39,7 @@ export class SunatPollProcessor {
     });
     this.bill = createBillServiceFromEnv();
     this.greDespatch = createGreClientsFromEnv().despatch;
+    this.greFake = config.get("SUNAT_GRE_MODE", { infer: true }) === "fake";
   }
 
   async process(job: Job<QueueJobData>): Promise<{ ok: true; status: string }> {
@@ -58,9 +53,7 @@ export class SunatPollProcessor {
 
     const doc = await this.documents.getById(organizationId, documentId);
     if (doc.status !== "ticket_pending") {
-      this.logger.warn(
-        `Skip sunat-poll for ${documentId} status=${doc.status}`,
-      );
+      this.logger.warn(`Skip sunat-poll for ${documentId} status=${doc.status}`);
       return { ok: true, status: doc.status };
     }
     if (!doc.sunatTicket) {
@@ -68,7 +61,7 @@ export class SunatPollProcessor {
     }
 
     if (doc.documentType === "09" || doc.documentType === "31") {
-      return this.processGre(organizationId, companyId, documentId, doc);
+      return this.processGre(organizationId, companyId, documentId, doc, job);
     }
 
     return this.processSoapSummary(organizationId, companyId, documentId, doc);
@@ -79,6 +72,7 @@ export class SunatPollProcessor {
     companyId: string,
     documentId: string,
     doc: Awaited<ReturnType<DocumentsService["getById"]>>,
+    job: Job<QueueJobData>,
   ): Promise<{ ok: true; status: string }> {
     try {
       let accessToken = await this.greTokens.getAccessToken(companyId);
@@ -86,7 +80,7 @@ export class SunatPollProcessor {
       try {
         result = await this.greDespatch.getStatus({
           accessToken,
-          ticket: doc.sunatTicket!,
+          ticket: doc.sunatTicket ?? "",
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -95,7 +89,7 @@ export class SunatPollProcessor {
         accessToken = await this.greTokens.getAccessToken(companyId);
         result = await this.greDespatch.getStatus({
           accessToken,
-          ticket: doc.sunatTicket!,
+          ticket: doc.sunatTicket ?? "",
         });
       }
 
@@ -104,15 +98,36 @@ export class SunatPollProcessor {
         throw new Error(`GRE ticket ${doc.sunatTicket} still pending`);
       }
 
+      const cdr = result.rawCdrZip?.length ? parseGreCdr(result.rawCdrZip) : undefined;
+      if (!this.greFake && cdr) {
+        const canonical = (
+          doc.payload as { _canonical?: { supplier: { identity_number: string } } }
+        )?._canonical;
+        const matches = (value: string | undefined, expected: string | null) =>
+          !!value &&
+          !!expected &&
+          value.replace(/-0+(\d+)$/, "-$1") === expected.replace(/-0+(\d+)$/, "-$1");
+        if (
+          !matches(cdr.documentId, doc.serieNumber) ||
+          cdr.receiverRuc !== canonical?.supplier.identity_number
+        )
+          throw new Error("GRE CDR identity does not match submitted document");
+      }
+      if (result.status === "accepted" && !cdr)
+        throw new Error("GRE ticket OK but CDR is not available yet");
+      if (cdr?.status === "rejected") result.status = "rejected";
+      else if (result.status !== "rejected" && cdr) result.status = cdr.status;
+      if (cdr) {
+        result.sunatCode = cdr.sunatCode;
+        result.sunatMessage = cdr.sunatMessage;
+      }
       if (result.rawCdrZip?.length) {
         const cdrKey = buildDocumentObjectKey({
           organizationId,
           companyId,
           documentId,
           kind: "cdr_xml",
-          sha256: createHash("sha256")
-            .update(result.rawCdrZip)
-            .digest("hex"),
+          sha256: createHash("sha256").update(result.rawCdrZip).digest("hex"),
           ext: "zip",
         });
         await this.documents.putArtifact({
@@ -126,17 +141,25 @@ export class SunatPollProcessor {
         });
       }
 
-      const nextStatus = result.status as DocumentStatus;
-      await this.documents.transitionStatus(
-        documentId,
-        "ticket_pending",
-        nextStatus,
-        {
-          sunatResponseCode: result.sunatCode ?? null,
-          sunatResponseMessage: result.sunatMessage ?? null,
-          completedAt: new Date(),
+      await this.documents.patchPayload(documentId, {
+        _gre: {
+          qr_url: !this.greFake && result.status !== "rejected" ? cdr?.qrUrl : undefined,
+          cdr_available: !!result.rawCdrZip?.length,
+          qr_source: !this.greFake && cdr?.qrUrl ? "sunat_cdr" : undefined,
+          simulated: this.greFake,
+          reconciliation_required: false,
+          reconciliation_count:
+            (doc.payload as { _gre?: { reconciliation_count?: number } })?._gre
+              ?.reconciliation_count ?? 0,
         },
-      );
+      });
+
+      const nextStatus = result.status as DocumentStatus;
+      await this.documents.transitionStatus(documentId, "ticket_pending", nextStatus, {
+        sunatResponseCode: result.sunatCode ?? null,
+        sunatResponseMessage: result.sunatMessage ?? null,
+        completedAt: new Date(),
+      });
       await this.documents.appendEvent({
         organizationId,
         companyId,
@@ -150,9 +173,29 @@ export class SunatPollProcessor {
 
       return { ok: true, status: nextStatus };
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : "GRE getStatus failed";
+      const message = cause instanceof Error ? cause.message : "GRE getStatus failed";
       this.logger.error(`sunat-poll GRE failed for ${documentId}: ${message}`);
+      if (job.attemptsMade + 1 >= Math.min(job.opts.attempts ?? 8, 8)) {
+        await this.documents.patchPayload(documentId, {
+          _gre: {
+            reconciliation_required: true,
+            reason: "poll_exhausted",
+            poll_attempts: job.attemptsMade + 1,
+            reconciliation_count:
+              (doc.payload as { _gre?: { reconciliation_count?: number } })?._gre
+                ?.reconciliation_count ?? 0,
+          },
+        });
+        await this.documents.appendEvent({
+          organizationId,
+          companyId,
+          documentId,
+          status: "ticket_pending",
+          source: "worker",
+          detail: "GRE polling exhausted; reconcile the existing ticket without resending",
+        });
+        return { ok: true, status: "ticket_pending" };
+      }
       throw cause;
     }
   }
@@ -167,7 +210,7 @@ export class SunatPollProcessor {
 
     try {
       const result = await this.bill.getStatus({
-        ticket: doc.sunatTicket!,
+        ticket: doc.sunatTicket ?? "",
         solUser: sol.username,
         solPassword: sol.password,
       });
@@ -192,16 +235,11 @@ export class SunatPollProcessor {
       });
 
       const nextStatus = cdr.status as DocumentStatus;
-      await this.documents.transitionStatus(
-        documentId,
-        "ticket_pending",
-        nextStatus,
-        {
-          sunatResponseCode: cdr.sunatCode,
-          sunatResponseMessage: cdr.sunatMessage ?? null,
-          completedAt: new Date(),
-        },
-      );
+      await this.documents.transitionStatus(documentId, "ticket_pending", nextStatus, {
+        sunatResponseCode: cdr.sunatCode,
+        sunatResponseMessage: cdr.sunatMessage ?? null,
+        completedAt: new Date(),
+      });
       await this.documents.appendEvent({
         organizationId,
         companyId,
@@ -213,19 +251,11 @@ export class SunatPollProcessor {
         data: { sunat_code: cdr.sunatCode },
       });
 
-      if (
-        nextStatus === "accepted" ||
-        nextStatus === "accepted_with_observation"
-      ) {
+      if (nextStatus === "accepted" || nextStatus === "accepted_with_observation") {
         if (doc.documentType === "RA") {
           await this.applyRaAccepted(organizationId, companyId, doc);
         } else if (doc.documentType === "RC") {
-          await this.applyRcTerminal(
-            organizationId,
-            companyId,
-            doc,
-            "accepted",
-          );
+          await this.applyRcTerminal(organizationId, companyId, doc, "accepted");
         }
       } else if (nextStatus === "rejected" && doc.documentType === "RC") {
         await this.applyRcTerminal(organizationId, companyId, doc, "rejected");
@@ -233,8 +263,7 @@ export class SunatPollProcessor {
 
       return { ok: true, status: nextStatus };
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : "getStatus failed";
+      const message = cause instanceof Error ? cause.message : "getStatus failed";
       this.logger.error(`sunat-poll failed for ${documentId}: ${message}`);
       throw cause;
     }
@@ -252,18 +281,12 @@ export class SunatPollProcessor {
     for (const id of ids) {
       try {
         const origin = await this.documents.getById(organizationId, id);
-        if (
-          origin.status !== "accepted" &&
-          origin.status !== "accepted_with_observation"
-        ) {
+        if (origin.status !== "accepted" && origin.status !== "accepted_with_observation") {
           continue;
         }
-        await this.documents.transitionStatus(
-          id,
-          origin.status as DocumentStatus,
-          "cancelled",
-          { completedAt: new Date() },
-        );
+        await this.documents.transitionStatus(id, origin.status as DocumentStatus, "cancelled", {
+          completedAt: new Date(),
+        });
         await this.documents.appendEvent({
           organizationId,
           companyId,
@@ -275,9 +298,7 @@ export class SunatPollProcessor {
           data: { voided_document_id: raDoc.id },
         });
       } catch (err) {
-        this.logger.warn(
-          `RA side-effect skip ${id}: ${err instanceof Error ? err.message : err}`,
-        );
+        this.logger.warn(`RA side-effect skip ${id}: ${err instanceof Error ? err.message : err}`);
       }
     }
   }
@@ -311,9 +332,7 @@ export class SunatPollProcessor {
           },
         });
       } catch (err) {
-        this.logger.warn(
-          `RC side-effect skip ${id}: ${err instanceof Error ? err.message : err}`,
-        );
+        this.logger.warn(`RC side-effect skip ${id}: ${err instanceof Error ? err.message : err}`);
       }
     }
   }

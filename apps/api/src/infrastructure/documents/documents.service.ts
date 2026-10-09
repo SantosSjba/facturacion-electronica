@@ -31,6 +31,14 @@ export interface DocumentPublic {
   sunat_message: string | null;
   summary_status: string | null;
   error: DocumentPublicError | null;
+  gre?: {
+    qr_status: string;
+    pdf_status: string;
+    cdr_status: string;
+    reconciliation_required: boolean;
+    reason?: string;
+    simulated: boolean;
+  };
   printing?: { format: string; template_version: string };
   links: {
     self: string;
@@ -101,13 +109,14 @@ export class DocumentsService {
       error: redactDocumentError(row.error),
       printing: (row.payload as { _print?: { format: string; template_version: string } } | null)
         ?._print,
+      ...(["09", "31"].includes(row.documentType) ? { gre: greAvailability(row) } : {}),
       links: {
         self: `/v1/documents/${id}`,
         xml: `/v1/documents/${id}/xml`,
         cdr: `/v1/documents/${id}/cdr`,
         pdf: `/v1/documents/${id}/pdf`,
         trace: `/v1/documents/${id}/trace`,
-        ...(["01", "03", "07", "08"].includes(row.documentType)
+        ...(["01", "03", "07", "08", "09", "31"].includes(row.documentType)
           ? { qr: `/v1/documents/${id}/qr` }
           : {}),
       },
@@ -565,4 +574,37 @@ function redactDocumentError(raw: unknown): DocumentPublicError | null {
   if (typeof err["sunat_code"] === "string") out.sunat_code = err["sunat_code"];
   if (Array.isArray(err["details"])) out.details = err["details"];
   return Object.keys(out).length > 0 ? out : null;
+}
+
+function greAvailability(row: typeof documents.$inferSelect) {
+  const payload = row.payload as {
+    _canonical?: unknown;
+    _gre?: {
+      qr_url?: string;
+      qr_source?: string;
+      cdr_available?: boolean;
+      reconciliation_required?: boolean;
+      reason?: string;
+      simulated?: boolean;
+    };
+  } | null;
+  const accepted = ["accepted", "accepted_with_observation"].includes(row.status);
+  const ready =
+    accepted &&
+    !!payload?._gre?.qr_url &&
+    payload?._gre?.qr_source === "sunat_cdr" &&
+    !payload?._gre?.simulated;
+  const state = row.status === "rejected" ? "unavailable" : ready ? "available" : "pending";
+  return {
+    qr_status: state,
+    cdr_status: payload?._gre?.cdr_available
+      ? "available"
+      : row.status === "rejected"
+        ? "unavailable"
+        : "pending",
+    pdf_status: ready && !payload?._canonical ? "historical_snapshot_missing" : state,
+    reconciliation_required: payload?._gre?.reconciliation_required ?? false,
+    reason: payload?._gre?.reason,
+    simulated: payload?._gre?.simulated ?? false,
+  };
 }

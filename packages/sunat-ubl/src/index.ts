@@ -106,6 +106,9 @@ export {
 export {
   assertDespatchCanonical,
   despatchCanonicalSchema,
+  despatchCanonicalFields,
+  despatchPartySchema,
+  validateDespatch,
   type DespatchCanonical,
   type DespatchDocumentType,
   type DespatchLineCanonical,

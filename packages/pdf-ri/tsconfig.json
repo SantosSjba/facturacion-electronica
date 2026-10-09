@@ -8,6 +8,6 @@
     "verbatimModuleSyntax": false,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "vitest.config.ts", "scripts/**/*.ts"],
   "exclude": ["dist"]
 }

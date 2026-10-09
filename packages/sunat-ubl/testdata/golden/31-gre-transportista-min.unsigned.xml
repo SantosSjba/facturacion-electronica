@@ -5,15 +5,23 @@
   <cbc:ID>V001-00000001</cbc:ID>
   <cbc:IssueDate>2026-09-17</cbc:IssueDate>
   <cbc:IssueTime>11:30:00</cbc:IssueTime>
-  <cbc:DespatchAdviceTypeCode>31</cbc:DespatchAdviceTypeCode>
+  <cbc:DespatchAdviceTypeCode listAgencyName="PE:SUNAT" listName="Tipo de Documento" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01">31</cbc:DespatchAdviceTypeCode>
   <cac:AdditionalDocumentReference>
     <cbc:ID>T001-00000001</cbc:ID>
-    <cbc:DocumentTypeCode>09</cbc:DocumentTypeCode>
+    <cbc:DocumentTypeCode listAgencyName="PE:SUNAT" listName="Documento relacionado al transporte" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo61">09</cbc:DocumentTypeCode>
+    <cac:IssuerParty>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:IssuerParty>
   </cac:AdditionalDocumentReference>
   <cac:DespatchSupplierParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="6">20601234567</cbc:ID>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
@@ -23,7 +31,7 @@
   <cac:DeliveryCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="6">20123456789</cbc:ID>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20123456789</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
@@ -33,13 +41,23 @@
   <cac:Shipment>
     <cbc:ID>SUNAT_Envio</cbc:ID>
     <cbc:GrossWeightMeasure unitCode="KGM">25</cbc:GrossWeightMeasure>
+    <cbc:SpecialInstructions>SUNAT_Envio_IndicadorPagadorFlete_Remitente</cbc:SpecialInstructions>
     <cac:ShipmentStage>
       <cac:TransitPeriod>
         <cbc:StartDate>2026-09-17</cbc:StartDate>
       </cac:TransitPeriod>
+      <cac:CarrierParty>
+        <cac:PartyIdentification>
+          <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:ID>
+        </cac:PartyIdentification>
+        <cac:PartyLegalEntity>
+          <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+        </cac:PartyLegalEntity>
+      </cac:CarrierParty>
       <cac:DriverPerson>
-        <cbc:ID schemeID="1">12345678</cbc:ID>
-        <cbc:FirstName>Juan Conductor Perez</cbc:FirstName>
+        <cbc:ID schemeID="1" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">12345678</cbc:ID>
+        <cbc:FirstName>Juan</cbc:FirstName>
+        <cbc:FamilyName>Conductor Perez</cbc:FamilyName>
         <cbc:JobTitle>Principal</cbc:JobTitle>
         <cac:IdentityDocumentReference>
           <cbc:ID>Q12345678</cbc:ID>
@@ -48,21 +66,21 @@
     </cac:ShipmentStage>
     <cac:Delivery>
       <cac:DeliveryAddress>
-        <cbc:ID>040101</cbc:ID>
+        <cbc:ID schemeAgencyName="PE:INEI" schemeName="Ubigeos">040101</cbc:ID>
         <cac:AddressLine>
           <cbc:Line>Almacén destino Arequipa</cbc:Line>
         </cac:AddressLine>
       </cac:DeliveryAddress>
       <cac:Despatch>
         <cac:DespatchAddress>
-          <cbc:ID>150101</cbc:ID>
+          <cbc:ID schemeAgencyName="PE:INEI" schemeName="Ubigeos">150101</cbc:ID>
           <cac:AddressLine>
             <cbc:Line>Almacén origen — Av. Industrial 100</cbc:Line>
           </cac:AddressLine>
         </cac:DespatchAddress>
         <cac:DespatchParty>
           <cac:PartyIdentification>
-            <cbc:ID schemeID="6">20111111111</cbc:ID>
+            <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20111111111</cbc:ID>
           </cac:PartyIdentification>
           <cac:PartyLegalEntity>
             <cbc:RegistrationName>REMITENTE COMERCIAL SAC</cbc:RegistrationName>
@@ -78,7 +96,7 @@
   </cac:Shipment>
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:DeliveredQuantity unitCode="NIU">25</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="NIU" unitCodeListID="UN/ECE rec 20" unitCodeListAgencyName="United Nations Economic Commission for Europe">25.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>1</cbc:LineID>
     </cac:OrderLineReference>

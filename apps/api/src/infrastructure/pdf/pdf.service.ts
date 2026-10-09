@@ -1,3 +1,4 @@
+import { greQrUrl, grePdfInput } from "./gre-pdf";
 import { commercialSections, commercialLineDetails } from "./commercial-pdf";
 import { createHash } from "node:crypto";
 import { formatUnit } from "@factosys/sunat-ubl";
@@ -27,7 +28,7 @@ import { QueueProducer } from "../queues/queue.producer";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 
 const CPE_TYPES = new Set(["01", "03", "07", "08"]);
-const PDF_TYPES = new Set([...CPE_TYPES, "RC", "RA"]);
+const PDF_TYPES = new Set([...CPE_TYPES, "RC", "RA", "09", "31"]);
 
 @Injectable()
 export class PdfService {
@@ -56,6 +57,8 @@ export class PdfService {
         { path: "document_type", issue: doc.documentType },
       ]);
     }
+
+    if (["09", "31"].includes(doc.documentType)) greQrUrl(doc);
 
     try {
       const existing = await this.documents.getArtifact(organizationId, documentId, "pdf");
@@ -122,6 +125,8 @@ export class PdfService {
       ]);
     }
 
+    if (["09", "31"].includes(doc.documentType)) greQrUrl(doc);
+
     // Background retries must also preserve a previously generated PDF.
     try {
       const existing = await this.documents.getArtifact(organizationId, documentId, "pdf");
@@ -158,6 +163,7 @@ export class PdfService {
   }
   async getQr(organizationId: string, documentId: string) {
     const doc = await this.documents.getById(organizationId, documentId);
+    if (["09", "31"].includes(doc.documentType)) return buildQrImage(greQrUrl(doc));
     if (!CPE_TYPES.has(doc.documentType))
       throw AppError.validation("QR only applies to CPE", [], { httpStatus: 422 });
     const xml = (
@@ -287,6 +293,8 @@ export class PdfService {
     if (digest === null) throw AppError.internal("Signed XML missing DigestValue");
     const company = await this.companies.requireCompany(organizationId, doc.companyId);
     const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
+    if (["09", "31"].includes(doc.documentType))
+      return grePdfInput(doc, documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined);
     if (doc.documentType === "RC" || doc.documentType === "RA")
       return this.summaryInput(
         doc,

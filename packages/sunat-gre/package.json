@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@factosys/shared": "workspace:*",
+    "@xmldom/xmldom": "^0.9.12",
     "adm-zip": "^0.6.1"
   },
   "devDependencies": {

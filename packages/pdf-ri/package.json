@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\"",
-    "test:print": "node scripts/verify-print.mjs"
+    "test:print": "node scripts/verify-print.mjs",
+    "test:gre-print": "tsx scripts/verify-gre-print.ts"
   },
   "dependencies": {
     "@factosys/shared": "workspace:*",

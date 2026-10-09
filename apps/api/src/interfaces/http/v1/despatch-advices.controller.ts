@@ -1,26 +1,13 @@
-import {
-  Body,
-  Controller,
-  Headers,
-  Post,
-  Res,
-} from "@nestjs/common";
-import {
-  ApiBearerAuth,
-  ApiHeader,
-  ApiOperation,
-  ApiTags,
-} from "@nestjs/swagger";
+import { Body, Controller, Headers, Param, Post, Res } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { AppError } from "@factosys/shared";
+import { z } from "zod";
 
 import { EmitDespatchAdviceUseCase } from "../../../infrastructure/documents/emit-despatch-advice.use-case";
 import { IdempotencyService } from "../../../infrastructure/idempotency/idempotency.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import {
   despatchAdviceCreateSchema,
@@ -36,6 +23,23 @@ export class DespatchAdvicesController {
     private readonly emitDespatch: EmitDespatchAdviceUseCase,
     private readonly idempotency: IdempotencyService,
   ) {}
+
+  @Post("despatch-advices/:id/reconcile-ticket")
+  @ApiKeyAuth()
+  @RequireScopes("documents:write")
+  @ApiOperation({
+    summary: "Retomar consulta GRE con ticket existente, sin reenviar",
+    description:
+      "Máximo tres reconciliaciones manuales, ocho consultas por ciclo. El ticket debe corresponder a la guía; se verifica identidad del CDR antes de aceptar. Si se perdió el ticket, consultar SUNAT; esta operación no recupera tickets por serie/número.",
+  })
+  async reconcile(
+    @CurrentAuth() auth: AuthContext,
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(z.object({ ticket: z.string().uuid() }).strict(), 422))
+    body: { ticket: string },
+  ) {
+    return this.emitDespatch.reconcileTicket(auth.organizationId, id, body.ticket);
+  }
 
   @Post("despatch-advices")
   @ApiKeyAuth()
@@ -68,6 +72,7 @@ export class DespatchAdvicesController {
       );
     }
 
+    await this.emitDespatch.requireCompanyAccess(auth.organizationId, body.company_id);
     const begin = await this.idempotency.begin({
       organizationId: auth.organizationId,
       companyId: body.company_id,

@@ -115,12 +115,14 @@ Implementación y evidencia: [Fase 2 — PDFs y vistas previas](phase2-print-pre
 
 Fuentes: A (`Despatch`, envío, transportista, vehículos/conductores y documentos asociados); NG págs. 1 y 3-12.
 
-- [ ] **F3-01. Campos nuevos.** Fecha de entrega de bienes al transportista, separada del inicio de traslado; validar condiciones para GRE remitente y transporte público con fuentes oficiales.
-- [ ] **F3-02. Roles y habilitación.** Revisar vehículo/conductor principal y secundarios, licencias, MTC y TUC/habilitación. Los arrays actuales se reutilizan; verificar que su estructura UBL conserva cada rol.
-- [ ] **F3-03. Indicadores y terceros.** Indicadores de retorno, vehículos M1/L y transporte subcontratado; identificación de subcontratador y pagador de flete. Usar campos tipados y reglas condicionales, sin copiar el único selector propietario de NubeFact como modelo fiscal.
-- [ ] **F3-04. Motivos y aduanas.** Validar motivos, descripción de "otros", establecimientos, unidades de peso, bultos, DAM/DS y referencias por ítem cuando correspondan. Conservar múltiples documentos relacionados.
-- [ ] **F3-05. QR y PDF GRE.** Extraer/persistir el dato oficial de QR de la respuesta/CDR que corresponda; producir PDF 09/31 con logo histórico y datos del traslado. Diferenciar artefactos disponibles y pendientes. El QR GRE no debe fabricarse con el payload del QR de factura.
-- [ ] **F3-06. Duplicados y baja.** Diseñar reconciliación para casos como el error 1033 sin reenviar indefinidamente. Documentar el procedimiento vigente para bajas GRE y separar su tratamiento de RA/RC de CPE; confirmar si existe una operación oficial utilizable antes de prometer un endpoint.
+- [x] **F3-01. Campos nuevos.** Fecha de entrega de bienes al transportista, separada del inicio de traslado; validar condiciones para GRE remitente y transporte público con fuentes oficiales.
+- [x] **F3-02. Roles y habilitación.** Revisar vehículo/conductor principal y secundarios, licencias, MTC y TUC/habilitación. Los arrays actuales se reutilizan; verificar que su estructura UBL conserva cada rol.
+- [x] **F3-03. Indicadores y terceros.** Indicadores de retorno, vehículos M1/L y transporte subcontratado; identificación de subcontratador y pagador de flete. Usar campos tipados y reglas condicionales, sin copiar el único selector propietario de NubeFact como modelo fiscal.
+- [x] **F3-04. Motivos y aduanas.** Validar motivos, descripción de "otros", establecimientos, unidades de peso, bultos, DAM/DS y referencias por ítem cuando correspondan. Conservar múltiples documentos relacionados.
+- [x] **F3-05. QR y PDF GRE.** Extraer/persistir el dato oficial de QR de la respuesta/CDR que corresponda; producir PDF 09/31 con logo histórico y datos del traslado. Diferenciar artefactos disponibles y pendientes. El QR GRE no debe fabricarse con el payload del QR de factura.
+- [x] **F3-06. Duplicados y baja.** Diseñar reconciliación para casos como el error 1033 sin reenviar indefinidamente. Documentar el procedimiento vigente para bajas GRE y separar su tratamiento de RA/RC de CPE; confirmar si existe una operación oficial utilizable antes de prometer un endpoint.
+
+Implementación y comprobaciones locales: [Fase 3 GRE](phase3-gre.md). Aceptación real pendiente de certificado/credenciales SUNAT; pruebas CDR simuladas.
 
 **Aceptación:** escenarios 09 público/privado y 31 con secundarios, subcontratador/pagador y documento aduanero conservan los campos en XML validado. El worker consulta tickets con reintentos acotados; el cliente distingue pendiente, rechazo y aceptación. El PDF GRE definitivo usa el QR oficial y queda ligado a la versión histórica del logo. No se recrea el flujo asíncrono ya existente.
 

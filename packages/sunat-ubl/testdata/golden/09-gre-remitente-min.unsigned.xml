@@ -5,15 +5,23 @@
   <cbc:ID>T001-00000001</cbc:ID>
   <cbc:IssueDate>2026-09-17</cbc:IssueDate>
   <cbc:IssueTime>10:00:00</cbc:IssueTime>
-  <cbc:DespatchAdviceTypeCode>09</cbc:DespatchAdviceTypeCode>
+  <cbc:DespatchAdviceTypeCode listAgencyName="PE:SUNAT" listName="Tipo de Documento" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo01">09</cbc:DespatchAdviceTypeCode>
   <cac:AdditionalDocumentReference>
     <cbc:ID>F001-00000015</cbc:ID>
-    <cbc:DocumentTypeCode>01</cbc:DocumentTypeCode>
+    <cbc:DocumentTypeCode listAgencyName="PE:SUNAT" listName="Documento relacionado al transporte" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo61">01</cbc:DocumentTypeCode>
+    <cac:IssuerParty>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+    </cac:IssuerParty>
   </cac:AdditionalDocumentReference>
   <cac:DespatchSupplierParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="6">20601234567</cbc:ID>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20601234567</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>FACTOSYS SPIKE SAC</cbc:RegistrationName>
@@ -23,7 +31,7 @@
   <cac:DeliveryCustomerParty>
     <cac:Party>
       <cac:PartyIdentification>
-        <cbc:ID schemeID="6">20123456789</cbc:ID>
+        <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20123456789</cbc:ID>
       </cac:PartyIdentification>
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>ACME SAC</cbc:RegistrationName>
@@ -32,32 +40,35 @@
   </cac:DeliveryCustomerParty>
   <cac:Shipment>
     <cbc:ID>SUNAT_Envio</cbc:ID>
-    <cbc:HandlingCode>01</cbc:HandlingCode>
+    <cbc:HandlingCode listAgencyName="PE:SUNAT" listName="Motivo de traslado" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo20">01</cbc:HandlingCode>
     <cbc:GrossWeightMeasure unitCode="KGM">10.5</cbc:GrossWeightMeasure>
     <cac:ShipmentStage>
-      <cbc:TransportModeCode>01</cbc:TransportModeCode>
+      <cbc:TransportModeCode listAgencyName="PE:SUNAT" listName="Modalidad de traslado" listURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo18">01</cbc:TransportModeCode>
       <cac:TransitPeriod>
         <cbc:StartDate>2026-09-17</cbc:StartDate>
       </cac:TransitPeriod>
       <cac:CarrierParty>
         <cac:PartyIdentification>
-          <cbc:ID schemeID="6">20600000000</cbc:ID>
+          <cbc:ID schemeID="6" schemeName="Documento de Identidad" schemeAgencyName="PE:SUNAT" schemeURI="urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo06">20600000000</cbc:ID>
         </cac:PartyIdentification>
         <cac:PartyLegalEntity>
           <cbc:RegistrationName>TRANSPORTE SAC</cbc:RegistrationName>
         </cac:PartyLegalEntity>
       </cac:CarrierParty>
+      <cac:LoadingTransportEvent>
+        <cbc:OccurrenceDate>2026-09-17</cbc:OccurrenceDate>
+      </cac:LoadingTransportEvent>
     </cac:ShipmentStage>
     <cac:Delivery>
       <cac:DeliveryAddress>
-        <cbc:ID>150122</cbc:ID>
+        <cbc:ID schemeAgencyName="PE:INEI" schemeName="Ubigeos">150122</cbc:ID>
         <cac:AddressLine>
           <cbc:Line>Av. Destino 456, Lima</cbc:Line>
         </cac:AddressLine>
       </cac:DeliveryAddress>
       <cac:Despatch>
         <cac:DespatchAddress>
-          <cbc:ID>150101</cbc:ID>
+          <cbc:ID schemeAgencyName="PE:INEI" schemeName="Ubigeos">150101</cbc:ID>
           <cac:AddressLine>
             <cbc:Line>Av. Emisor 123, Lima</cbc:Line>
           </cac:AddressLine>
@@ -67,7 +78,7 @@
   </cac:Shipment>
   <cac:DespatchLine>
     <cbc:ID>1</cbc:ID>
-    <cbc:DeliveredQuantity unitCode="NIU">10</cbc:DeliveredQuantity>
+    <cbc:DeliveredQuantity unitCode="NIU" unitCodeListID="UN/ECE rec 20" unitCodeListAgencyName="United Nations Economic Commission for Europe">10.00</cbc:DeliveredQuantity>
     <cac:OrderLineReference>
       <cbc:LineID>1</cbc:LineID>
     </cac:OrderLineReference>

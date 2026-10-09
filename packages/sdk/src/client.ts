@@ -10,6 +10,8 @@ import type {
   PreviewInput,
   PreviewValidation,
   CpeQr,
+  DespatchInput,
+  GreDocument,
 } from "./types";
 
 export class FactosysClient {
@@ -157,6 +159,15 @@ export class FactosysClient {
   debitNotes = {
     create: (body: NoteInput, idempotencyKey: string) =>
       this.request<CpeDocument>("/v1/debit-notes", { method: "POST", body, idempotencyKey }),
+  };
+  despatchAdvices = {
+    create: (body: DespatchInput, idempotencyKey: string) =>
+      this.request<GreDocument>("/v1/despatch-advices", { method: "POST", body, idempotencyKey }),
+    reconcileTicket: (id: string, ticket: string) =>
+      this.request<GreDocument>(`/v1/despatch-advices/${encodeURIComponent(id)}/reconcile-ticket`, {
+        method: "POST",
+        body: { ticket },
+      }),
   };
   previews = {
     validate: (body: PreviewInput) =>
