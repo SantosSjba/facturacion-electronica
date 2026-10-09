@@ -15,9 +15,7 @@ export type { FactosysClientOptions, RequestOptions, CompanyLogoResponse } from 
 export const PACKAGE_NAME = "@factosys/sdk" as const;
 
 /** Convenience: fetch platform ruleset without API key (public endpoint). */
-export async function getRuleset(
-  baseUrl: string,
-): Promise<{
+export async function getRuleset(baseUrl: string): Promise<{
   ruleset_version: string;
   source: string;
   source_sha256: string;
@@ -35,3 +33,5 @@ export async function getRuleset(
 }
 
 export { FactosysClient as default };
+
+export type { InvoiceInput, ReceiptInput, NoteInput, CpeDocument } from "./types";

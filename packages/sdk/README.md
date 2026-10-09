@@ -61,11 +61,35 @@ console.log(doc.status, doc.serie_number, doc.links);
 
 ## Errores tipados
 
-| code | Clase |
-| --- | --- |
-| `FACTOSYS_VALIDATION` | `ValidationError` |
-| `FACTOSYS_SUNAT_REJECTED` | `SunatRejectedError` |
+| code                            | Clase                      |
+| ------------------------------- | -------------------------- |
+| `FACTOSYS_VALIDATION`           | `ValidationError`          |
+| `FACTOSYS_SUNAT_REJECTED`       | `SunatRejectedError`       |
 | `FACTOSYS_IDEMPOTENCY_CONFLICT` | `IdempotencyConflictError` |
-| otros | `FactosysError` |
+| otros                           | `FactosysError`            |
 
 Los códigos son estables para `switch` en el integrador (doc 16 / S9-02).
+
+## Casos comerciales de fase 1
+
+`invoices.create` y `receipts.create` reciben `InvoiceInput`/`ReceiptInput`; `creditNotes.create` y `debitNotes.create` reciben `NoteInput`. Los tipos comparten el contrato fiscal: cuotas, ajustes, anticipos, detracción, ISC, ICBPER, IVAP, referencias y cambio. Cada emisión requiere una clave de idempotencia estable para esa operación.
+
+```ts
+import { FactosysClient, type InvoiceInput } from "@factosys/sdk";
+const client = new FactosysClient({ apiKey, baseUrl });
+const input: InvoiceInput = {
+  ...invoiceData,
+  payment_terms: {
+    condition: "credit",
+    currency: "PEN",
+    outstanding_amount: 118,
+    installments: [
+      { number: 1, due_date: "2026-11-08", amount: 50 },
+      { number: 2, due_date: "2026-12-08", amount: 68 },
+    ],
+  },
+};
+const document = await client.invoices.create(input, operationId);
+```
+
+Ver [contrato y ejemplos](../../docs/phase1-commercial-cpe.md). El cambio se proporciona explícitamente y no convierte los precios del request. Las cuotas describen el crédito, no los pagos cobrados.

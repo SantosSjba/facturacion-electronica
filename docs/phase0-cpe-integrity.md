@@ -1,5 +1,7 @@
 # Fase 0: integridad de CPE
 
+> Las restricciones comerciales descritas aquí corresponden al cierre histórico de fase 0. Crédito, ajustes, anticipos, detracción y tributos adicionales se amplían en el [contrato de fase 1](./phase1-commercial-cpe.md).
+
 Implementada el 2026-10-08 para factura 01, boleta 03, nota de crédito 07 y nota de débito 08. Se verificó localmente con XML firmado, XSD, reglas de importes, PostgreSQL, MinIO y PDF Chromium. Esta evidencia no equivale a aceptación de los nuevos escenarios en SUNAT real.
 
 ## Cálculo y redondeo

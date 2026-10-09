@@ -1,3 +1,10 @@
+import {
+  appendCommercialReferences,
+  appendCommercialPayments,
+  appendMonetary,
+  appendAdjustment,
+  appendCommercialDelivery,
+} from "./commercial-xml";
 import { create } from "xmlbuilder2";
 import {
   appendCpeParty,
@@ -66,29 +73,13 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
 
     if (canonical.purchase_order)
       root.ele("cac:OrderReference").ele("cbc:ID").txt(canonical.purchase_order);
+    appendCommercialReferences(root, canonical);
     appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
     appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
 
-    // SUNAT FormaPago (MIGE-Factoring / cat. PaymentTerms) — Contado default for MVP golden
-    const paymentTerms = root.ele("cac:PaymentTerms");
-    paymentTerms.ele("cbc:ID").txt("FormaPago").up();
-    paymentTerms.ele("cbc:PaymentMeansID").txt("Contado").up();
-
+    appendCommercialPayments(root, canonical);
     appendDocumentTaxes(root, canonical.totals, cur);
-
-    const monetary = root.ele("cac:LegalMonetaryTotal");
-    monetary
-      .ele("cbc:LineExtensionAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.line_extension_amount))
-      .up();
-    monetary
-      .ele("cbc:TaxInclusiveAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.tax_inclusive_amount))
-      .up();
-    monetary
-      .ele("cbc:PayableAmount", { currencyID: cur })
-      .txt(formatMoney(canonical.totals.payable_amount))
-      .up();
+    appendMonetary(root, "cac:LegalMonetaryTotal", canonical.totals, cur);
 
     for (const line of canonical.lines) {
       const invLine = root.ele("cac:InvoiceLine");
@@ -112,6 +103,8 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
         .txt(line.is_free ? "02" : "01")
         .up();
 
+      appendCommercialDelivery(invLine, line);
+      for (const a of line.adjustments ?? []) appendAdjustment(invLine, a, cur);
       appendCpeLineTaxes(invLine, line, cur);
       appendCpeItem(invLine, line);
       invLine

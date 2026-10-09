@@ -114,3 +114,13 @@ export {
 } from "./types/despatch-canonical";
 
 export { ublInternal, ublValidationError } from "./errors";
+
+export {
+  commercialFields,
+  commercialLineFields,
+  paymentTermsSchema,
+  adjustmentSchema,
+  detractionSchema,
+} from "./types/commercial-fields";
+
+export { validateNoteReason } from "./hydrate/from-note-fixture";

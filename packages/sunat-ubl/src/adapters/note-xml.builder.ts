@@ -1,3 +1,10 @@
+import {
+  appendCommercialReferences,
+  appendCommercialPayments,
+  appendMonetary,
+  appendAdjustment,
+  appendCommercialDelivery,
+} from "./commercial-xml";
 import { create } from "xmlbuilder2";
 import {
   appendCpeParty,
@@ -35,19 +42,7 @@ function appendTaxAndMonetary(
   const cur = canonical.currency;
   appendDocumentTaxes(root, canonical.totals, cur);
 
-  const monetary = root.ele(monetaryTag);
-  monetary
-    .ele("cbc:LineExtensionAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.line_extension_amount))
-    .up();
-  monetary
-    .ele("cbc:TaxInclusiveAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.tax_inclusive_amount))
-    .up();
-  monetary
-    .ele("cbc:PayableAmount", { currencyID: cur })
-    .txt(formatMoney(canonical.totals.payable_amount))
-    .up();
+  appendMonetary(root, monetaryTag, canonical.totals, cur);
 }
 
 function buildNoteXml(
@@ -119,8 +114,10 @@ function buildNoteXml(
     .txt(canonical.affected_document.document_type)
     .up();
 
+  appendCommercialReferences(root, canonical);
   appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
   appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
+  appendCommercialPayments(root, canonical);
   appendTaxAndMonetary(
     root,
     canonical,
@@ -149,7 +146,9 @@ function buildNoteXml(
       .txt(line.is_free ? "02" : "01")
       .up();
 
+    appendCommercialDelivery(noteLine, line);
     appendCpeLineTaxes(noteLine, line, cur);
+    for (const a of line.adjustments ?? []) appendAdjustment(noteLine, a, cur);
 
     appendCpeItem(noteLine, line);
     noteLine

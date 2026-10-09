@@ -1,3 +1,4 @@
+import { commercialFail } from "../totals/commercial";
 import { computeAutoTotals, toCanonical as toInvoiceCanonical } from "../totals/auto-totals";
 import type { InvoiceCanonical } from "../types/invoice-canonical";
 import {
@@ -24,6 +25,40 @@ export function loadDebitNoteInterestFixtureRequest(): NoteFixtureRequest {
   return parseNoteFixtureRequest(file.request);
 }
 
+export function validateNoteReason(
+  request: Pick<NoteFixtureRequest, "note_type" | "payment_terms" | "lines">,
+  documentType: NoteDocumentType,
+): void {
+  const quotaAdjustment = documentType === "07" && request.note_type === "13";
+  const catalog = readAssetJson<{ catalogs: Record<string, { code: string }[]> }>(
+    "assets/catalogs/commercial-catalogs.json",
+  );
+  if (
+    !catalog.catalogs[documentType === "07" ? "09" : "10"]?.some(
+      (item) => item.code === request.note_type,
+    )
+  )
+    commercialFail("note_type", "Unknown note reason code");
+  if (
+    quotaAdjustment &&
+    (request.payment_terms?.condition !== "credit" ||
+      request.lines.some((l) => l.unit_value !== 0 || l.isc || l.icbper || l.adjustments?.length))
+  )
+    commercialFail("note_type", "Quota corrections require credit terms and zero fiscal values");
+  if (
+    !quotaAdjustment &&
+    request.lines.some((l) => l.tax_affectation === "40") &&
+    request.note_type !== "11"
+  )
+    commercialFail("note_type", "Export adjustments require note reason 11");
+  if (
+    !quotaAdjustment &&
+    request.lines.some((l) => l.tax_affectation === "17") &&
+    request.note_type !== "12"
+  )
+    commercialFail("note_type", "IVAP adjustments require note reason 12");
+}
+
 /**
  * Hydrate note fixture → NoteCanonical (reuses invoice auto-totals).
  */
@@ -35,6 +70,8 @@ export function hydrateNoteFromFixtureRequest(
     number?: number;
   },
 ): NoteCanonical {
+  validateNoteReason(request, documentType);
+  const quotaAdjustment = documentType === "07" && request.note_type === "13";
   const number = options?.number ?? request.number ?? DEFAULT_CORRELATIVE;
   const supplier = options?.supplier ?? { ...SPIKE_SUPPLIER };
 
@@ -55,7 +92,7 @@ export function hydrateNoteFromFixtureRequest(
     customer: request.customer,
     lines: request.lines,
   };
-  const { lines, totals } = computeAutoTotals(invoiceShape);
+  const { lines, totals } = computeAutoTotals(invoiceShape, { quotaAdjustment });
   const invoiceCanon = toInvoiceCanonical({
     request: invoiceShape,
     supplier,
@@ -66,6 +103,13 @@ export function hydrateNoteFromFixtureRequest(
 
   return {
     document_type: documentType,
+    payment_terms: request.payment_terms,
+    payment_means: request.payment_means,
+    adjustments: request.adjustments,
+    prepayments: request.prepayments,
+    detraction: request.detraction,
+    exchange_rate: request.exchange_rate,
+    despatch_references: request.despatch_references,
     issue_time: request.issue_time,
     due_date: request.due_date,
     purchase_order: request.purchase_order,

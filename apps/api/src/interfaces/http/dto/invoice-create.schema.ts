@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   cpeOptionalFields,
+  commercialFields,
   cpeTotalsInputSchema,
   invoiceLineInputSchema,
   partyCanonicalSchema,
@@ -18,12 +19,11 @@ export const invoiceCreateSchema = z
     operation_type: z.string().length(4),
     issue_date: z.iso.date(),
     ...cpeOptionalFields,
+    ...commercialFields,
     currency: z.string().length(3),
     totals_mode: z.enum(["auto", "strict"]).optional(),
     customer: partyCanonicalSchema,
     lines: z.array(invoiceLineInputSchema).min(1),
-    detraction: z.record(z.string(), z.unknown()).optional(),
-    payment_means: z.array(z.record(z.string(), z.unknown())).optional(),
     totals: cpeTotalsInputSchema.optional(),
   })
   .strict();

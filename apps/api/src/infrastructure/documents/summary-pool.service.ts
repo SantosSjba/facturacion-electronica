@@ -1,3 +1,4 @@
+import type { InvoiceCanonical, SummaryLineTotalsCanonical } from "@factosys/sunat-ubl";
 import { Injectable } from "@nestjs/common";
 import { AppError } from "@factosys/shared";
 
@@ -13,11 +14,16 @@ export interface SummaryPoolLine {
     identity_number: string;
   };
   totals: {
+    tax_groups?: SummaryLineTotalsCanonical["tax_groups"];
     gravadas: number;
     exoneradas: number;
     inafectas: number;
     gratuitas?: number;
     igv: number;
+    isc?: number;
+    ivap?: number;
+    icbper?: number;
+    other_charges?: number;
     payable: number;
   };
   affectedDocument?: {
@@ -94,8 +100,53 @@ export class SummaryPoolService {
       }
       const lineExtension = Number(totals.line_extension_amount ?? totals.gravadas ?? 0) || 0;
       const igv =
-        (Number(totals.tax_amount ?? totals.igv ?? 0) || 0) -
-        (Number(totals.free_tax_amount ?? 0) || 0);
+        totals.igv_amount ??
+        Number(totals.tax_amount ?? totals.igv ?? 0) - Number(totals.free_tax_amount ?? 0);
+      const nonTaxAdjustments = (
+        row.payload as
+          | {
+              _canonical?: {
+                lines?: { adjustments?: { code: string; amount: number }[] }[];
+                adjustments?: { code: string; amount: number }[];
+              };
+            }
+          | undefined
+      )?._canonical;
+      const adjustments = [
+        ...(nonTaxAdjustments?.adjustments ?? []),
+        ...(nonTaxAdjustments?.lines ?? []).flatMap((l) => l.adjustments ?? []),
+      ];
+      const otherCharges = adjustments
+        .filter((a) => ["46", "48", "50"].includes(a.code))
+        .reduce((sum, a) => sum + a.amount, 0);
+      const otherDiscounts = adjustments
+        .filter((a) => ["01", "03"].includes(a.code))
+        .reduce((sum, a) => sum + a.amount, 0);
+      if (otherDiscounts)
+        throw AppError.validation(
+          "Non-tax discounts require individual emission",
+          [{ path: "document_ids", issue: row.id }],
+          { httpStatus: 422 },
+        );
+      const canonical = (row.payload as { _canonical?: InvoiceCanonical } | undefined)?._canonical;
+      const taxGroups = canonical?.totals.tax_subtotals
+        .filter((g) => ["1000", "1016", "2000", "7152"].includes(g.tax_scheme_id))
+        .map((g) => ({
+          scheme_id: g.tax_scheme_id,
+          name: g.tax_scheme_name,
+          type_code:
+            g.tax_scheme_id === "2000" ? "EXC" : g.tax_scheme_id === "7152" ? "OTH" : "VAT",
+          percent: g.percent,
+          amount: g.tax_amount,
+        }));
+      if (taxGroups && !taxGroups.some((g) => ["1000", "1016"].includes(g.scheme_id)))
+        taxGroups.unshift({
+          scheme_id: "1000",
+          name: "IGV",
+          type_code: "VAT",
+          percent: 18,
+          amount: 0,
+        });
       const payable = Number(totals.payable_amount ?? totals.payable ?? lineExtension + igv) || 0;
 
       let affectedDocument: SummaryPoolLine["affectedDocument"];
@@ -121,11 +172,16 @@ export class SummaryPoolService {
           identity_number: row.customerIdentityNumber ?? "00000000",
         },
         totals: {
+          tax_groups: taxGroups,
           gravadas: Number(totals.taxed_amount ?? lineExtension),
           exoneradas: Number(totals.exempt_amount ?? 0),
           inafectas: Number(totals.unaffected_amount ?? 0),
           gratuitas: Number(totals.free_amount ?? 0),
           igv,
+          isc: Number(totals.isc_amount ?? 0),
+          ivap: Number(totals.ivap_amount ?? 0),
+          icbper: Number(totals.icbper_amount ?? 0),
+          other_charges: otherCharges,
           payable,
         },
         affectedDocument,

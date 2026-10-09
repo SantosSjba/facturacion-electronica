@@ -33,6 +33,21 @@ export function decimalMultiply(a: number, b: number, divisor = 1, places = 2): 
   return halfUp(left.units * right.units, left.scale * right.scale * BigInt(divisor), places);
 }
 
+export function decimalDivide(a: number, b: number, places = 10): number {
+  const left = decimal(a);
+  const right = decimal(b);
+  if (!right.units) throw ublValidationError("Decimal division by zero");
+  return halfUp(left.units * right.scale, left.scale * right.units, places);
+}
+
+export function subtractMoney(a: number, b: number): number {
+  const left = decimal(a),
+    right = decimal(b);
+  const units = left.units * right.scale - right.units * left.scale;
+  if (units < 0n) throw ublValidationError("Amount cannot be negative");
+  return halfUp(units, left.scale * right.scale, 2);
+}
+
 export function sumMoney(values: number[]): number {
   const cents = values.reduce((sum, value) => {
     const d = decimal(value);
@@ -41,4 +56,14 @@ export function sumMoney(values: number[]): number {
   if (cents > BigInt(Number.MAX_SAFE_INTEGER))
     throw ublValidationError("Total exceeds safe precision");
   return halfUp(cents, 100n, 2);
+}
+
+export function decimalAdd(a: number, b: number, places = 10): number {
+  const left = decimal(a),
+    right = decimal(b);
+  return halfUp(
+    left.units * right.scale + right.units * left.scale,
+    left.scale * right.scale,
+    places,
+  );
 }

@@ -1,3 +1,4 @@
+import { commercialSections, commercialLineDetails } from "./commercial-pdf";
 import { createHash } from "node:crypto";
 
 import { Injectable, Logger } from "@nestjs/common";
@@ -141,7 +142,10 @@ export class PdfService {
     const snapshotCustomer = snapshot?.["customer"] as Record<string, unknown> | undefined;
     const igv = moneyStr(
       (snapshot
-        ? Number(totals["tax_amount"] ?? 0) - Number(totals["free_tax_amount"] ?? 0)
+        ? Number(
+            totals["igv_amount"] ??
+              Number(totals["tax_amount"] ?? 0) - Number(totals["free_tax_amount"] ?? 0),
+          )
         : undefined) ??
         totals["tax_amount"] ??
         totals["total_igv"] ??
@@ -178,13 +182,19 @@ export class PdfService {
           const unitValue = Number(l["unit_value"] ?? l["unit_price"] ?? l["price"] ?? 0);
           const lineExt =
             (snapshot
-              ? Number(l["line_extension_amount"]) + (l["is_free"] ? 0 : Number(l["tax_amount"]))
+              ? Number(l["line_extension_amount"]) +
+                (l["is_free"] ? Number(l["icbper_amount"] ?? 0) : Number(l["tax_amount"])) +
+                ((l["adjustments"] ?? []) as { code: string; amount: number }[]).reduce(
+                  (sum, a) =>
+                    sum + (["48"].includes(a.code) ? a.amount : a.code === "01" ? -a.amount : 0),
+                  0,
+                )
               : undefined) ??
             l["line_extension_amount"] ??
             l["amount"] ??
             l["line_total"] ??
             unitValue * qty;
-          const lineIgv = l["tax_amount"] ?? l["igv"] ?? 0;
+          const lineIgv = l["igv_amount"] ?? l["tax_amount"] ?? l["igv"] ?? 0;
           return {
             description: String(l["description"] ?? l["name"] ?? "Item"),
             productCode: typeof l["product_code"] === "string" ? l["product_code"] : undefined,
@@ -195,6 +205,9 @@ export class PdfService {
             unitPrice: moneyStr(l["unit_price"] ?? unitValue),
             igv: moneyStr(lineIgv),
             amount: moneyStr(lineExt),
+            details: commercialLineDetails(l),
+            isc: nonzeroMoney(l["isc_amount"]),
+            icbper: nonzeroMoney(l["icbper_amount"]),
           };
         })
       : [
@@ -233,7 +246,8 @@ export class PdfService {
       affectedSerieNumber: (
         snapshot?.["affected_document"] as Record<string, string> | undefined
       )?.["serie_number"],
-      currency: doc.currency ?? "PEN",
+      currency: String(snapshot?.["currency"] ?? doc.currency ?? "PEN"),
+      commercialSections: commercialSections(snapshot),
       issuer: {
         ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
         legalName: String(snapshotSupplier?.["name"] ?? company.legalName),
@@ -259,6 +273,15 @@ export class PdfService {
         export: nonzeroMoney(totals["export_amount"]),
         free: nonzeroMoney(totals["free_amount"]),
         freeTax: nonzeroMoney(totals["free_tax_amount"]),
+        ivap: nonzeroMoney(totals["ivap_amount"]),
+        isc: nonzeroMoney(totals["isc_amount"]),
+        icbper: nonzeroMoney(totals["icbper_amount"]),
+        prepaid: nonzeroMoney(totals["prepaid_amount"]),
+        gross: moneyStr(
+          Number(totals["payable_amount"] ?? 0) + Number(totals["prepaid_amount"] ?? 0),
+        ),
+        discounts: nonzeroMoney(totals["allowance_total_amount"]),
+        charges: nonzeroMoney(totals["charge_total_amount"]),
       },
       digestValue: digest,
       qrPayload,

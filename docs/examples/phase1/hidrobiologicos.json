@@ -1,0 +1,41 @@
+{
+  "company_id": "01900000-0000-7000-8000-000000000001",
+  "serie": "F001",
+  "operation_type": "1002",
+  "issue_date": "2026-10-08",
+  "currency": "PEN",
+  "totals_mode": "auto",
+  "customer": {
+    "identity_type": "6",
+    "identity_number": "20123456789",
+    "name": "ACME SAC"
+  },
+  "lines": [
+    {
+      "id": 1,
+      "quantity": 1,
+      "unit_code": "NIU",
+      "description": "Servicio de consultoría",
+      "unit_value": 100,
+      "tax_affectation": "10",
+      "igv_percent": 18,
+      "tax_scheme_id": "1000",
+      "hydrobiology": {
+        "vessel_registration": "ABC",
+        "vessel_name": "BARCO",
+        "species": "ANCHOVETA",
+        "quantity": 1,
+        "unloading_place": "CALLAO",
+        "unloading_date": "2026-10-08"
+      }
+    }
+  ],
+  "detraction": {
+    "goods_code": "004",
+    "percent": 10,
+    "amount": 12,
+    "account": "00123456789",
+    "payment_means_code": "001",
+    "currency": "PEN"
+  }
+}

@@ -35,8 +35,57 @@ export class EmitCreditNoteUseCase {
     });
 
     this.assertSerieFamily(input.body.serie, affected.documentType);
+    if (
+      affected.currency &&
+      (affected.currency !== input.body.currency ||
+        affected.customerIdentityType !== input.body.customer.identity_type ||
+        affected.customerIdentityNumber !== input.body.customer.identity_number)
+    )
+      throw AppError.validation(
+        "Note currency/customer must match affected document",
+        [{ path: "affected_document", issue: "currency or customer mismatch" }],
+        { httpStatus: 422 },
+      );
+    if (input.body.issue_date < (affected.issueDate ?? ""))
+      throw AppError.validation(
+        "Note cannot precede affected document",
+        [{ path: "issue_date", issue: "before affected issue date" }],
+        { httpStatus: 422 },
+      );
 
-    validateCpeInput(input.body);
+    if (
+      input.body.note_type === "13" &&
+      (affected.payload as { _canonical?: { payment_terms?: { condition?: string } } } | undefined)
+        ?._canonical?.payment_terms?.condition !== "credit"
+    )
+      throw AppError.validation(
+        "Quota correction requires an accepted credit invoice",
+        [{ path: "affected_document", issue: "original is not credit" }],
+        { httpStatus: 422 },
+      );
+    validateCpeInput(input.body, "07");
+    const originalTotal = Number(
+      (affected.totals as { payable_amount?: number } | undefined)?.payable_amount,
+    );
+    const noteTotal = hydrateNoteFromFixtureRequest({ ...input.body }, "07").totals.payable_amount;
+    const correctedBalance =
+      input.body.payment_terms?.condition === "credit"
+        ? input.body.payment_terms.outstanding_amount
+        : 0;
+    if (
+      Number.isFinite(originalTotal) &&
+      (noteTotal > originalTotal || correctedBalance > originalTotal)
+    )
+      throw AppError.validation(
+        "Credit note cannot exceed the affected document amount",
+        [
+          {
+            path: input.body.note_type === "13" ? "payment_terms.outstanding_amount" : "lines",
+            issue: "exceeds original amount",
+          },
+        ],
+        { httpStatus: 422 },
+      );
     return this.orchestrator.execute({
       organizationId: input.organizationId,
       companyId: input.body.company_id,
@@ -139,8 +188,25 @@ export class EmitDebitNoteUseCase {
     });
 
     this.assertSerieFamily(input.body.serie, affected.documentType);
+    if (
+      affected.currency &&
+      (affected.currency !== input.body.currency ||
+        affected.customerIdentityType !== input.body.customer.identity_type ||
+        affected.customerIdentityNumber !== input.body.customer.identity_number)
+    )
+      throw AppError.validation(
+        "Note currency/customer must match affected document",
+        [{ path: "affected_document", issue: "currency or customer mismatch" }],
+        { httpStatus: 422 },
+      );
+    if (input.body.issue_date < (affected.issueDate ?? ""))
+      throw AppError.validation(
+        "Note cannot precede affected document",
+        [{ path: "issue_date", issue: "before affected issue date" }],
+        { httpStatus: 422 },
+      );
 
-    validateCpeInput(input.body);
+    validateCpeInput(input.body, "08");
     return this.orchestrator.execute({
       organizationId: input.organizationId,
       companyId: input.body.company_id,

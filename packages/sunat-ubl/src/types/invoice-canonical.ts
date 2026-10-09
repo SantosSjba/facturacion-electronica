@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { commercialFields, commercialLineFields, adjustmentSchema } from "./commercial-fields";
 
 import { ublValidationError } from "../errors";
 import { cpeAddressSchema, cpeOptionalFields, cpeTotalsInputSchema } from "./cpe-fields";
@@ -10,6 +11,7 @@ export const partyCanonicalSchema = z
     identity_number: z.string().min(1),
     name: z.string().min(1),
     email: z.string().email().optional(),
+    non_resident: z.boolean().optional(),
     address: cpeAddressSchema.optional(),
   })
   .strict();
@@ -18,6 +20,7 @@ export type PartyCanonical = z.infer<typeof partyCanonicalSchema>;
 
 export const invoiceLineInputSchema = z
   .object({
+    ...commercialLineFields,
     id: z.number().int().positive(),
     quantity: z.number().positive(),
     unit_code: z.string().min(1),
@@ -37,6 +40,19 @@ export const invoiceLineInputSchema = z
 
 export type InvoiceLineInput = z.infer<typeof invoiceLineInputSchema>;
 
+export const taxSubtotalSchema = z.object({
+  taxable_amount: z.number(),
+  tax_amount: z.number(),
+  tax_category_id: z.string(),
+  tax_scheme_id: z.string(),
+  tax_scheme_name: z.string(),
+  tax_type_code: z.string(),
+  percent: z.number(),
+  tier_range: z.string().optional(),
+  base_unit_measure: z.number().optional(),
+  per_unit_amount: z.number().optional(),
+});
+
 /** Line after auto-totals. */
 export const invoiceLineCanonicalSchema = invoiceLineInputSchema.extend({
   tax_scheme_id: z.string().min(1),
@@ -49,19 +65,14 @@ export const invoiceLineCanonicalSchema = invoiceLineInputSchema.extend({
   tax_scheme_name: z.string(),
   tax_type_code: z.string(),
   is_free: z.boolean(),
+  tax_subtotals: z.array(taxSubtotalSchema),
+  isc_amount: z.number(),
+  icbper_amount: z.number(),
+  igv_amount: z.number(),
+  non_tax_adjustment: z.number(),
 });
 
 export type InvoiceLineCanonical = z.infer<typeof invoiceLineCanonicalSchema>;
-
-export const taxSubtotalSchema = z.object({
-  taxable_amount: z.number(),
-  tax_amount: z.number(),
-  tax_category_id: z.string(),
-  tax_scheme_id: z.string(),
-  tax_scheme_name: z.string(),
-  tax_type_code: z.string(),
-  percent: z.number(),
-});
 
 export const invoiceTotalsSchema = z.object({
   line_extension_amount: z.number(),
@@ -79,6 +90,15 @@ export const invoiceTotalsSchema = z.object({
   export_amount: z.number(),
   free_amount: z.number(),
   free_tax_amount: z.number(),
+  igv_amount: z.number().default(0),
+  ivap_amount: z.number().default(0),
+  isc_amount: z.number().default(0),
+  icbper_amount: z.number().default(0),
+  prepaid_amount: z.number().default(0),
+  allowance_total_amount: z.number().default(0),
+  charge_total_amount: z.number().default(0),
+  advance_tax_amount: z.number().default(0),
+  computed_adjustments: z.array(adjustmentSchema).default([]),
 });
 
 export type InvoiceTotals = z.infer<typeof invoiceTotalsSchema>;
@@ -97,6 +117,7 @@ export const invoiceCanonicalSchema = z
     operation_type: z.string().length(4),
     issue_date: z.string().min(10),
     ...cpeOptionalFields,
+    ...commercialFields,
     currency: z.string().length(3),
     totals_mode: z.enum(["auto", "strict"]).default("auto"),
     supplier: partyCanonicalSchema,
@@ -134,6 +155,7 @@ export const invoiceFixtureRequestSchema = z
     operation_type: z.string().length(4),
     issue_date: z.string().min(10),
     ...cpeOptionalFields,
+    ...commercialFields,
     currency: z.string().length(3),
     totals_mode: z.enum(["auto", "strict"]).optional(),
     customer: partyCanonicalSchema,

@@ -52,7 +52,7 @@ const REQUEST_BODIES: {
     method: "post",
     schema: invoiceCreateSchema,
     description:
-      "Factura (01) con múltiples líneas y totales por categoría/tributo/tasa. `auto` calcula los importes; `strict` requiere `totals` y compara exactamente a dos decimales. Se admiten direcciones tipadas, códigos de producto, leyendas, hora, vencimiento y orden de compra. Correlativo automático: omitir `number`. Detracción, medios de pago/crédito, ISC e IVAP aún devuelven 422. Ver docs/phase0-cpe-integrity.md.",
+      "Factura (01) con múltiples líneas y totales por categoría/tributo/tasa. `auto` calcula los importes; `strict` requiere `totals` y compara exactamente a dos decimales. Se admiten direcciones tipadas, códigos de producto, leyendas, hora, vencimiento y orden de compra. Correlativo automático: omitir `number`. Crédito y cuotas, medios de pago, descuentos/cargos, anticipos, detracción 1001-1004, ISC (01/02/03), ICBPER, IVAP y tipo de cambio tipados. Ver docs/phase1-commercial-cpe.md.",
     example: {
       company_id: "00000000-0000-4000-8000-000000000001",
       serie: "F001",
@@ -92,7 +92,7 @@ const REQUEST_BODIES: {
     method: "post",
     schema: creditNoteCreateSchema,
     description:
-      "Nota de crédito (07) con todas sus líneas, totales auto/strict y referencia al comprobante aceptado. Admite direcciones, códigos, hora, leyendas y orden de compra. Vencimiento y ajuste de cuotas (tipo 13) aún no soportados.",
+      "Nota de crédito (07) con todas sus líneas, totales auto/strict y referencia al comprobante aceptado. Admite direcciones, códigos, hora, leyendas y orden de compra. Crédito tipo 13 ajusta cuotas de una factura a crédito aceptada con importes fiscales cero. Códigos 11/12 para exportación/IVAP. Descuentos y cargos tipados; misma moneda y adquirente del documento afectado.",
   },
   {
     path: "/v1/debit-notes",

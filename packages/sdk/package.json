@@ -22,7 +22,9 @@
     "test": "vitest run",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@factosys/sunat-ubl": "workspace:*"
+  },
   "devDependencies": {
     "vitest": "^5.0.1"
   }

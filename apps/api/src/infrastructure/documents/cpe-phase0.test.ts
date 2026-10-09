@@ -126,8 +126,6 @@ describe("phase 0 HTTP input to signed UBL", () => {
   );
 
   it.each([
-    { detraction: {} },
-    { payment_means: [] },
     { number: 10 },
     { operation_type: "1001" },
     { totals: { ...body.totals, payable_amount: 230 } },

@@ -3,8 +3,7 @@ import { create } from "xmlbuilder2";
 import { formatMoney } from "../totals/auto-totals";
 
 const NS = {
-  summary:
-    "urn:sunat:names:specification:ubl:peru:schema:xsd:SummaryDocuments-1",
+  summary: "urn:sunat:names:specification:ubl:peru:schema:xsd:SummaryDocuments-1",
   cac: "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
   cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
   ds: "http://www.w3.org/2000/09/xmldsig#",
@@ -19,7 +18,16 @@ export interface SummaryLineTotalsCanonical {
   gratuitas?: number;
   igv: number;
   isc?: number;
+  ivap?: number;
+  icbper?: number;
   other_charges?: number;
+  tax_groups?: {
+    scheme_id: string;
+    name: string;
+    type_code: string;
+    percent: number;
+    amount: number;
+  }[];
   payable: number;
 }
 
@@ -66,17 +74,14 @@ export class XmlSummaryDocumentsBuilder {
       throw new Error("SummaryDocuments requires at least one line");
     }
 
-    const root = create({ version: "1.0", encoding: "UTF-8" }).ele(
-      "SummaryDocuments",
-      {
-        xmlns: NS.summary,
-        "xmlns:cac": NS.cac,
-        "xmlns:cbc": NS.cbc,
-        "xmlns:ds": NS.ds,
-        "xmlns:ext": NS.ext,
-        "xmlns:sac": NS.sac,
-      },
-    );
+    const root = create({ version: "1.0", encoding: "UTF-8" }).ele("SummaryDocuments", {
+      xmlns: NS.summary,
+      "xmlns:cac": NS.cac,
+      "xmlns:cbc": NS.cbc,
+      "xmlns:ds": NS.ds,
+      "xmlns:ext": NS.ext,
+      "xmlns:sac": NS.sac,
+    });
 
     root.ele("cbc:UBLVersionID").txt("2.0").up();
     root.ele("cbc:CustomizationID").txt("1.1").up();
@@ -104,14 +109,8 @@ export class XmlSummaryDocumentsBuilder {
       .up();
 
     const supplier = root.ele("cac:AccountingSupplierParty");
-    supplier
-      .ele("cbc:CustomerAssignedAccountID")
-      .txt(input.supplier.identity_number)
-      .up();
-    supplier
-      .ele("cbc:AdditionalAccountID")
-      .txt(input.supplier.identity_type)
-      .up();
+    supplier.ele("cbc:CustomerAssignedAccountID").txt(input.supplier.identity_number).up();
+    supplier.ele("cbc:AdditionalAccountID").txt(input.supplier.identity_type).up();
     supplier
       .ele("cac:Party")
       .ele("cac:PartyLegalEntity")
@@ -128,21 +127,18 @@ export class XmlSummaryDocumentsBuilder {
       node.ele("cbc:ID").txt(line.serie_number.toUpperCase()).up();
 
       const customer = node.ele("cac:AccountingCustomerParty");
-      customer
-        .ele("cbc:CustomerAssignedAccountID")
-        .txt(line.customer.identity_number)
-        .up();
-      customer
-        .ele("cbc:AdditionalAccountID")
-        .txt(line.customer.identity_type)
-        .up();
+      customer.ele("cbc:CustomerAssignedAccountID").txt(line.customer.identity_number).up();
+      customer.ele("cbc:AdditionalAccountID").txt(line.customer.identity_type).up();
+
+      if (line.affected_document) {
+        const ref = node.ele("cac:BillingReference").ele("cac:InvoiceDocumentReference");
+        ref.ele("cbc:ID").txt(line.affected_document.serie_number.toUpperCase()).up();
+        ref.ele("cbc:DocumentTypeCode").txt(line.affected_document.document_type).up();
+      }
 
       node.ele("cac:Status").ele("cbc:ConditionCode").txt(line.status).up().up();
 
-      node
-        .ele("sac:TotalAmount", { currencyID: "PEN" })
-        .txt(formatMoney(line.totals.payable))
-        .up();
+      node.ele("sac:TotalAmount", { currencyID: "PEN" }).txt(formatMoney(line.totals.payable)).up();
 
       appendBillingPayment(node, line.totals.gravadas, "01");
       appendBillingPayment(node, line.totals.exoneradas, "02");
@@ -151,29 +147,44 @@ export class XmlSummaryDocumentsBuilder {
         appendBillingPayment(node, line.totals.gratuitas, "05");
       }
 
-      const tax = node.ele("cac:TaxTotal");
-      tax
-        .ele("cbc:TaxAmount", { currencyID: "PEN" })
-        .txt(formatMoney(line.totals.igv))
-        .up();
-      const sub = tax.ele("cac:TaxSubtotal");
-      sub
-        .ele("cbc:TaxAmount", { currencyID: "PEN" })
-        .txt(formatMoney(line.totals.igv))
-        .up();
-      const cat = sub.ele("cac:TaxCategory");
-      const scheme = cat.ele("cac:TaxScheme");
-      scheme.ele("cbc:ID").txt("1000").up();
-      scheme.ele("cbc:Name").txt("IGV").up();
-      scheme.ele("cbc:TaxTypeCode").txt("VAT").up();
-
-      if (line.affected_document) {
-        const ref = node.ele("cac:BillingReference").ele("cac:InvoiceDocumentReference");
-        ref.ele("cbc:ID").txt(line.affected_document.serie_number.toUpperCase()).up();
-        ref
-          .ele("cbc:DocumentTypeCode")
-          .txt(line.affected_document.document_type)
-          .up();
+      if (line.totals.other_charges) {
+        const charge = node.ele("cac:AllowanceCharge");
+        charge.ele("cbc:ChargeIndicator").txt("true");
+        charge.ele("cbc:Amount", { currencyID: "PEN" }).txt(formatMoney(line.totals.other_charges));
+      }
+      const fallback = [
+        [
+          line.totals.ivap ? "1016" : "1000",
+          line.totals.ivap ? "IVAP" : "IGV",
+          "VAT",
+          line.totals.ivap || line.totals.igv,
+        ],
+        ["2000", "ISC", "EXC", line.totals.isc],
+        ["7152", "ICBPER", "OTH", line.totals.icbper],
+      ] as const;
+      const groups =
+        line.totals.tax_groups ??
+        fallback
+          .filter(([code, , , amount]) => code === "1000" || code === "1016" || amount)
+          .map(([scheme_id, name, type_code, amount]) => ({
+            scheme_id,
+            name,
+            type_code,
+            amount: amount ?? 0,
+            percent: scheme_id === "1016" ? 4 : 18,
+          }));
+      for (const { scheme_id: code, name, type_code: type, amount: value, percent } of groups) {
+        if (code !== "1000" && code !== "1016" && !value) continue;
+        const tax = node.ele("cac:TaxTotal");
+        tax.ele("cbc:TaxAmount", { currencyID: "PEN" }).txt(formatMoney(value ?? 0));
+        const sub = tax.ele("cac:TaxSubtotal");
+        sub.ele("cbc:TaxAmount", { currencyID: "PEN" }).txt(formatMoney(value ?? 0));
+        const cat = sub.ele("cac:TaxCategory");
+        if (code === "1000" || code === "1016") cat.ele("cbc:Percent").txt(String(percent));
+        const scheme = cat.ele("cac:TaxScheme");
+        scheme.ele("cbc:ID").txt(code);
+        scheme.ele("cbc:Name").txt(name);
+        scheme.ele("cbc:TaxTypeCode").txt(type);
       }
     }
 
@@ -193,9 +204,6 @@ function appendBillingPayment(
 ): void {
   if (amount <= 0) return;
   const pay = parent.ele("sac:BillingPayment");
-  pay
-    .ele("cbc:PaidAmount", { currencyID: "PEN" })
-    .txt(formatMoney(amount))
-    .up();
+  pay.ele("cbc:PaidAmount", { currencyID: "PEN" }).txt(formatMoney(amount)).up();
   pay.ele("cbc:InstructionID").txt(instructionId).up();
 }

@@ -1,3 +1,4 @@
+import { appendCommercialItemProperties } from "./commercial-xml";
 import type { create } from "xmlbuilder2";
 import { ListUri } from "../attributes/listuri-injector";
 import { formatMoney } from "../totals/auto-totals";
@@ -75,7 +76,8 @@ export function appendDocumentTaxes(root: Node, totals: InvoiceTotals, cur: stri
   tax.ele("cbc:TaxAmount", { currencyID: cur }).txt(formatMoney(totals.tax_amount));
   for (const group of totals.tax_subtotals) {
     const sub = tax.ele("cac:TaxSubtotal");
-    sub.ele("cbc:TaxableAmount", { currencyID: cur }).txt(formatMoney(group.taxable_amount));
+    if (group.tax_scheme_id !== "7152")
+      sub.ele("cbc:TaxableAmount", { currencyID: cur }).txt(formatMoney(group.taxable_amount));
     sub.ele("cbc:TaxAmount", { currencyID: cur }).txt(formatMoney(group.tax_amount));
     const cat = sub.ele("cac:TaxCategory");
     cat.ele("cbc:ID", ListUri.docTaxCategory()).txt(group.tax_category_id);
@@ -91,17 +93,30 @@ export function appendDocumentTaxes(root: Node, totals: InvoiceTotals, cur: stri
 export function appendCpeLineTaxes(node: Node, line: InvoiceLineCanonical, cur: string): void {
   const tax = node.ele("cac:TaxTotal");
   tax.ele("cbc:TaxAmount", { currencyID: cur }).txt(formatMoney(line.tax_amount));
-  const sub = tax.ele("cac:TaxSubtotal");
-  sub.ele("cbc:TaxableAmount", { currencyID: cur }).txt(formatMoney(line.taxable_amount));
-  sub.ele("cbc:TaxAmount", { currencyID: cur }).txt(formatMoney(line.tax_amount));
-  const cat = sub.ele("cac:TaxCategory");
-  cat.ele("cbc:ID", ListUri.lineTaxCategory()).txt(line.tax_category_id);
-  cat.ele("cbc:Percent").txt(String(line.igv_percent));
-  cat.ele("cbc:TaxExemptionReasonCode", ListUri.taxExemptionReason()).txt(line.tax_affectation);
-  const scheme = cat.ele("cac:TaxScheme");
-  scheme.ele("cbc:ID", ListUri.lineTaxScheme()).txt(line.tax_scheme_id);
-  scheme.ele("cbc:Name").txt(line.tax_scheme_name);
-  scheme.ele("cbc:TaxTypeCode").txt(line.tax_type_code);
+  for (const group of line.tax_subtotals) {
+    const sub = tax.ele("cac:TaxSubtotal");
+    if (group.tax_scheme_id !== "7152")
+      sub.ele("cbc:TaxableAmount", { currencyID: cur }).txt(formatMoney(group.taxable_amount));
+    sub.ele("cbc:TaxAmount", { currencyID: cur }).txt(formatMoney(group.tax_amount));
+    if (group.base_unit_measure !== undefined)
+      sub
+        .ele("cbc:BaseUnitMeasure", {
+          unitCode: group.tax_scheme_id === "7152" ? "NIU" : line.unit_code,
+        })
+        .txt(formatUnit(group.base_unit_measure, 0));
+    const cat = sub.ele("cac:TaxCategory");
+    cat.ele("cbc:ID", ListUri.lineTaxCategory()).txt(group.tax_category_id);
+    if (group.tax_scheme_id !== "7152") cat.ele("cbc:Percent").txt(String(group.percent));
+    if (group.per_unit_amount !== undefined)
+      cat.ele("cbc:PerUnitAmount", { currencyID: cur }).txt(formatUnit(group.per_unit_amount));
+    if (!["2000", "7152"].includes(group.tax_scheme_id))
+      cat.ele("cbc:TaxExemptionReasonCode", ListUri.taxExemptionReason()).txt(line.tax_affectation);
+    if (group.tier_range) cat.ele("cbc:TierRange").txt(group.tier_range);
+    const scheme = cat.ele("cac:TaxScheme");
+    scheme.ele("cbc:ID", ListUri.lineTaxScheme()).txt(group.tax_scheme_id);
+    scheme.ele("cbc:Name").txt(group.tax_scheme_name);
+    scheme.ele("cbc:TaxTypeCode").txt(group.tax_type_code);
+  }
 }
 
 export function appendCpeItem(node: Node, line: InvoiceLineCanonical): void {
@@ -118,6 +133,7 @@ export function appendCpeItem(node: Node, line: InvoiceLineCanonical): void {
         listName: "Item Classification",
       })
       .txt(line.sunat_product_code);
+  appendCommercialItemProperties(item, line);
 }
 
 export function appendLegends(
@@ -131,6 +147,11 @@ export function appendLegends(
   ) {
     legends.push({ code: "1002", text: "TRANSFERENCIA GRATUITA" });
   }
+  if (
+    canonical.lines.some((l) => l.tax_affectation === "17") &&
+    !legends.some((l) => l.code === "2007")
+  )
+    legends.push({ code: "2007", text: "OPERACIÓN SUJETA AL IVAP" });
   for (const legend of legends)
     root.ele("cbc:Note", { languageLocaleID: legend.code }).txt(legend.text);
 }

@@ -42,6 +42,13 @@ export const cpeTotalsInputSchema = z
     export_amount: z.number().nonnegative().optional(),
     free_amount: z.number().nonnegative().optional(),
     free_tax_amount: z.number().nonnegative().optional(),
+    prepaid_amount: z.number().nonnegative().optional(),
+    allowance_total_amount: z.number().nonnegative().optional(),
+    charge_total_amount: z.number().nonnegative().optional(),
+    igv_amount: z.number().nonnegative().optional(),
+    ivap_amount: z.number().nonnegative().optional(),
+    isc_amount: z.number().nonnegative().optional(),
+    icbper_amount: z.number().nonnegative().optional(),
   })
   .strict();
 

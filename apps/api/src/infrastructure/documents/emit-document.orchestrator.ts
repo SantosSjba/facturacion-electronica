@@ -1,3 +1,5 @@
+import { validatePrepayments } from "./prepayment-validation";
+import type { InvoiceCanonical } from "@factosys/sunat-ubl";
 import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
@@ -81,6 +83,17 @@ export class EmitDocumentOrchestrator {
           input.companyId,
         );
 
+        const prepayments =
+          (input.payload as { prepayments?: InvoiceCanonical["prepayments"] }).prepayments ?? [];
+        const advanceInput = {
+          organizationId: input.organizationId,
+          companyId: company.id,
+          companyRuc: company.ruc,
+          currency: input.currency,
+          customer: input.customer,
+          prepayments,
+        };
+        if (prepayments.length) await validatePrepayments(this.db, advanceInput);
         const { pfx, password } = await withSpan(
           "emit.validate",
           { "factosys.step": "credentials" },
@@ -136,8 +149,9 @@ export class EmitDocumentOrchestrator {
               this.db,
               input.organizationId,
               "documents_this_month",
-              async (tx) =>
-                tx.insert(documents).values({
+              async (tx) => {
+                if (prepayments.length) await validatePrepayments(tx, advanceInput, true);
+                return tx.insert(documents).values({
                   id: documentId,
                   organizationId: input.organizationId,
                   companyId: company.id,
@@ -162,7 +176,8 @@ export class EmitDocumentOrchestrator {
                   idempotencyKey: input.idempotencyKey,
                   ublProfile: "2.1",
                   relatedDocumentId: built.relatedDocumentId ?? input.relatedDocumentId ?? null,
-                }),
+                });
+              },
             );
 
             await this.documents.appendEvent({

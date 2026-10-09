@@ -9,6 +9,9 @@ export interface PdfLineItem {
   amount: string;
   productCode?: string;
   sunatProductCode?: string;
+  details?: string[];
+  isc?: string;
+  icbper?: string;
 }
 
 export interface PdfRenderInput {
@@ -20,6 +23,7 @@ export interface PdfRenderInput {
   purchaseOrder?: string;
   legends?: { code: string; text: string }[];
   currency: string;
+  commercialSections?: { title: string; entries: { label: string; value: string }[] }[];
   issuer: {
     ruc: string;
     legalName: string;
@@ -43,6 +47,13 @@ export interface PdfRenderInput {
     export?: string;
     free?: string;
     freeTax?: string;
+    isc?: string;
+    icbper?: string;
+    ivap?: string;
+    prepaid?: string;
+    gross?: string;
+    discounts?: string;
+    charges?: string;
   };
   digestValue: string;
   qrPayload: string;

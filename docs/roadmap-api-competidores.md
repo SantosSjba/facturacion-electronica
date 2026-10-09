@@ -85,13 +85,15 @@ Fuentes: A (`Invoice`, `SaleDetail`, `Note`); NJ págs. 5, 10 y 15-16; NT págs.
 
 Fuentes: A (`PaymentTerms`, `Cuota`, `Detraction`, `Prepayment`, descuentos/cargos de `SaleDetail` y ejemplos); NJ págs. 7, 9-16; NT págs. 8-15.
 
-- [ ] **F1-01. Contado y crédito.** Forma de pago tipada, saldo pendiente, moneda, cuotas con número/fecha/importe y vencimiento; mapear a UBL y PDF. Validar coherencia de cuotas con el saldo. Separar condición de pago, medio de pago y estado de cobro.
-- [ ] **F1-02. Descuentos y cargos.** Por línea y globales, con motivo, base, factor/importe y tratamiento fiscal. Cubrir combinaciones y descuentos que no afectan la base cuando corresponda.
-- [ ] **F1-03. Anticipos.** Referenciar documentos de anticipo, emisión y regularización; conciliar anticipos, impuestos y saldo para evitar descontarlos dos veces.
-- [ ] **F1-04. Detracción.** Código del bien/servicio, tasa, monto, cuenta y medio de pago; extender después a transporte de carga con origen/destino, viaje, valores referenciales y tramos. Hidrobiológicos y pasajeros se habilitan por escenario validado.
-- [ ] **F1-05. Tributos adicionales.** ICBPER, ISC e IVAP por línea y cabecera con fórmulas específicas y casos gratuitos cuando proceda. No tratar todos los impuestos como IGV.
-- [ ] **F1-06. Operaciones y documentos relacionados.** Exportación, no domiciliados, gratuidad y referencias a guías; notas por descuentos, devoluciones y ajustes de cuotas. Incorporar catálogos y restricciones por tipo de documento.
-- [ ] **F1-07. Moneda y tipo de cambio.** La moneda ya existe; definir cuándo corresponde registrar tipo de cambio, su fuente/fecha y su representación, sin convertir automáticamente importes sin contrato explícito.
+- [x] **F1-01. Contado y crédito.** Forma de pago tipada, saldo pendiente, moneda, cuotas con número/fecha/importe y vencimiento; mapear a UBL y PDF. Validar coherencia de cuotas con el saldo. Separar condición de pago, medio de pago y estado de cobro.
+- [x] **F1-02. Descuentos y cargos.** Por línea y globales, con motivo, base, factor/importe y tratamiento fiscal. Cubrir combinaciones y descuentos que no afectan la base cuando corresponda.
+- [x] **F1-03. Anticipos.** Referenciar documentos de anticipo, emisión y regularización; conciliar anticipos, impuestos y saldo para evitar descontarlos dos veces.
+- [x] **F1-04. Detracción.** Código del bien/servicio, tasa, monto, cuenta y medio de pago; extender después a transporte de carga con origen/destino, viaje, valores referenciales y tramos. Hidrobiológicos y pasajeros se habilitan por escenario validado.
+- [x] **F1-05. Tributos adicionales.** ICBPER, ISC e IVAP por línea y cabecera con fórmulas específicas y casos gratuitos cuando proceda. No tratar todos los impuestos como IGV.
+- [x] **F1-06. Operaciones y documentos relacionados.** Exportación, no domiciliados, gratuidad y referencias a guías; notas por descuentos, devoluciones y ajustes de cuotas. Incorporar catálogos y restricciones por tipo de documento.
+- [x] **F1-07. Moneda y tipo de cambio.** La moneda ya existe; definir cuándo corresponde registrar tipo de cambio, su fuente/fecha y su representación, sin convertir automáticamente importes sin contrato explícito.
+
+**Evidencia de implementación local:** [contrato, ejemplos y pruebas](./phase1-commercial-cpe.md). Aceptación SUNAT real pendiente. El anticipo ISC tiene además pendiente renovar el catálogo 53 del validador XSL local; el resto de los 14 escenarios pasa ese XSL.
 
 **Aceptación:** cada escenario habilitado tiene request documentado, canónico, XML firmado validado, totales coherentes y PDF equivalente. Incluir fixtures positivos y negativos: contado, dos cuotas, descuento global + línea, anticipo parcial, detracción, ICBPER, ISC, IVAP, exportación y nota asociada. Validar los escenarios mediante SUNAT real cuando el ambiente permita hacerlo; identificar explícitamente los que solo tengan cobertura Fake.
 
@@ -169,7 +171,7 @@ Fuentes: NT págs. 3-5 y 13-18; NJ págs. 2, 7 y 9; A ejemplos de contingencia y
 | Fase | Estado inicial                              | Evidencia para cerrar                                                                                     | Fecha / cambio                                         |
 | ---- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | 0    | Implementada; verificación local completada | Líneas, impuestos mixtos/gratuitas, `strict`, firma, XSD, snapshot y PDF; aceptación SUNAT real pendiente | 2026-10-08; ver [evidencia](./phase0-cpe-integrity.md) |
-| 1    | Pendiente; base parcial                     | Casos comerciales completos por escenario                                                                 | Por completar                                          |
+| 1    | Implementada; verificación local            | Contrato, cálculo, XML/PDF, SDK, anticipos concurrentes; SUNAT real pendiente                             | 2026-10-08; [evidencia](./phase1-commercial-cpe.md)    |
 | 2    | Pendiente; PDF básico existente             | QR leído, formatos revisados y preview sin emisión                                                        | Por completar                                          |
 | 3    | Pendiente; emisión GRE base existente       | Campos avanzados, QR oficial y PDF GRE                                                                    | Por completar                                          |
 | 4    | Pendiente; infraestructura existente        | Reconciliación, entrega, scopes y ejemplos                                                                | Por completar                                          |

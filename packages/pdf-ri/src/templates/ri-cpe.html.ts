@@ -21,7 +21,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
       (l, i) => `
       <tr>
         <td>${i + 1}</td>
-        <td>${esc(l.description)}${l.productCode ? `<br>Código: ${esc(l.productCode)}` : ""}${l.sunatProductCode ? `<br>SUNAT: ${esc(l.sunatProductCode)}` : ""}</td>
+        <td>${esc(l.description)}${l.productCode ? `<br>Código: ${esc(l.productCode)}` : ""}${l.sunatProductCode ? `<br>SUNAT: ${esc(l.sunatProductCode)}` : ""}${(l.details ?? []).map((detail) => `<br>${esc(detail)}`).join("")}${l.isc ? `<br>ISC: ${esc(l.isc)}` : ""}${l.icbper ? `<br>ICBPER: ${esc(l.icbper)}` : ""}</td>
         <td>${esc(l.quantity)} ${esc(l.unit)}</td>
         <td>${esc(l.unitPrice)}</td>
         <td>${esc(l.igv)}</td>
@@ -80,7 +80,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
   ${noteBlock}
   <table>
     <thead>
-      <tr><th>#</th><th>Descripción</th><th>Cant.</th><th>P.U.</th><th>IGV</th><th>Importe</th></tr>
+      <tr><th>#</th><th>Descripción</th><th>Cant.</th><th>P.U.</th><th>IGV / IVAP</th><th>Importe</th></tr>
     </thead>
     <tbody>${linesHtml}</tbody>
   </table>
@@ -92,8 +92,15 @@ export function buildRiHtml(input: PdfRenderInput): string {
     ${input.totals.export ? `<div>Exportación: ${esc(input.totals.export)}</div>` : ""}
     ${input.totals.free ? `<div>Gratuito (referencial): ${esc(input.totals.free)}</div>` : ""}
     ${input.totals.freeTax ? `<div>Impuesto gratuito (no cobrado): ${esc(input.totals.freeTax)}</div>` : ""}
+    ${input.totals.ivap ? `<div>IVAP: ${esc(input.totals.ivap)}</div>` : ""}
+    ${input.totals.isc ? `<div>ISC: ${esc(input.totals.isc)}</div>` : ""}
+    ${input.totals.icbper ? `<div>ICBPER: ${esc(input.totals.icbper)}</div>` : ""}
+    ${input.totals.discounts ? `<div>Descuentos sin efecto tributario: ${esc(input.totals.discounts)}</div>` : ""}
+    ${input.totals.charges ? `<div>Cargos sin efecto tributario: ${esc(input.totals.charges)}</div>` : ""}
+    ${input.totals.prepaid ? `<div>Importe antes de anticipos: ${esc(input.totals.gross ?? "")}</div><div>Anticipos aplicados: ${esc(input.totals.prepaid)}</div>` : ""}
     <div><strong>Total: ${esc(input.totals.total)}</strong></div>
   </div>
+  ${(input.commercialSections ?? []).map((section) => `<section><h2>${esc(section.title)}</h2>${section.entries.map((entry) => `<div><strong>${esc(entry.label)}:</strong> ${esc(entry.value)}</div>`).join("")}</section>`).join("")}
   <div class="footer">
     <div>
       <div><strong>Valor resumen (DigestValue):</strong></div>

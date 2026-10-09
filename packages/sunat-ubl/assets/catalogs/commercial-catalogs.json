@@ -1,0 +1,367 @@
+{
+  "source": "SUNAT reglas-validacion-cpe-2026-08-26.xlsx, Catálogos 08/09/10/54/59",
+  "catalogs": {
+    "54": [
+      {
+        "code": "001",
+        "description": "Azúcar y melaza de caña"
+      },
+      {
+        "code": "002",
+        "description": "Arroz"
+      },
+      {
+        "code": "003",
+        "description": "Alcohol etílico"
+      },
+      {
+        "code": "004",
+        "description": "Recursos hidrobiológicos"
+      },
+      {
+        "code": "005",
+        "description": "Maíz amarillo duro"
+      },
+      {
+        "code": "007",
+        "description": "Caña de azúcar"
+      },
+      {
+        "code": "008",
+        "description": "Madera"
+      },
+      {
+        "code": "009",
+        "description": "Arena y piedra."
+      },
+      {
+        "code": "010",
+        "description": "Residuos, subproductos, desechos, recortes y desperdicios"
+      },
+      {
+        "code": "011",
+        "description": "Bienes gravados con el IGV, o renuncia a la exoneración"
+      },
+      {
+        "code": "012",
+        "description": "Intermediación laboral y tercerización"
+      },
+      {
+        "code": "013",
+        "description": "Animales vivos"
+      },
+      {
+        "code": "014",
+        "description": "Carnes y despojos comestibles"
+      },
+      {
+        "code": "015",
+        "description": "Abonos, cueros y pieles de origen animal"
+      },
+      {
+        "code": "016",
+        "description": "Aceite de pescado"
+      },
+      {
+        "code": "017",
+        "description": "Harina, polvo y “pellets” de pescado, crustáceos, moluscos y demás invertebrados acuáticos"
+      },
+      {
+        "code": "019",
+        "description": "Arrendamiento de bienes muebles"
+      },
+      {
+        "code": "020",
+        "description": "Mantenimiento y reparación de bienes muebles"
+      },
+      {
+        "code": "021",
+        "description": "Movimiento de carga"
+      },
+      {
+        "code": "022",
+        "description": "Otros servicios empresariales"
+      },
+      {
+        "code": "023",
+        "description": "Leche"
+      },
+      {
+        "code": "024",
+        "description": "Comisión mercantil"
+      },
+      {
+        "code": "025",
+        "description": "Fabricación de bienes por encargo"
+      },
+      {
+        "code": "026",
+        "description": "Servicio de transporte de personas"
+      },
+      {
+        "code": "027",
+        "description": "Servicio de transporte de carga"
+      },
+      {
+        "code": "028",
+        "description": "Transporte de pasajeros"
+      },
+      {
+        "code": "030",
+        "description": "Contratos de construcción"
+      },
+      {
+        "code": "031",
+        "description": "Oro gravado con el IGV"
+      },
+      {
+        "code": "032",
+        "description": "Paprika y otros frutos de los generos capsicum o pimienta"
+      },
+      {
+        "code": "034",
+        "description": "Minerales metálicos no auríferos"
+      },
+      {
+        "code": "035",
+        "description": "Bienes exonerados del IGV"
+      },
+      {
+        "code": "036",
+        "description": "Oro y demás minerales metálicos exonerados del IGV"
+      },
+      {
+        "code": "037",
+        "description": "Demás servicios gravados con el IGV"
+      },
+      {
+        "code": "038",
+        "description": "Espectáculos públicos gravados con el IGV"
+      },
+      {
+        "code": "039",
+        "description": "Minerales no metálicos"
+      },
+      {
+        "code": "040",
+        "description": "Bien inmueble gravado con IGV"
+      },
+      {
+        "code": "041",
+        "description": "Plomo"
+      },
+      {
+        "code": "042",
+        "description": "Ladrillos de construcción, bovedillas, cubrevigas y artículos similares, de cerámica"
+      },
+      {
+        "code": "043",
+        "description": "Estructuras metálicas para la construcción"
+      },
+      {
+        "code": "044",
+        "description": "Servicio de beneficio de minerales metálicos gravado con el IGV"
+      },
+      {
+        "code": "045",
+        "description": "Minerales de oro y sus concentrados gravados con el IGV "
+      },
+      {
+        "code": "046",
+        "description": "Cobre gravado con el IGV"
+      },
+      {
+        "code": "047",
+        "description": "Plata gravada con el IGV"
+      },
+      {
+        "code": "099",
+        "description": "Ley 30737"
+      }
+    ],
+    "59": [
+      {
+        "code": "001",
+        "description": "Depósito en cuenta"
+      },
+      {
+        "code": "002",
+        "description": "Giro"
+      },
+      {
+        "code": "003",
+        "description": "Transferencia de fondos"
+      },
+      {
+        "code": "004",
+        "description": "Orden de pago"
+      },
+      {
+        "code": "005",
+        "description": "Tarjeta de débito"
+      },
+      {
+        "code": "006",
+        "description": "Tarjeta de crédito emitida en el país por una empresa del sistema financiero "
+      },
+      {
+        "code": "007",
+        "description": "Cheques con la cláusula de \"NO NEGOCIABLE\", \"INTRANSFERIBLES\", \"NO A LA ORDEN\" u otra equivalente, a que se refiere el inciso g) del artículo 5° de la ley"
+      },
+      {
+        "code": "008",
+        "description": "Efectivo, por operaciones en las que no existe obligación de utilizar medio de pago"
+      },
+      {
+        "code": "009",
+        "description": "Efectivo, en los demás casos"
+      },
+      {
+        "code": "010",
+        "description": "Medios de pago usados en comercio exterior "
+      },
+      {
+        "code": "011",
+        "description": "Documentos emitidos por las EDPYMES y las cooperativas de ahorro y crédito no autorizadas a captar depósitos del público"
+      },
+      {
+        "code": "012",
+        "description": "Tarjeta de crédito emitida en el país o en el exterior por una empresa no perteneciente al sistema financiero, cuyo objeto principal sea la emisión y administración de tarjetas de crédito"
+      },
+      {
+        "code": "013",
+        "description": "Tarjetas de crédito emitidas en el exterior por empresas bancarias o financieras no domiciliadas"
+      },
+      {
+        "code": "101",
+        "description": "Transferencias – Comercio exterior"
+      },
+      {
+        "code": "102",
+        "description": "Cheques bancarios - Comercio exterior"
+      },
+      {
+        "code": "103",
+        "description": "Orden de pago simple - Comercio exterior"
+      },
+      {
+        "code": "104",
+        "description": "Orden de pago documentario - Comercio exterior"
+      },
+      {
+        "code": "105",
+        "description": "Remesa simple - Comercio exterior"
+      },
+      {
+        "code": "106",
+        "description": "Remesa documentaria - Comercio exterior"
+      },
+      {
+        "code": "107",
+        "description": "Carta de crédito simple - Comercio exterior"
+      },
+      {
+        "code": "108",
+        "description": "Carta de crédito documentario - Comercio exterior"
+      },
+      {
+        "code": "999",
+        "description": "Otros medios de pago"
+      }
+    ],
+    "08": [
+      {
+        "code": "01",
+        "description": "Sistema al valor (Apéndice IV, lit. A – T.U.O IGV e ISC)"
+      },
+      {
+        "code": "02",
+        "description": "Aplicación del Monto Fijo ( Sistema específico, bienes en el apéndice III, Apéndice IV, lit. B – T.U.O IGV e ISC)"
+      },
+      {
+        "code": "03",
+        "description": "Sistema de Precios de Venta al Público (Apéndice IV, lit. C – T.U.O IGV e ISC)"
+      }
+    ],
+    "09": [
+      {
+        "code": "01",
+        "description": "Anulación de la operación"
+      },
+      {
+        "code": "02",
+        "description": "Anulación por error en el RUC"
+      },
+      {
+        "code": "03",
+        "description": "Corrección por error en la descripción o atención de reclamo respecto de bienes adquiridos o servicios prestados\nCorrección por error en la descripción y/o código de producto SUNAT"
+      },
+      {
+        "code": "04",
+        "description": "Descuento global"
+      },
+      {
+        "code": "05",
+        "description": "Descuento por ítem"
+      },
+      {
+        "code": "06",
+        "description": "Devolución total"
+      },
+      {
+        "code": "07",
+        "description": "Devolución por ítem"
+      },
+      {
+        "code": "08",
+        "description": "Bonificación"
+      },
+      {
+        "code": "09",
+        "description": "Disminución en el valor"
+      },
+      {
+        "code": "10",
+        "description": "Otros Conceptos "
+      },
+      {
+        "code": "11",
+        "description": "Ajustes de operaciones de exportación"
+      },
+      {
+        "code": "12",
+        "description": "Ajustes afectos al IVAP"
+      },
+      {
+        "code": "13",
+        "description": "Corrección o modificación del monto neto pendiente de pago y/o la(s) fechas(s) de vencimiento del pago único o de las cuotas y/o los montos correspondientes a cada cuota, de ser el caso"
+      }
+    ],
+    "10": [
+      {
+        "code": "01",
+        "description": "Intereses por mora"
+      },
+      {
+        "code": "02",
+        "description": "Aumento en el valor"
+      },
+      {
+        "code": "03",
+        "description": "Penalidades/ otros conceptos "
+      },
+      {
+        "code": "11",
+        "description": "Ajustes de operaciones de exportación"
+      },
+      {
+        "code": "12",
+        "description": "Ajustes afectos al IVAP"
+      },
+      {
+        "code": "13",
+        "description": "Penalidades"
+      }
+    ]
+  }
+}

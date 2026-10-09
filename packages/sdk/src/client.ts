@@ -1,5 +1,13 @@
 import { isRetryable, mapError, type FactosysErrorBody } from "./errors";
-import type { CompanyLogoResponse, FactosysClientOptions, RequestOptions } from "./types";
+import type {
+  CompanyLogoResponse,
+  FactosysClientOptions,
+  RequestOptions,
+  InvoiceInput,
+  ReceiptInput,
+  NoteInput,
+  CpeDocument,
+} from "./types";
 
 export class FactosysClient {
   readonly baseUrl: string;
@@ -29,7 +37,6 @@ export class FactosysClient {
       : `${this.baseUrl.replace(/\/v1$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
 
     let attempt = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       attempt += 1;
       const controller = new AbortController();
@@ -123,8 +130,8 @@ export class FactosysClient {
   };
 
   invoices = {
-    create: (body: unknown, idempotencyKey: string) =>
-      this.request("/v1/invoices", {
+    create: (body: InvoiceInput, idempotencyKey: string) =>
+      this.request<CpeDocument>("/v1/invoices", {
         method: "POST",
         body,
         idempotencyKey,
@@ -132,14 +139,22 @@ export class FactosysClient {
   };
 
   receipts = {
-    create: (body: unknown, idempotencyKey: string) =>
-      this.request("/v1/receipts", {
+    create: (body: ReceiptInput, idempotencyKey: string) =>
+      this.request<CpeDocument>("/v1/receipts", {
         method: "POST",
         body,
         idempotencyKey,
       }),
   };
 
+  creditNotes = {
+    create: (body: NoteInput, idempotencyKey: string) =>
+      this.request<CpeDocument>("/v1/credit-notes", { method: "POST", body, idempotencyKey }),
+  };
+  debitNotes = {
+    create: (body: NoteInput, idempotencyKey: string) =>
+      this.request<CpeDocument>("/v1/debit-notes", { method: "POST", body, idempotencyKey }),
+  };
   documents = {
     get: (id: string) => this.request(`/v1/documents/${id}`),
     getXml: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/xml`),
@@ -165,7 +180,7 @@ export class FactosysClient {
    * Create invoice and poll until terminal status or timeout.
    */
   async createInvoiceAndWait(
-    body: unknown,
+    body: InvoiceInput,
     opts: { idempotencyKey: string; timeoutMs?: number; pollMs?: number },
   ): Promise<Record<string, unknown>> {
     const created = (await this.invoices.create(body, opts.idempotencyKey)) as {

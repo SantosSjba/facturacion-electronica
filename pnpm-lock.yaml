@@ -317,6 +317,10 @@ importers:
         version: 1.63.0
 
   packages/sdk:
+    dependencies:
+      '@factosys/sunat-ubl':
+        specifier: workspace:*
+        version: link:../sunat-ubl
     devDependencies:
       vitest:
         specifier: ^5.0.1

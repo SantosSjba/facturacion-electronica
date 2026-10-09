@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { commercialFields } from "./commercial-fields";
 
 import { ublValidationError } from "../errors";
 import { cpeOptionalFields, cpeTotalsInputSchema } from "./cpe-fields";
@@ -31,6 +32,7 @@ export const noteCanonicalSchema = z
     number: z.number().int().positive(),
     issue_date: z.string().min(10),
     ...cpeOptionalFields,
+    ...commercialFields,
     currency: z.string().length(3),
     note_type: z.string().min(1),
     reason: z.string().min(1),
@@ -69,6 +71,7 @@ export const noteFixtureRequestSchema = z.object({
   number: z.number().int().positive().optional(),
   issue_date: z.string().min(10),
   ...cpeOptionalFields,
+  ...commercialFields,
   currency: z.string().length(3),
   note_type: z.string().min(1),
   reason: z.string().min(1),

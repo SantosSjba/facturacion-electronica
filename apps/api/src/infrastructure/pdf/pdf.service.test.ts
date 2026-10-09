@@ -1,3 +1,4 @@
+import { phase1Scenarios } from "../../../../../packages/sunat-ubl/test-fixtures/commercial-scenarios";
 import { ConfigService } from "@nestjs/config";
 import { FakePdfRenderer } from "@factosys/pdf-ri";
 import { AppError } from "@factosys/shared";
@@ -170,3 +171,53 @@ function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error("Missing test fixture value");
   return value;
 }
+
+describe("commercial PDF snapshot", () => {
+  it.each(phase1Scenarios().map((request, index) => ({ request, index })))(
+    "prints commercial fiscal scenario $index",
+    async ({ request, index }) => {
+      const { service, documents } = fixture(false);
+      const canonical = hydrateFromFixtureRequest(request);
+      documents.getById.mockResolvedValue({
+        companyId: "company",
+        documentType: "01",
+        totals: canonical.totals,
+        payload: { _canonical: canonical },
+      });
+      const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+      await service.renderAndStore("org", "document");
+      const input = render.mock.calls[0]?.[0];
+      if (!input) throw new Error("Missing render input");
+      expect(input.totals.total).toBe(canonical.totals.payable_amount.toFixed(2));
+      expect(input.currency).toBe(request.currency);
+      if (index === 1) {
+        expect(input.lines[0]?.amount).toBe("108.20");
+        expect(input.totals).toMatchObject({
+          gravado: "85.00",
+          igv: "15.30",
+          charges: "5.00",
+          total: "105.30",
+        });
+      }
+      if (index === 0) {
+        expect(input.commercialSections).toContainEqual({
+          title: "Forma de pago",
+          entries: [
+            { label: "Condición", value: "Crédito" },
+            { label: "Saldo pendiente", value: "118.00 PEN" },
+            { label: "Cuota 1", value: "2026-11-08 — 50.00 PEN" },
+            { label: "Cuota 2", value: "2026-12-08 — 68.00 PEN" },
+          ],
+        });
+      }
+      if (request.prepayments?.length)
+        expect(input.commercialSections?.some((s) => s.title === "Anticipos")).toBe(true);
+      if (request.detraction)
+        expect(input.commercialSections?.some((s) => s.title === "Detracción")).toBe(true);
+      if (request.exchange_rate)
+        expect(input.commercialSections?.some((s) => s.title === "Tipo de cambio")).toBe(true);
+      if (request.lines[0]?.cargo_transport)
+        expect(input.lines[0]?.details?.join(" ")).toContain("200.00 PEN");
+    },
+  );
+});

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   cpeOptionalFields,
+  commercialFields,
   cpeTotalsInputSchema,
   invoiceLineInputSchema,
   partyCanonicalSchema,
@@ -16,6 +17,7 @@ export const creditNoteCreateSchema = z
     number: z.number().int().positive().optional(),
     issue_date: z.iso.date(),
     ...cpeOptionalFields,
+    ...commercialFields,
     currency: z.string().length(3),
     note_type: z.string().min(1),
     reason: z.string().min(1),
