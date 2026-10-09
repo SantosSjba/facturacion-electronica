@@ -101,7 +101,7 @@ export function Dialog({
     <div className="modal fixed inset-0 z-999999 flex items-center justify-center overflow-hidden p-4 sm:p-6">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gray-400/50 backdrop-blur-[32px]"
+        className="absolute inset-0 bg-gray-400/50 backdrop-blur-[2px]"
         onClick={closeOnBackdrop ? onClose : undefined}
       />
       <div
