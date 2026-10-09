@@ -30,6 +30,7 @@ import { toast } from "@/shared/ui/toaster";
 
 import { putSolCredentials } from "../../api";
 import type { Company } from "../../types";
+import { solUsernameForApi, solUsernameForInput } from "../../sol-username";
 
 export function SolTab() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +47,11 @@ export function SolTab() {
   const summary = company.credentials_summary?.sol;
 
   const mutation = useMutation({
-    mutationFn: () => putSolCredentials(id ?? "", { username, password }),
+    mutationFn: () =>
+      putSolCredentials(id ?? "", {
+        username: solUsernameForApi(company.ruc, username),
+        password,
+      }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["company", id] });
       await qc.invalidateQueries({ queryKey: ["companies"] });
@@ -68,7 +73,7 @@ export function SolTab() {
   }
 
   function handleOpen() {
-    setUsername(summary?.username ?? "");
+    setUsername(solUsernameForInput(company.ruc, summary?.username));
     setPassword("");
     setError(null);
     setOpen(true);
@@ -134,7 +139,7 @@ export function SolTab() {
         >
           <DialogHeader
             title="Configurar clave SOL"
-            description="Usuario y contraseña secundarios SUNAT. La contraseña es write-only."
+            description="Usuario y contraseña secundarios SUNAT. La contraseña se guarda de forma cifrada y no se muestra después."
             onClose={handleClose}
           />
           <DialogBody className="space-y-4">
@@ -144,12 +149,16 @@ export function SolTab() {
                 id="sol-user"
                 required
                 autoComplete="username"
+                aria-describedby="sol-user-help"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
+              <p id="sol-user-help" className="text-sm text-muted-foreground">
+                Ingresa el usuario secundario. Añadiremos automáticamente el RUC {company.ruc}.
+              </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="sol-pass">Password (write-only)</Label>
+              <Label htmlFor="sol-pass">Contraseña SOL</Label>
               <Input
                 id="sol-pass"
                 type="password"

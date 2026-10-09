@@ -36,18 +36,32 @@ const messagesByCode: Record<string, string> = {
 function spanishApiMessage(status: number, body: ApiErrorBody): string {
   // Specific authentication failures must remain useful without exposing account existence.
   if (body.message === "Invalid credentials") return "El correo o la contraseña son incorrectos.";
-  if (body.message === "Company plan limit reached") return "Alcanzaste el límite de empresas de tu plan. Solicita un cambio de plan para crear otra empresa.";
-  if (body.message === "Invalid RUC") return "El RUC ingresado no es válido. Revisa sus 11 dígitos.";
-  if (body.message === "Company already exists for this RUC and environment") return "Ya existe una empresa con este RUC en el ambiente seleccionado.";
-  if (body.message === "Plan change request already resolved") return "Esta solicitud ya fue resuelta. Actualiza la lista para ver el resultado.";
-  if (body.message === "Requested plan not found or inactive") return "El plan solicitado ya no está disponible. Revisa el catálogo antes de continuar.";
-  if (body.message === "User plan limit reached") return "Alcanzaste el límite de usuarios de tu plan. Solicita un cambio de plan para crear otro usuario.";
-  if (body.message === "API key plan limit reached") return "Alcanzaste el límite de API keys de tu plan. Revoca una clave o solicita un cambio de plan.";
-  if (body.message === "Monthly document plan limit reached") return "Alcanzaste el límite mensual de documentos. Solicita un cambio de plan o espera al próximo mes.";
-  if (body.message === "User email already exists in organization") return "Ya existe un usuario con ese correo en esta organización.";
-  if (body.message === "Cannot remove or disable the last owner") return "La organización debe conservar al menos un propietario activo.";
-  if (body.message === "Only owner can assign the owner role") return "Solo el propietario puede asignar el rol de propietario.";
-  if (status === 0) return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
+  if (body.message === "Company plan limit reached")
+    return "Alcanzaste el límite de empresas de tu plan. Solicita un cambio de plan para crear otra empresa.";
+  if (body.message === "Invalid RUC")
+    return "El RUC ingresado no es válido. Revisa sus 11 dígitos.";
+  if (body.message === "SOL username must include this company's RUC and user")
+    return "El usuario SOL debe corresponder al RUC de esta empresa e incluir el usuario secundario.";
+  if (body.message === "Company already exists for this RUC and environment")
+    return "Ya existe una empresa con este RUC en el ambiente seleccionado.";
+  if (body.message === "Plan change request already resolved")
+    return "Esta solicitud ya fue resuelta. Actualiza la lista para ver el resultado.";
+  if (body.message === "Requested plan not found or inactive")
+    return "El plan solicitado ya no está disponible. Revisa el catálogo antes de continuar.";
+  if (body.message === "User plan limit reached")
+    return "Alcanzaste el límite de usuarios de tu plan. Solicita un cambio de plan para crear otro usuario.";
+  if (body.message === "API key plan limit reached")
+    return "Alcanzaste el límite de API keys de tu plan. Revoca una clave o solicita un cambio de plan.";
+  if (body.message === "Monthly document plan limit reached")
+    return "Alcanzaste el límite mensual de documentos. Solicita un cambio de plan o espera al próximo mes.";
+  if (body.message === "User email already exists in organization")
+    return "Ya existe un usuario con ese correo en esta organización.";
+  if (body.message === "Cannot remove or disable the last owner")
+    return "La organización debe conservar al menos un propietario activo.";
+  if (body.message === "Only owner can assign the owner role")
+    return "Solo el propietario puede asignar el rol de propietario.";
+  if (status === 0)
+    return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
   const codeMessage = body.code ? messagesByCode[body.code] : undefined;
   if (codeMessage) return codeMessage;
   const statusMessages: Record<number, string | undefined> = {
@@ -59,7 +73,9 @@ function spanishApiMessage(status: number, body: ApiErrorBody): string {
     422: messagesByCode.FACTOSYS_VALIDATION,
     429: messagesByCode.FACTOSYS_RATE_LIMITED,
   };
-  return statusMessages[status] ?? "No se pudo completar la solicitud. Inténtalo de nuevo más tarde.";
+  return (
+    statusMessages[status] ?? "No se pudo completar la solicitud. Inténtalo de nuevo más tarde."
+  );
 }
 
 export class ApiError extends Error {
@@ -85,7 +101,10 @@ export class ApiError extends Error {
   }
 }
 
-export function getErrorMessage(error: unknown, fallback = "No se pudo completar la acción."): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback = "No se pudo completar la acción.",
+): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof TypeError) {
     return "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";

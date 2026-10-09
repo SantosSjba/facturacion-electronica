@@ -54,9 +54,13 @@ export class CredentialsService {
   ): Promise<void> {
     const company = await this.companyService.requireCompany(org, companyId);
     if (!input.username.startsWith(company.ruc) || input.username.length <= 11)
-      throw AppError.validation("SOL username must include this company's RUC and user", [], {
-        httpStatus: 422,
-      });
+      throw AppError.validation(
+        "SOL username must include this company's RUC and user",
+        [{ path: "username", issue: "Must include this company's RUC followed by the SOL user" }],
+        {
+          httpStatus: 422,
+        },
+      );
     await this.rotate(org, companyId, "sol", "active", { sol_username: input.username }, input);
     await this.redis?.del("gre:oauth:" + companyId);
   }
