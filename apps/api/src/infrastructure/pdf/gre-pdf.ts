@@ -24,8 +24,8 @@ export function greQrUrl(doc: Doc): string {
   return data.qr_url;
 }
 
-export function grePdfInput(doc: Doc, logoDataUrl?: string): PdfRenderInput {
-  const qr = greQrUrl(doc);
+export function grePdfInput(doc: Doc, logoDataUrl?: string, preview = false): PdfRenderInput {
+  const qr = preview ? "" : greQrUrl(doc);
   const payload = doc.payload as {
     _canonical?: unknown;
     _print?: { format: PdfFormat; template_version: string };

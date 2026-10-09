@@ -80,6 +80,44 @@ export interface DocumentListResult {
 
 @Injectable()
 export class DocumentsService {
+  async findByIdentifiers(
+    org: string,
+    companyId: string,
+    type: string,
+    serie: string,
+    number: number,
+  ) {
+    const [doc] = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, org),
+          eq(documents.companyId, companyId),
+          eq(documents.documentType, type),
+          eq(documents.serie, serie.toUpperCase()),
+          eq(documents.number, number),
+        ),
+      )
+      .limit(1);
+    if (!doc) throw AppError.notFound("Document not found");
+    return this.getDetails(org, doc.id);
+  }
+  async findByTicket(org: string, companyId: string, ticket: string) {
+    const [doc] = await this.db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, org),
+          eq(documents.companyId, companyId),
+          eq(documents.sunatTicket, ticket),
+        ),
+      )
+      .limit(1);
+    if (!doc) throw AppError.notFound("Document not found");
+    return this.getDetails(org, doc.id);
+  }
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly storage: ObjectStorageService,

@@ -6,6 +6,7 @@ import {
   appendCommercialDelivery,
 } from "./commercial-xml";
 import { create } from "xmlbuilder2";
+import { appendExtendedPartiesAndDelivery } from "./extended-commercial-xml";
 import {
   appendCpeParty,
   appendDocumentTaxes,
@@ -118,6 +119,10 @@ function buildNoteXml(
   appendCommercialReferences(root, canonical);
   appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
   appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
+  appendExtendedPartiesAndDelivery(root, canonical, () => {
+    if (canonical.document_type === "08")
+      for (const a of canonical.totals.computed_adjustments) appendAdjustment(root, a, cur);
+  });
   appendCommercialPayments(root, canonical);
   appendTaxAndMonetary(
     root,

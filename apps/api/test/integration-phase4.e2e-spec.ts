@@ -62,6 +62,7 @@ import type { ApiKeyService } from "../src/infrastructure/api-keys/api-key.servi
 import type { RateLimitService } from "../src/infrastructure/redis/rate-limit.service";
 import type { AuthService } from "../src/infrastructure/auth/auth.service";
 import { invoiceCreateSchema } from "../src/interfaces/http/dto/invoice-create.schema";
+import { DocumentStatusController } from "../src/interfaces/http/v1/document-status.controller";
 import { enrichInvoicingRequestBodies } from "../src/infrastructure/openapi/enrich-invoicing-bodies";
 
 describe("phase 4 isolated onboarding, recovery, delivery and recipient access", () => {
@@ -142,6 +143,7 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     const access = new DocumentAccessService(db, docs, pdf);
     const module = await Test.createTestingModule({
       controllers: [
+        DocumentStatusController,
         IntegratorCompaniesController,
         DocumentIntegrationController,
         SharedDocumentsController,
@@ -263,7 +265,8 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     await api("patch", `/v1/companies/${companyId}/series/${series.id}`)
       .send({ is_active: false })
       .expect(200);
-    await api("delete", `/v1/companies/${companyId}`).expect(404);
+    await api("delete", `/v1/companies/${companyId}`).expect(204);
+    await api("patch", `/v1/companies/${companyId}`).send({ status: "active" }).expect(200);
   });
   it("rotates encrypted credentials atomically and returns no secret, then revokes", async () => {
     for (const password of ["first-fixture-secret", "second-fixture-secret"]) {
@@ -577,5 +580,73 @@ describe("phase 4 isolated onboarding, recovery, delivery and recipient access",
     const result = (await request(app.getHttpServer()).get("/v1/capabilities").expect(200)).body;
     expect(result.unsupported).toContain("GRE_void_REST");
     expect(result.modes.email).toBe("log");
+  });
+  it("looks up scoped identifiers and tickets and recovers CDR without allocating a number", async () => {
+    const id = await makeDoc("failed");
+    const row = await docs.getById(org, id);
+    const query = new URLSearchParams({
+      company_id: companyId,
+      tipo: "01",
+      serie: row.serie ?? "",
+      numero: String(row.number),
+    });
+    expect((await api("get", `/v1/document-status?${query}`, "reader").expect(200)).body.id).toBe(
+      id,
+    );
+    await api("get", `/v1/document-status?${query}`, "foreign").expect(404);
+    await api(
+      "get",
+      `/v1/document-status?${new URLSearchParams({ company_id: productionCompany, tipo: "01", serie: row.serie ?? "", numero: String(row.number) })}`,
+      "sandbox",
+    ).expect(403);
+    const before = await db
+      .select()
+      .from(documentSeries)
+      .where(eq(documentSeries.companyId, companyId));
+    await api("post", "/v1/document-status/recover-cdr", "reader")
+      .send(Object.fromEntries(query))
+      .expect(403);
+    const recovered = await api("post", "/v1/document-status/recover-cdr")
+      .send(Object.fromEntries(query))
+      .expect(200);
+    expect(recovered.body.id).toBe(id);
+    expect(recovered.body.status).toBe("accepted");
+    expect(
+      await db.select().from(documentSeries).where(eq(documentSeries.companyId, companyId)),
+    ).toEqual(before);
+    await db
+      .update(documents)
+      .set({ sunatTicket: "competition-ticket" })
+      .where(eq(documents.id, id));
+    const ticket = new URLSearchParams({ company_id: companyId, ticket: "competition-ticket" });
+    expect(
+      (await api("get", `/v1/document-status/ticket?${ticket}`, "reader").expect(200)).body.id,
+    ).toBe(id);
+    await api("get", `/v1/document-status/ticket?${ticket}`, "foreign").expect(404);
+  });
+  it("deletes empty companies but preserves fiscal history when disabling an issuer", async () => {
+    const id = await makeDoc();
+    await api("delete", `/v1/companies/${companyId}?permanent=true`, "reader").expect(403);
+    await api("delete", `/v1/companies/${companyId}?permanent=true`, "foreign").expect(404);
+    await api("delete", `/v1/companies/${companyId}?permanent=true`).expect(409);
+    const empty = newId();
+    await db.insert(companies).values({
+      id: empty,
+      organizationId: org,
+      ruc: "20601234568",
+      legalName: "Empty deletion fixture",
+      environment: "sandbox",
+    });
+    await api("delete", `/v1/companies/${empty}?permanent=true`).expect(204);
+    expect(await db.select().from(companies).where(eq(companies.id, empty))).toEqual([]);
+    expect(
+      (await db.select().from(auditEvents).where(eq(auditEvents.resourceId, empty)))[0]?.action,
+    ).toBe("company.deleted");
+    await api("delete", `/v1/companies/${companyId}`).expect(204);
+    expect((await db.select().from(companies).where(eq(companies.id, companyId)))[0]?.status).toBe(
+      "disabled",
+    );
+    expect((await docs.getById(org, id)).id).toBe(id);
+    await db.update(companies).set({ status: "active" }).where(eq(companies.id, companyId));
   });
 });

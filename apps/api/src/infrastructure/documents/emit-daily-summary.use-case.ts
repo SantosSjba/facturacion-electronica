@@ -114,6 +114,7 @@ export class EmitDailySummaryUseCase {
           customer: l.customer,
           totals: l.totals,
           affected_document: l.affectedDocument,
+          perception: l.perception,
         })),
       };
       const { xml } = new XmlSummaryDocumentsBuilder().build(canonical);

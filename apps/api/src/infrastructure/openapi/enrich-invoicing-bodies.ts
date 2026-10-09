@@ -47,7 +47,7 @@ const validationCpeSchema = z.object({
 });
 
 function zodToOpenApiSchema(schema: z.ZodType): Record<string, unknown> {
-  const json = z.toJSONSchema(schema) as Record<string, unknown>;
+  const json = z.toJSONSchema(schema, { io: "input" }) as Record<string, unknown>;
   delete json.$schema;
   return json;
 }
@@ -132,7 +132,7 @@ const REQUEST_BODIES: {
     method: "post" as const,
     schema: previewCreateSchema,
     description:
-      "Vista previa CPE local sin certificado, envío ni reserva de correlativos; número 1 referencial. Scope documents:write; 500 líneas / 200 KB máximo. PDF marcado sin QR fiscal.",
+      "Vista previa local 01/03/07/08/09/31/20/40/RC/RA/RR sin certificado, envío ni reserva de correlativos; número 1 referencial. Scope documents:write; 500 líneas / 200 KB máximo. PDF marcado sin QR fiscal.",
   })),
   {
     path: "/v1/invoices",

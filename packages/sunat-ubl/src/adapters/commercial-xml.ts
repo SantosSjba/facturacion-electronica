@@ -56,6 +56,11 @@ export function appendCommercialReferences(root: Node, cpe: Cpe): void {
       .ele("cbc:ID", { schemeID: "6" })
       .txt(advance.issuer_ruc);
   }
+  for (const ref of cpe.related_documents ?? []) {
+    const node = root.ele("cac:AdditionalDocumentReference");
+    node.ele("cbc:ID").txt(ref.number);
+    node.ele("cbc:DocumentTypeCode").txt(ref.document_type);
+  }
 }
 export function appendCommercialPayments(root: Node, cpe: Cpe): void {
   const d = cpe.detraction;
@@ -104,7 +109,8 @@ export function appendCommercialPayments(root: Node, cpe: Cpe): void {
     node.ele("cbc:PaidAmount", { currencyID: cpe.currency }).txt(formatMoney(p.amount));
     node.ele("cbc:PaidDate").txt(p.paid_date);
   }
-  for (const a of cpe.totals.computed_adjustments) appendAdjustment(root, a, cpe.currency);
+  if (cpe.document_type !== "08")
+    for (const a of cpe.totals.computed_adjustments) appendAdjustment(root, a, cpe.currency);
   const rate = cpe.exchange_rate;
   if (rate) {
     const node = root.ele("cac:TaxExchangeRate");
@@ -128,6 +134,7 @@ export function appendMonetary(
     ["AllowanceTotalAmount", "allowance_total_amount"],
     ["ChargeTotalAmount", "charge_total_amount"],
     ["PrepaidAmount", "prepaid_amount"],
+    ["PayableRoundingAmount", "rounding_amount"],
     ["PayableAmount", "payable_amount"],
   ] as const) {
     if (
@@ -135,7 +142,10 @@ export function appendMonetary(
       !totals[key]
     )
       continue;
-    node.ele(`cbc:${name}`, { currencyID: currency }).txt(formatMoney(totals[key]));
+    const value = totals[key] ?? 0;
+    node
+      .ele(`cbc:${name}`, { currencyID: currency })
+      .txt(value < 0 ? `-${formatMoney(Math.abs(value))}` : formatMoney(value));
   }
 }
 export function appendCommercialDelivery(node: Node, line: InvoiceLineCanonical): void {

@@ -75,6 +75,8 @@ export const invoiceLineCanonicalSchema = invoiceLineInputSchema.extend({
 export type InvoiceLineCanonical = z.infer<typeof invoiceLineCanonicalSchema>;
 
 export const invoiceTotalsSchema = z.object({
+  rounding_amount: z.number().optional(),
+  perception_amount: z.number().optional(),
   line_extension_amount: z.number(),
   tax_amount: z.number(),
   tax_inclusive_amount: z.number(),

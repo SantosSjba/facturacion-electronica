@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extendedCommercialFields, extendedLineFields } from "./extended-commercial-fields";
 
 const money = z.number().nonnegative();
 const amount = z.number().positive();
@@ -32,7 +33,24 @@ export const paymentMeansSchema = z
   .strict();
 export const adjustmentSchema = z
   .object({
-    code: z.enum(["00", "01", "02", "03", "04", "05", "06", "20", "46", "47", "48", "49", "50"]),
+    code: z.enum([
+      "00",
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+      "20",
+      "46",
+      "47",
+      "48",
+      "49",
+      "50",
+      "51",
+      "52",
+      "53",
+    ]),
     reason: code.optional(),
     base_amount: amount,
     amount,
@@ -142,6 +160,7 @@ export const exchangeRateSchema = z
   })
   .strict();
 export const commercialFields = {
+  ...extendedCommercialFields,
   payment_terms: paymentTermsSchema.optional(),
   payment_means: z.array(paymentMeansSchema).optional(),
   adjustments: z.array(adjustmentSchema).optional(),
@@ -153,6 +172,7 @@ export const commercialFields = {
     .optional(),
 };
 export const commercialLineFields = {
+  ...extendedLineFields,
   adjustments: z.array(adjustmentSchema).optional(),
   isc: iscSchema.optional(),
   icbper: icbperSchema.optional(),

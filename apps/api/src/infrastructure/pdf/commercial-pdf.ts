@@ -6,6 +6,83 @@ export function commercialSections(snapshot?: Record<string, unknown>): Section[
   if (!snapshot) return [];
   const c = snapshot as unknown as InvoiceCanonical;
   const sections: Section[] = [];
+  if (c.seller)
+    sections.push({
+      title: "Vendedor",
+      entries: [
+        { label: c.seller.identity_number, value: c.seller.name },
+        ...Object.entries(c.seller.address ?? {}).map(([label, value]) => ({
+          label,
+          value: String(value),
+        })),
+      ],
+    });
+  if (c.delivery_address)
+    sections.push({
+      title: "Dirección de entrega",
+      entries: Object.entries(c.delivery_address).map(([label, value]) => ({
+        label,
+        value: String(value),
+      })),
+    });
+  if (c.related_documents?.length)
+    sections.push({
+      title: "Documentos relacionados",
+      entries: c.related_documents.map((r) => ({ label: r.document_type, value: r.number })),
+    });
+  if (c.sale_perception)
+    sections.push({
+      title: "Percepción de la venta",
+      entries: [
+        { label: "Régimen", value: c.sale_perception.regime },
+        { label: "Base", value: money(c.sale_perception.base_amount) },
+        { label: "Percepción", value: money(c.sale_perception.amount) },
+        { label: "Total incluido", value: money(c.sale_perception.total_amount) },
+      ],
+    });
+  if (c.rounding_amount)
+    sections.push({
+      title: "Redondeo",
+      entries: [{ label: "Importe", value: money(c.rounding_amount) }],
+    });
+  if (c.embedded_despatch)
+    sections.push({
+      title: "Datos informativos de transporte — requiere GRE",
+      entries: [
+        { label: "Partida", value: c.embedded_despatch.origin.address },
+        { label: "Ubigeo partida", value: c.embedded_despatch.origin.ubigeo },
+        {
+          label: "Establecimiento partida",
+          value: [
+            c.embedded_despatch.origin.establishment_ruc,
+            c.embedded_despatch.origin.establishment_code,
+          ]
+            .filter(Boolean)
+            .join(" / "),
+        },
+        { label: "Llegada", value: c.embedded_despatch.destination.address },
+        { label: "Ubigeo llegada", value: c.embedded_despatch.destination.ubigeo },
+        {
+          label: "Establecimiento llegada",
+          value: [
+            c.embedded_despatch.destination.establishment_ruc,
+            c.embedded_despatch.destination.establishment_code,
+          ]
+            .filter(Boolean)
+            .join(" / "),
+        },
+        { label: "Modalidad", value: c.embedded_despatch.transport_mode },
+        { label: "Placa", value: c.embedded_despatch.vehicle_plate },
+        {
+          label: "Peso",
+          value: `${c.embedded_despatch.gross_weight} ${c.embedded_despatch.weight_unit}`,
+        },
+        { label: "Transportista", value: c.embedded_despatch.carrier?.name ?? "Privado" },
+        { label: "Marca", value: c.embedded_despatch.vehicle_brand ?? "" },
+        { label: "Licencia", value: c.embedded_despatch.driver_license ?? "" },
+        { label: "Autorización", value: c.embedded_despatch.authorization ?? "" },
+      ],
+    });
   const terms = c.payment_terms;
   if (terms)
     sections.push({
@@ -90,6 +167,11 @@ export function commercialLineDetails(raw: Record<string, unknown>): string[] {
     (a) =>
       `Ajuste ${a.code}${a.reason ? ` (${a.reason})` : ""}: ${money(a.amount)}; base ${money(a.base_amount)}${a.factor ? `; factor ${a.factor}` : ""}`,
   );
+  if (l.gs1_product_code) details.push(`GTIN: ${l.gs1_product_code}`);
+  for (const a of l.attributes ?? [])
+    details.push(
+      `${a.code} ${a.name}: ${a.value}${a.start_date ? `; inicio ${a.start_date}` : ""}${a.end_date ? `; fin ${a.end_date}` : ""}${a.duration_days !== undefined ? `; duración ${a.duration_days} días` : ""}`,
+    );
   if (l.isc)
     details.push(
       `ISC sistema ${l.isc.system}${l.isc.system === "02" ? `; monto por unidad ${l.isc.per_unit_amount}` : `; tasa ${l.isc.percent}%`}${l.isc.system === "03" ? `; precio público ${l.isc.retail_unit_price}; factor ${l.isc.factor}` : ""}`,

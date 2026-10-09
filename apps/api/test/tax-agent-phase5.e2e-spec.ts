@@ -17,6 +17,7 @@ import {
   organizations,
   companies,
   documents,
+  documentSeries,
   documentArtifacts,
   type Db,
 } from "@factosys/db";
@@ -315,6 +316,30 @@ describe("phase 5 isolated tax-agent lifecycle", () => {
     await agents.process(job(original.id));
     const xml = (await docs.getArtifact(org, original.id, "xml_signed")).body;
     const oldPdf = await pdf.getOrRender(org, original.id);
+    const beforePreview = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.companyId, companyId));
+    const beforeSeries = await db
+      .select()
+      .from(documentSeries)
+      .where(eq(documentSeries.companyId, companyId));
+    const preview = await agents.previewReversion(org, {
+      company_id: companyId,
+      document_type: "40",
+      reference_date: "2026-10-08",
+      issue_date: "2026-10-08",
+      communicated_on: "2026-10-08",
+      documents: [{ document_id: original.id, reason: "Error de prueba" }],
+    });
+    expect(preview.id).toBe("RR-20261008-1");
+    expect(preview.lines.at(-1)?.serie).toBe("P001");
+    expect(await db.select().from(documents).where(eq(documents.companyId, companyId))).toEqual(
+      beforePreview,
+    );
+    expect(
+      await db.select().from(documentSeries).where(eq(documentSeries.companyId, companyId)),
+    ).toEqual(beforeSeries);
     const created = (await rr(original.id, newId(), "40").expect(201)).body;
     await rr(original.id, newId(), "40").expect(409);
     expect((await docs.getById(org, original.id)).status).toBe("accepted");

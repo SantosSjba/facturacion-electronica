@@ -5,6 +5,8 @@ import {
   companies,
   credentials,
   documentSeries,
+  documents,
+  webhookEndpoints,
   newId,
   organizations,
   type Db,
@@ -79,6 +81,40 @@ export interface CompanyPublic {
 @Injectable()
 export class CompaniesService {
   constructor(@Inject(DB) private readonly db: Db) {}
+
+  async remove(organizationId: string, companyId: string, permanent = false): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const [company] = await tx
+        .select()
+        .from(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.organizationId, organizationId)))
+        .for("update");
+      if (!company) throw AppError.notFound("Company not found");
+      if (!permanent) {
+        await tx
+          .update(companies)
+          .set({ status: "disabled", updatedAt: new Date() })
+          .where(eq(companies.id, companyId));
+        return;
+      }
+      const [document] = await tx
+        .select({ id: documents.id })
+        .from(documents)
+        .where(eq(documents.companyId, companyId))
+        .limit(1);
+      if (document) throw AppError.conflict("Company has fiscal history; use logical deletion");
+      const [webhook] = await tx
+        .select({ id: webhookEndpoints.id })
+        .from(webhookEndpoints)
+        .where(eq(webhookEndpoints.companyId, companyId))
+        .limit(1);
+      if (webhook)
+        throw AppError.conflict("Remove company webhook endpoints before permanent deletion");
+      await tx
+        .delete(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.organizationId, organizationId)));
+    });
+  }
 
   async create(
     organizationId: string,

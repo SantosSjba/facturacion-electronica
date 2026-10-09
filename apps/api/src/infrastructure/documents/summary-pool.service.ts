@@ -5,6 +5,7 @@ import { AppError } from "@factosys/shared";
 import { DocumentsService } from "./documents.service";
 
 export interface SummaryPoolLine {
+  perception?: InvoiceCanonical["sale_perception"];
   documentId: string;
   documentType: "03" | "07" | "08";
   serieNumber: string;
@@ -147,7 +148,13 @@ export class SummaryPoolService {
           percent: 18,
           amount: 0,
         });
-      const payable = Number(totals.payable_amount ?? totals.payable ?? lineExtension + igv) || 0;
+      const payable =
+        Number(
+          canonical?.sale_perception?.base_amount ??
+            totals.payable_amount ??
+            totals.payable ??
+            lineExtension + igv,
+        ) || 0;
 
       let affectedDocument: SummaryPoolLine["affectedDocument"];
       if (docType === "07" || docType === "08") {
@@ -185,6 +192,7 @@ export class SummaryPoolService {
           payable,
         },
         affectedDocument,
+        perception: canonical?.sale_perception,
       };
     });
   }

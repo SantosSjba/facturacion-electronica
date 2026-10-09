@@ -13,8 +13,12 @@ import { validateCpeInput, supplierParty } from "../documents/cpe-input";
 import { validatePrepayments } from "../documents/prepayment-validation";
 import { EmitCreditNoteUseCase, EmitDebitNoteUseCase } from "../documents/emit-note.use-case";
 import { DB } from "../persistence/db.tokens";
-import type { PreviewCreate } from "../../interfaces/http/dto/preview-create.schema";
+import type {
+  PreviewCreate,
+  AuxiliaryPreviewCreate,
+} from "../../interfaces/http/dto/preview-create.schema";
 import { PdfService } from "./pdf.service";
+import { AuxiliaryPreviewService } from "./auxiliary-preview.service";
 
 /** Read-only: no series allocator, signer, storage writes, queue or acceptance events. */
 @Injectable()
@@ -27,17 +31,42 @@ export class PreviewService {
     private readonly credit: EmitCreditNoteUseCase,
     private readonly debit: EmitDebitNoteUseCase,
     private readonly pdf: PdfService,
+    private readonly auxiliary?: AuxiliaryPreviewService,
   ) {}
 
   async build(organizationId: string, body: PreviewCreate) {
-    if (body.document.lines.length > 500 || Buffer.byteLength(JSON.stringify(body)) > 200_000)
+    const rows =
+      ("lines" in body.document ? body.document.lines : undefined) ??
+      ("documents" in body.document ? body.document.documents : undefined) ??
+      ("document_ids" in body.document ? body.document.document_ids : undefined) ??
+      [];
+    if (
+      (Array.isArray(rows) ? rows.length : 0) > 500 ||
+      Buffer.byteLength(JSON.stringify(body)) > 200_000
+    )
       throw AppError.validation("Preview supports up to 500 lines / 200 KB", [], {
         httpStatus: 422,
       });
+    if (
+      body.document_type !== "01" &&
+      body.document_type !== "03" &&
+      body.document_type !== "07" &&
+      body.document_type !== "08"
+    ) {
+      if (!this.auxiliary) throw AppError.internal("Auxiliary preview service unavailable");
+      return this.auxiliary.build(organizationId, body as AuxiliaryPreviewCreate);
+    }
     const company = await this.companies.requireActiveCompany(
       organizationId,
       body.document.company_id,
     );
+    if (
+      body.document.sale_perception &&
+      !company.taxAgentSettings.perception_regimes.includes(body.document.sale_perception.regime)
+    )
+      throw AppError.validation("Company not enabled for this sale-perception regime", [], {
+        httpStatus: 422,
+      });
     validateCpeInput(
       body.document,
       body.document_type === "07" || body.document_type === "08" ? body.document_type : undefined,
@@ -88,7 +117,7 @@ export class PreviewService {
       numbering_reserved: false,
       reference_number: 1,
       document_type: body.document_type,
-      totals: canonical.totals,
+      totals: canonical.totals ?? {},
       validation: "local_business_rules",
       sunat_acceptance: "not_checked",
     };
@@ -105,12 +134,13 @@ export class PreviewService {
     this.active.set(organizationId, count + 1);
     this.activeTotal++;
     try {
-      const { canonical } = await this.build(organizationId, body);
+      const { canonical, xml } = await this.build(organizationId, body);
       return await this.pdf.renderPreview(
         organizationId,
         body.document.company_id,
         canonical as unknown as Record<string, unknown>,
-        body.document.pdf_format,
+        "pdf_format" in body.document ? body.document.pdf_format : undefined,
+        xml,
       );
     } finally {
       const remaining = (this.active.get(organizationId) ?? 1) - 1;

@@ -285,11 +285,8 @@ export function computeAutoTotals(
   if (request.totals) {
     for (const [key, value] of Object.entries(request.totals)) {
       const expected = totals[key as keyof InvoiceTotals];
-      if (
-        typeof expected !== "number" ||
-        value !== roundMoney(value) ||
-        roundMoney(value) !== expected
-      ) {
+      const rounded = Math.sign(value) * roundMoney(Math.abs(value));
+      if (typeof expected !== "number" || value !== rounded || rounded !== expected) {
         fail(
           `totals.${key}`,
           `Expected ${expected}; totals must match exactly at two decimal places`,
@@ -365,6 +362,12 @@ export function toCanonical(params: {
     detraction: params.request.detraction,
     exchange_rate: params.request.exchange_rate,
     despatch_references: params.request.despatch_references,
+    seller: params.request.seller,
+    delivery_address: params.request.delivery_address,
+    embedded_despatch: params.request.embedded_despatch,
+    sale_perception: params.request.sale_perception,
+    rounding_amount: params.request.rounding_amount,
+    related_documents: params.request.related_documents,
     currency: params.request.currency,
     totals_mode: params.request.totals_mode ?? "auto",
     supplier: params.supplier,

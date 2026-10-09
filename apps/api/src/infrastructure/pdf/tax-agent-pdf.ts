@@ -11,14 +11,21 @@ export function taxAgentPdfInput(
   doc: Awaited<ReturnType<DocumentsService["getById"]>>,
   xml: string,
   logoDataUrl?: string,
+  preview = false,
 ): PdfRenderInput {
   const p = doc.payload as {
     _canonical: TaxAgentCanonical;
     _print?: { format: PdfRenderInput["format"]; template_version: string };
   };
   const c = p._canonical;
-  const fiscal = readSignedCpeQr(xml);
-  if (!fiscal) throw new Error("Tax-agent signed XML lacks QR data");
+  const signed = preview ? undefined : readSignedCpeQr(xml);
+  if (!preview && !signed) throw new Error("Tax-agent signed XML lacks QR data");
+  const fiscal = signed ?? {
+    serie: c.serie,
+    number: String(c.number).padStart(8, "0"),
+    issueDate: c.issue_date,
+    digestValue: "",
+  };
   const retention = c.document_type === "20",
     money = (n: number | undefined) => {
       if (n === undefined) throw new Error("Missing fiscal amount");
@@ -96,7 +103,7 @@ export function taxAgentPdfInput(
       },
     ],
     digestValue: fiscal.digestValue,
-    qrPayload: buildQrPayload(fiscal),
+    qrPayload: signed ? buildQrPayload(signed) : "",
     observations: c.observations,
   };
 }

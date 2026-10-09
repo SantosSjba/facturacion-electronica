@@ -10,6 +10,7 @@ import { CompaniesController } from "./companies.controller";
 import { CredentialsController } from "./credentials.controller";
 import { SeriesController } from "./series.controller";
 import { IntegratorCompaniesController } from "./integrator-companies.controller";
+import { CompanyToolsController } from "./company-tools.controller";
 
 @Module({
   controllers: [
@@ -18,6 +19,7 @@ import { IntegratorCompaniesController } from "./integrator-companies.controller
     CredentialsController,
     SeriesController,
     IntegratorCompaniesController,
+    CompanyToolsController,
   ],
   providers: [
     CompaniesService,

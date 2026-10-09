@@ -13,6 +13,10 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AppError } from "@factosys/shared";
 import { PreviewService } from "../src/infrastructure/pdf/preview.service";
+import { AuxiliaryPreviewService } from "../src/infrastructure/pdf/auxiliary-preview.service";
+import type { TaxAgentService } from "../src/infrastructure/documents/tax-agent.service";
+import { greScenario } from "../../../packages/sunat-ubl/test-fixtures/gre-scenarios";
+import { taxAgentRequest } from "../../../packages/sunat-ubl/test-fixtures/tax-agent-scenarios";
 import { PreviewsController } from "../src/interfaces/http/v1/previews.controller";
 import { DocumentsController } from "../src/interfaces/http/v1/documents.controller";
 import { ApiKeyGuard } from "../src/interfaces/http/guards/api-key.guard";
@@ -22,6 +26,7 @@ import type { RateLimitService } from "../src/infrastructure/redis/rate-limit.se
 import type { AuthService } from "../src/infrastructure/auth/auth.service";
 import { previewCreateSchema } from "../src/interfaces/http/dto/preview-create.schema";
 import { phase1Request } from "../../../packages/sunat-ubl/test-fixtures/commercial-scenarios";
+import { extendedSale } from "../../../packages/sunat-ubl/test-fixtures/competition-scenarios";
 import { S3Client } from "@aws-sdk/client-s3";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -88,6 +93,7 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
       ruc: "20601234567",
       legalName: "EMISOR PHASE0",
       address: { line: "Dirección emisor", ubigeo: "150101" },
+      taxAgentSettings: { retention: true, perception_regimes: ["01", "02", "03"] },
     });
     await db.insert(documentSeries).values(
       (
@@ -149,6 +155,11 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
       new EmitCreditNoteUseCase(emitter, docs),
       new EmitDebitNoteUseCase(emitter, docs),
       pdf,
+      new AuxiliaryPreviewService(
+        companyService,
+        new SummaryPoolService(docs),
+        {} as TaxAgentService,
+      ),
     );
     const module = await Test.createTestingModule({
       controllers: [PreviewsController, DocumentsController],
@@ -283,6 +294,94 @@ describe("phase 2 isolated print and preview HTTP integration", () => {
       .send(body)
       .expect(200);
     expect(pdfHttp.headers["content-type"]).toContain("application/pdf");
+    expect(await snapshot()).toEqual(before);
+  }, 30000);
+
+  it("previews GRE, agents and RA over HTTP with real PDFs and no persistence changes", async () => {
+    const before = await snapshot();
+    const guideInput = (type: "09" | "31") => {
+      const { supplier, supplier_party, number, ...document } = greScenario(
+        type === "31" ? "carrier" : "public",
+      );
+      void supplier;
+      void supplier_party;
+      void number;
+      return { ...document, company_id: companyId };
+    };
+    const inputs = [
+      { document_type: "09", document: guideInput("09") },
+      { document_type: "31", document: guideInput("31") },
+      { document_type: "20", document: { ...taxAgentRequest("20"), company_id: companyId } },
+      { document_type: "40", document: { ...taxAgentRequest("40"), company_id: companyId } },
+      {
+        document_type: "RA",
+        document: {
+          company_id: companyId,
+          reference_date: "2026-10-08",
+          issue_date: "2026-10-09",
+          documents: [{ document_type: "01", serie_number: "F001-1", reason: "Error de prueba" }],
+        },
+      },
+    ];
+    for (const body of inputs) {
+      await request(app.getHttpServer())
+        .post("/v1/previews/pdf")
+        .auth("reader", { type: "bearer" })
+        .send(body)
+        .expect(403);
+      await request(app.getHttpServer())
+        .post("/v1/previews/xml")
+        .auth("foreign", { type: "bearer" })
+        .send(body)
+        .expect(404);
+      const rendered = await request(app.getHttpServer())
+        .post("/v1/previews/pdf")
+        .auth("writer", { type: "bearer" })
+        .send(body)
+        .expect(200);
+      expect(rendered.body.subarray(0, 5).toString()).toBe("%PDF-");
+      expect(rendered.headers["x-factosys-preview"]).toBe("true");
+    }
+    expect(await snapshot()).toEqual(before);
+  }, 30000);
+
+  it("persists extended sale XML and preserves boleta perception in RC preview", async () => {
+    const requestBody = { ...extendedSale(), company_id: companyId };
+    const invoice = await new EmitInvoiceUseCase(emitter).execute({
+      organizationId: orgId,
+      idempotencyKey: newId(),
+      body: invoiceCreateSchema.parse(requestBody),
+    });
+    const xml = (await docs.getArtifact(orgId, invoice.id, "xml_signed")).body.toString();
+    expect(xml).toContain("StandardItemIdentification");
+    expect(xml).toContain("SellerSupplierParty");
+    expect(xml).toContain('<cbc:PayableAmount currencyID="PEN">120.35</cbc:PayableAmount>');
+    const receipt = await new EmitReceiptUseCase(emitter).execute({
+      organizationId: orgId,
+      idempotencyKey: newId(),
+      body: receiptCreateSchema.parse({ ...requestBody, serie: "B001" }),
+    });
+    const before = await snapshot();
+    const body = {
+      document_type: "RC",
+      document: {
+        company_id: companyId,
+        reference_date: requestBody.issue_date,
+        document_ids: [receipt.id],
+      },
+    };
+    const preview = await request(app.getHttpServer())
+      .post("/v1/previews/xml")
+      .auth("writer", { type: "bearer" })
+      .send(body)
+      .expect(200);
+    expect(preview.text).toContain("SUNATPerceptionSummaryDocumentReference");
+    expect(preview.text).toContain("120.35");
+    await request(app.getHttpServer())
+      .post("/v1/previews/pdf")
+      .auth("writer", { type: "bearer" })
+      .send(body)
+      .expect(200);
     expect(await snapshot()).toEqual(before);
   }, 30000);
 

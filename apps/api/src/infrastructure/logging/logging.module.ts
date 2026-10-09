@@ -17,6 +17,12 @@ const REDACT_PATHS = [
   "*.pfx",
   "*.p12",
   "*.privateKey",
+  "*.cert",
+  "*.cert_pass",
+  "*.pem",
+  "req.body.cert",
+  "req.body.cert_pass",
+  "req.body.base64",
 ] as const;
 
 @Module({

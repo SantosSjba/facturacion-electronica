@@ -57,7 +57,42 @@ export interface CpeDocument {
 
 export type PreviewInput =
   | { document_type: "01" | "03"; document: InvoiceInput | ReceiptInput }
-  | { document_type: "07" | "08"; document: NoteInput };
+  | { document_type: "07" | "08"; document: NoteInput }
+  | { document_type: "09" | "31"; document: DespatchInput }
+  | { document_type: "20" | "40"; document: TaxAgentCreate }
+  | { document_type: "RR"; document: ReversionInput }
+  | { document_type: "RA"; document: VoidedPreviewInput }
+  | { document_type: "RC"; document: SummaryPreviewInput };
+export interface VoidedPreviewInput {
+  company_id: string;
+  reference_date: string;
+  issue_date?: string;
+  documents: {
+    document_type: string;
+    serie_number?: string;
+    serie?: string;
+    number?: number;
+    reason: string;
+  }[];
+}
+export interface SummaryPreviewInput {
+  company_id: string;
+  reference_date: string;
+  issue_date?: string;
+  document_ids?: string[];
+  lines?: { document_id?: string; status?: "1" | "2" | "3" }[];
+}
+export interface SaleQrInput {
+  company_id: string;
+  tipo: "01" | "03" | "07" | "08";
+  serie: string;
+  numero: string;
+  emision: string;
+  igv: number;
+  total: number;
+  clienteTipo: string;
+  clienteNumero: string;
+}
 export interface PreviewValidation {
   preview: true;
   signed: false;
@@ -65,7 +100,7 @@ export interface PreviewValidation {
   numbering_reserved: false;
   reference_number: 1;
   document_type: string;
-  totals: InvoiceTotals;
+  totals: Partial<InvoiceTotals> & { tax_amount?: number; settlement_amount?: number };
   validation: "local_business_rules";
   sunat_acceptance: "not_checked";
 }

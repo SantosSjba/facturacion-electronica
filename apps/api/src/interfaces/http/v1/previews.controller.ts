@@ -18,7 +18,9 @@ export class PreviewsController {
   @HttpCode(200)
   @ApiKeyAuth()
   @RequireScopes("documents:write")
-  @ApiOperation({ summary: "Prevalidar CPE sin firma ni reserva de numeración" })
+  @ApiOperation({
+    summary: "Prevalidar 01/03/07/08/09/31/20/40/RC/RA/RR sin firma ni reserva de numeración",
+  })
   validate(
     @CurrentAuth() auth: AuthContext,
     @Body(new ZodValidationPipe(previewCreateSchema, 422)) body: PreviewCreate,

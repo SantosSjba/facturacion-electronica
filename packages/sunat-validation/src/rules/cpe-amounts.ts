@@ -106,7 +106,9 @@ export function checkCpeAmounts(doc: Document): string[] {
     issues.push("Document base does not match all lines and global taxable adjustments");
   const nonTaxGlobal = children(root, "AllowanceCharge")
     .filter((a) =>
-      ["03", "46", "50"].includes(children(a, "AllowanceChargeReasonCode")[0]?.textContent ?? ""),
+      ["03", "46", "50", "51", "52", "53"].includes(
+        children(a, "AllowanceChargeReasonCode")[0]?.textContent ?? "",
+      ),
     )
     .reduce(
       (sum, a) =>
@@ -121,7 +123,10 @@ export function checkCpeAmounts(doc: Document): string[] {
     issues.push("Non-tax monetary adjustments do not match item/global adjustments");
   if (
     !close(base + taxAmount - freeTax + advanceTax, inclusive) ||
-    !close(inclusive + charges - allowances - prepaid, payable)
+    !close(
+      inclusive + charges - allowances - prepaid + (amount(monetary, "PayableRoundingAmount") ?? 0),
+      payable,
+    )
   )
     issues.push("PayableAmount does not match fiscal price, non-tax adjustments and advances");
   if (!close(lineTax - freeIsc + globalTaxAdjustment, taxAmount))

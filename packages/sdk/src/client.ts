@@ -187,6 +187,10 @@ export class FactosysClient {
       ),
   };
   companies = {
+    remove: (id: string, permanent = false) =>
+      this.request<undefined>(`/v1/companies/${encodeURIComponent(id)}?permanent=${permanent}`, {
+        method: "DELETE",
+      }),
     list: () => this.request("/v1/companies"),
     get: (id: string) => this.request(`/v1/companies/${encodeURIComponent(id)}`),
     create: (body: CompanyInput) => this.request("/v1/companies", { method: "POST", body }),
@@ -286,7 +290,50 @@ export class FactosysClient {
     getPdf: (body: PreviewInput) =>
       this.request<ArrayBuffer>("/v1/previews/pdf", { method: "POST", body }),
   };
+  companyTools = {
+    convertCertificate: (cert: string, cert_pass: string, base64 = true) =>
+      this.request<{ pem: string; cer: string }>("/v1/company-tools/certificate", {
+        method: "POST",
+        body: { cert, cert_pass, base64 },
+      }),
+    generateTestCertificate: (password: string) =>
+      this.request<{ pfx: string; test_only: true; sunat_acceptance: string }>(
+        "/v1/company-tools/certificate/free",
+        { method: "POST", body: { password } },
+      ),
+    encodeFile: (file: Blob, filename = "file.bin") => {
+      const body = new FormData();
+      body.append("file", file, filename);
+      return this.request<{ base64: string; size_bytes: number }>("/v1/company-tools/file/base64", {
+        method: "POST",
+        body,
+      });
+    },
+    decodeFile: (base64: string, filename = "file.bin") =>
+      this.request<ArrayBuffer>("/v1/company-tools/base64/file", {
+        method: "POST",
+        body: { base64, filename },
+      }),
+  };
+  sale = {
+    getQr: (body: import("./types").SaleQrInput) =>
+      this.request<ArrayBuffer>("/v1/sale/qr", { method: "POST", body }),
+  };
   documents = {
+    getByTicket: (company_id: string, ticket: string) =>
+      this.request<DocumentDetails>(
+        "/v1/document-status/ticket?" + new URLSearchParams({ company_id, ticket }),
+      ),
+    recoverCdrByIdentifiers: (company_id: string, tipo: string, serie: string, numero: number) =>
+      this.request<DocumentDetails>("/v1/document-status/recover-cdr", {
+        method: "POST",
+        body: { company_id, tipo, serie, numero },
+      }),
+    getByIdentifiers: (company_id: string, tipo: string, serie: string, numero: number) =>
+      this.request<DocumentDetails>(
+        "/v1/document-status?" +
+          new URLSearchParams({ company_id, tipo, serie, numero: String(numero) }),
+      ),
     list: (
       filters: {
         company_id?: string;

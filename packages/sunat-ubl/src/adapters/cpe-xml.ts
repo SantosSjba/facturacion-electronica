@@ -124,6 +124,11 @@ export function appendCpeItem(node: Node, line: InvoiceLineCanonical): void {
   item.ele("cbc:Description").txt(line.description);
   if (line.product_code)
     item.ele("cac:SellersItemIdentification").ele("cbc:ID").txt(line.product_code);
+  if (line.gs1_product_code)
+    item
+      .ele("cac:StandardItemIdentification")
+      .ele("cbc:ID", { schemeID: "GTIN", schemeAgencyID: "9" })
+      .txt(line.gs1_product_code);
   if (line.sunat_product_code)
     item
       .ele("cac:CommodityClassification")
@@ -134,13 +139,33 @@ export function appendCpeItem(node: Node, line: InvoiceLineCanonical): void {
       })
       .txt(line.sunat_product_code);
   appendCommercialItemProperties(item, line);
+  for (const attribute of line.attributes ?? []) {
+    const property = item.ele("cac:AdditionalItemProperty");
+    property.ele("cbc:Name").txt(attribute.name);
+    property
+      .ele("cbc:NameCode", {
+        listAgencyName: "PE:SUNAT",
+        listURI: "urn:pe:gob:sunat:cpe:see:gem:catalogos:catalogo55",
+      })
+      .txt(attribute.code);
+    property.ele("cbc:Value").txt(attribute.value);
+    if (attribute.start_date || attribute.end_date || attribute.duration_days !== undefined) {
+      const period = property.ele("cac:UsabilityPeriod");
+      if (attribute.start_date) period.ele("cbc:StartDate").txt(attribute.start_date);
+      if (attribute.end_date) period.ele("cbc:EndDate").txt(attribute.end_date);
+      if (attribute.duration_days !== undefined)
+        period.ele("cbc:DurationMeasure", { unitCode: "DAY" }).txt(String(attribute.duration_days));
+    }
+  }
 }
 
 export function appendLegends(
   root: Node,
-  canonical: Pick<InvoiceCanonical, "lines" | "legends">,
+  canonical: Pick<InvoiceCanonical, "lines" | "legends" | "sale_perception">,
 ): void {
   const legends = [...(canonical.legends ?? [])];
+  if (canonical.sale_perception && !legends.some((l) => l.code === "2000"))
+    legends.push({ code: "2000", text: "COMPROBANTE DE PERCEPCIÓN" });
   if (
     canonical.lines.every((line) => line.is_free) &&
     !legends.some((legend) => legend.code === "1002")

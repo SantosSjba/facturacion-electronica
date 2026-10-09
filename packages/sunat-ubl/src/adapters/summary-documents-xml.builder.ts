@@ -1,6 +1,7 @@
 import { create } from "xmlbuilder2";
 
 import { formatMoney } from "../totals/auto-totals";
+import type { InvoiceCanonical } from "../types/invoice-canonical";
 
 const NS = {
   summary: "urn:sunat:names:specification:ubl:peru:schema:xsd:SummaryDocuments-1",
@@ -41,6 +42,7 @@ export interface SummaryDocumentsLineCanonical {
     identity_number: string;
   };
   totals: SummaryLineTotalsCanonical;
+  perception?: InvoiceCanonical["sale_perception"];
   affected_document?: {
     document_type: string;
     serie_number: string;
@@ -136,6 +138,19 @@ export class XmlSummaryDocumentsBuilder {
         ref.ele("cbc:DocumentTypeCode").txt(line.affected_document.document_type).up();
       }
 
+      if (line.perception) {
+        const p = line.perception;
+        const reference = node.ele("sac:SUNATPerceptionSummaryDocumentReference");
+        reference.ele("sac:SUNATPerceptionSystemCode").txt(p.regime);
+        reference
+          .ele("sac:SUNATPerceptionPercent")
+          .txt(String({ "01": 2, "02": 1, "03": 0.5 }[p.regime]));
+        reference.ele("cbc:TotalInvoiceAmount", { currencyID: "PEN" }).txt(formatMoney(p.amount));
+        reference
+          .ele("sac:SUNATTotalCashed", { currencyID: "PEN" })
+          .txt(formatMoney(p.total_amount));
+        reference.ele("cbc:TaxableAmount", { currencyID: "PEN" }).txt(formatMoney(p.base_amount));
+      }
       node.ele("cac:Status").ele("cbc:ConditionCode").txt(line.status).up().up();
 
       node.ele("sac:TotalAmount", { currencyID: "PEN" }).txt(formatMoney(line.totals.payable)).up();

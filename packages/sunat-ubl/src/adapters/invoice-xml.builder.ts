@@ -6,6 +6,7 @@ import {
   appendCommercialDelivery,
 } from "./commercial-xml";
 import { create } from "xmlbuilder2";
+import { appendExtendedPartiesAndDelivery } from "./extended-commercial-xml";
 import {
   appendCpeParty,
   appendDocumentTaxes,
@@ -77,6 +78,7 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
     appendCommercialReferences(root, canonical);
     appendCpeParty(root, "cac:AccountingSupplierParty", canonical.supplier, true);
     appendCpeParty(root, "cac:AccountingCustomerParty", canonical.customer);
+    appendExtendedPartiesAndDelivery(root, canonical);
 
     appendCommercialPayments(root, canonical);
     appendDocumentTaxes(root, canonical.totals, cur);

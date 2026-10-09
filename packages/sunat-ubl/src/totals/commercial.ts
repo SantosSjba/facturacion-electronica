@@ -11,7 +11,8 @@ import { readAssetJson } from "../paths/package-root";
 export const commercialFail = (path: string, issue: string): never => {
   throw ublValidationError("Invalid commercial CPE", { details: [{ path, issue }] });
 };
-export const isCharge = (code: string) => ["46", "47", "48", "49", "50"].includes(code);
+export const isCharge = (code: string) =>
+  ["46", "47", "48", "49", "50", "51", "52", "53"].includes(code);
 export const affectsTax = (code: string) =>
   ["00", "02", "04", "05", "06", "47", "49", "20"].includes(code);
 export function validateAdjustment(a: Adjustment, path: string, scope: "line" | "global"): void {
@@ -208,6 +209,62 @@ export function finishCommercial(
     totals.prepaid_amount,
   );
   totals.computed_adjustments = computed;
+
+  if (request.rounding_amount !== undefined) {
+    if (
+      Math.abs(request.rounding_amount) !== decimalRound(Math.abs(request.rounding_amount)) ||
+      Math.abs(request.rounding_amount) > 1
+    )
+      fail(
+        "rounding_amount",
+        "Rounding requires two decimals and an absolute value no greater than one",
+      );
+    totals.rounding_amount = request.rounding_amount;
+    totals.payable_amount =
+      request.rounding_amount < 0
+        ? subtractMoney(totals.payable_amount, Math.abs(request.rounding_amount))
+        : sumMoney([totals.payable_amount, request.rounding_amount]);
+    if (totals.payable_amount < 0)
+      fail("rounding_amount", "Rounding cannot produce a negative payable amount");
+  }
+  const perception = request.sale_perception;
+  if (perception) {
+    const rate = { "01": 2, "02": 1, "03": 0.5 }[perception.regime];
+    if (perception.regime === "03" && !perception.customer_is_perception_agent)
+      fail(
+        "sale_perception.customer_is_perception_agent",
+        "Regime 03 requires a perception-agent customer",
+      );
+    if (
+      request.currency !== "PEN" ||
+      request.payment_terms?.condition === "credit" ||
+      request.detraction ||
+      request.prepayments?.length ||
+      lines.some((l) => l.tax_affectation === "40")
+    )
+      fail(
+        "sale_perception",
+        "Sale perception requires a domestic PEN cash sale without detraction or advances; use a separate perception document for subsequent collections",
+      );
+    if (
+      perception.base_amount !== totals.payable_amount ||
+      perception.amount !== decimalMultiply(perception.base_amount, rate, 100) ||
+      perception.total_amount !== sumMoney([perception.base_amount, perception.amount])
+    )
+      fail(
+        "sale_perception",
+        "Perception base, rate, amount and total must match the computed sale",
+      );
+    totals.perception_amount = perception.amount;
+    totals.charge_total_amount = sumMoney([totals.charge_total_amount, perception.amount]);
+    totals.payable_amount = perception.total_amount;
+    computed.push({
+      code: { "01": "51", "02": "52", "03": "53" }[perception.regime] as Adjustment["code"],
+      base_amount: perception.base_amount,
+      amount: perception.amount,
+      factor: rate / 100,
+    });
+  }
 
   const exchange = request.exchange_rate;
   if (

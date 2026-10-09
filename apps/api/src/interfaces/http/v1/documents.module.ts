@@ -1,5 +1,7 @@
 import { TaxAgentService } from "../../../infrastructure/documents/tax-agent.service";
 import { TaxAgentsController } from "./tax-agents.controller";
+import { SaleQrController } from "./sale-qr.controller";
+import { DocumentStatusController } from "./document-status.controller";
 import { Inject, Module, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { Worker, type ConnectionOptions } from "bullmq";
 
@@ -32,6 +34,7 @@ import { DailySummariesController } from "./daily-summaries.controller";
 import { DespatchAdvicesController } from "./despatch-advices.controller";
 import { PdfRenderProcessor } from "../../../infrastructure/pdf/pdf-render.processor";
 import { PreviewService } from "../../../infrastructure/pdf/preview.service";
+import { AuxiliaryPreviewService } from "../../../infrastructure/pdf/auxiliary-preview.service";
 import { PreviewsController } from "./previews.controller";
 import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 import { CdrRecoveryService } from "../../../infrastructure/documents/cdr-recovery.service";
@@ -47,6 +50,8 @@ import { CapabilitiesController } from "./capabilities.controller";
 @Module({
   imports: [CompaniesModule, IdempotencyModule, WebhooksModule],
   controllers: [
+    SaleQrController,
+    DocumentStatusController,
     PreviewsController,
     DocumentIntegrationController,
     SharedDocumentsController,
@@ -62,6 +67,7 @@ import { CapabilitiesController } from "./capabilities.controller";
     DocumentsController,
   ],
   providers: [
+    AuxiliaryPreviewService,
     TaxAgentService,
     DocumentsService,
     CredentialsResolver,

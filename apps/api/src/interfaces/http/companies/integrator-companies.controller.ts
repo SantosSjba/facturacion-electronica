@@ -8,11 +8,19 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from "@nestjs/swagger";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 import { CompaniesService } from "../../../infrastructure/companies/companies.service";
@@ -113,6 +121,38 @@ export class IntegratorCompaniesController {
     });
     await this.record(auth, id, "company.updated", { changed_fields: Object.keys(body) });
     return result;
+  }
+  @Delete(":id")
+  @ApiQuery({ name: "permanent", enum: ["true", "false"], required: false })
+  @HttpCode(204)
+  @RequireScopes("companies:write")
+  @ApiOperation({
+    summary: "Eliminar empresa lógicamente; permanent=true solo sin historial fiscal ni webhooks",
+  })
+  async remove(
+    @CurrentAuth() auth: AuthContext,
+    @Param("id", uuid) id: string,
+    @Query(
+      new ZodValidationPipe(
+        z.object({ permanent: z.enum(["true", "false"]).optional() }).strict(),
+        422,
+      ),
+    )
+    query: { permanent?: "true" | "false" },
+  ) {
+    // Permanent deletion records the resource ID without a company foreign key.
+    await this.companies.requireCompany(auth.organizationId, id);
+    await this.companies.remove(auth.organizationId, id, query.permanent === "true");
+    await this.audit.append({
+      organizationId: auth.organizationId,
+      companyId: query.permanent === "true" ? undefined : id,
+      actorType: auth.kind,
+      actorId: auth.kind === "api_key" ? auth.apiKeyId : auth.userId,
+      action: "company.deleted",
+      resourceType: "company",
+      resourceId: id,
+      data: { permanent: query.permanent === "true" },
+    });
   }
   @Get(":id/series")
   @RequireScopes("series:read")

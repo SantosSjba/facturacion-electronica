@@ -92,6 +92,16 @@ export class EmitDocumentOrchestrator {
           input.organizationId,
           input.companyId,
         );
+        const salePerception = (
+          input.payload as { sale_perception?: InvoiceCanonical["sale_perception"] }
+        ).sale_perception;
+        if (
+          salePerception &&
+          !company.taxAgentSettings.perception_regimes.includes(salePerception.regime)
+        )
+          throw AppError.validation("Company not enabled for this sale-perception regime", [], {
+            httpStatus: 422,
+          });
 
         const prepayments =
           (input.payload as { prepayments?: InvoiceCanonical["prepayments"] }).prepayments ?? [];

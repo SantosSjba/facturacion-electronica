@@ -32,6 +32,8 @@ export const cpeLegendSchema = z
 
 export const cpeTotalsInputSchema = z
   .object({
+    rounding_amount: z.number().optional(),
+    perception_amount: z.number().nonnegative().optional(),
     line_extension_amount: z.number().nonnegative(),
     tax_amount: z.number().nonnegative(),
     tax_inclusive_amount: z.number().nonnegative(),

@@ -310,7 +310,7 @@ export class TaxAgentService {
       },
     });
   }
-  async revert(org: string, body: ReversionBody, idempotencyKey: string) {
+  private async prepareReversion(org: string, body: ReversionBody) {
     const company = await this.companiesService.requireActiveCompany(org, body.company_id);
     this.assertEnvironment(company.environment);
     this.checkWindow(body.issue_date, body.communicated_on);
@@ -354,6 +354,34 @@ export class TaxAgentService {
         ?.lines ?? [];
     if (previousLines.length + originals.length > 500)
       throw validation("Cumulative RR exceeds 500 lines");
+    return { company, originals, previous, previousLines, check };
+  }
+
+  async previewReversion(org: string, body: ReversionBody): Promise<VoidedDocumentsCanonical> {
+    const { company, originals, previousLines } = await this.prepareReversion(org, body);
+    return {
+      id: `RR-${body.issue_date.replace(/-/g, "")}-1`,
+      issue_date: body.issue_date,
+      reference_date: body.reference_date,
+      supplier: supplierParty(company),
+      lines: [
+        ...previousLines,
+        ...originals.map((d, i) => ({
+          line_id: 0,
+          document_type: d.documentType,
+          serie: d.serie ?? "",
+          number: d.number ?? 0,
+          reason: body.documents[i]?.reason ?? "",
+        })),
+      ].map((line, i) => ({ ...line, line_id: i + 1 })),
+    };
+  }
+
+  async revert(org: string, body: ReversionBody, idempotencyKey: string) {
+    const { company, originals, previous, previousLines, check } = await this.prepareReversion(
+      org,
+      body,
+    );
     const serie = body.issue_date.replace(/-/g, "");
     return this.orchestrator.execute({
       organizationId: org,

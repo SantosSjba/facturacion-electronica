@@ -181,6 +181,7 @@ export class PdfService {
     companyId: string,
     snapshot: Record<string, unknown>,
     format?: PdfFormat,
+    unsignedXml?: string,
   ): Promise<Buffer> {
     const company = await this.companies.requireCompany(organizationId, companyId);
     const doc = {
@@ -190,6 +191,8 @@ export class PdfService {
       number: snapshot["number"],
       issueDate: snapshot["issue_date"],
       currency: snapshot["currency"],
+      serieNumber: snapshot["id"],
+      status: "preview",
       totals: snapshot["totals"],
       payload: {
         _canonical: snapshot,
@@ -200,7 +203,7 @@ export class PdfService {
       },
       logoSnapshot: { logo: company.logo ?? null },
     } as Awaited<ReturnType<DocumentsService["getById"]>>;
-    const input = await this.renderInput(organizationId, doc, "");
+    const input = await this.renderInput(organizationId, doc, "", unsignedXml);
     return Buffer.from(
       await this.renderer.render({ ...input, preview: true, digestValue: "", qrPayload: "" }),
     );
@@ -259,6 +262,11 @@ export class PdfService {
                 `Documento afectado: ${(row["affected_document"] as Record<string, string>)["serie_number"]}`,
               ]
             : []),
+          ...(row["perception"]
+            ? [
+                `Percepción: ${moneyStr((row["perception"] as Record<string, unknown>)["amount"])}; total incluido: ${moneyStr((row["perception"] as Record<string, unknown>)["total_amount"])}`,
+              ]
+            : []),
         ],
       })),
       totals: { total: "" },
@@ -283,24 +291,30 @@ export class PdfService {
     organizationId: string,
     doc: Awaited<ReturnType<DocumentsService["getById"]>>,
     previewDigest?: string,
+    previewXml?: string,
   ): Promise<PdfRenderInput> {
     const signedXml =
       previewDigest === undefined
         ? (await this.documents.getArtifact(organizationId, doc.id, "xml_signed")).body.toString(
             "utf8",
           )
-        : "";
+        : (previewXml ?? "");
     const digest = previewDigest ?? extractDigestValue(signedXml);
     if (digest === null) throw AppError.internal("Signed XML missing DigestValue");
     const company = await this.companies.requireCompany(organizationId, doc.companyId);
     const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
     if (["09", "31"].includes(doc.documentType))
-      return grePdfInput(doc, documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined);
+      return grePdfInput(
+        doc,
+        documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
+        previewDigest !== undefined,
+      );
     if (["20", "40"].includes(doc.documentType))
       return taxAgentPdfInput(
         doc,
         signedXml,
         documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
+        previewDigest !== undefined,
       );
     if (["RC", "RA", "RR"].includes(doc.documentType))
       return this.summaryInput(
@@ -401,7 +415,7 @@ export class PdfService {
           },
         ];
 
-    const xmlQr = signedXml ? readSignedCpeQr(signedXml) : null;
+    const xmlQr = previewDigest === undefined && signedXml ? readSignedCpeQr(signedXml) : null;
     const qrPayload = buildQrPayload(
       xmlQr ?? {
         ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
