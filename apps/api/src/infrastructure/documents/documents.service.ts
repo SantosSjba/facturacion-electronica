@@ -60,6 +60,7 @@ export interface DocumentPublicError {
 }
 
 export interface DocumentListFilters {
+  environment?: "sandbox" | "production";
   companyId?: string;
   /** Single type or multiple (e.g. GRE list 09+31). */
   documentType?: string;
@@ -131,6 +132,7 @@ export class DocumentsService {
   ): Promise<DocumentListResult> {
     const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
     const conditions = [eq(documents.organizationId, organizationId)];
+    if (filters.environment) conditions.push(eq(documents.environment, filters.environment));
 
     if (filters.companyId) {
       conditions.push(eq(documents.companyId, filters.companyId));
@@ -150,7 +152,11 @@ export class DocumentsService {
       conditions.push(lte(documents.issueDate, filters.dateTo));
     }
     if (filters.serieNumber?.trim()) {
-      conditions.push(ilike(documents.serieNumber, `%${filters.serieNumber.trim()}%`));
+      const value = filters.serieNumber.trim().toUpperCase();
+      const parts = /^([A-Z0-9]{4})-(\d{1,8})$/.exec(value);
+      if (parts?.[1] && parts[2])
+        conditions.push(eq(documents.serie, parts[1]), eq(documents.number, Number(parts[2])));
+      else conditions.push(ilike(documents.serieNumber, `%${value}%`));
     }
 
     if (filters.cursor) {
@@ -259,6 +265,80 @@ export class DocumentsService {
       throw AppError.notFound("Document not found");
     }
     return row;
+  }
+
+  async getDetails(organizationId: string, documentId: string) {
+    const row = await this.getById(organizationId, documentId);
+    const artifacts = await this.db
+      .select({
+        kind: documentArtifacts.kind,
+        sha256: documentArtifacts.sha256,
+        content_type: documentArtifacts.contentType,
+      })
+      .from(documentArtifacts)
+      .where(
+        and(
+          eq(documentArtifacts.organizationId, organizationId),
+          eq(documentArtifacts.documentId, documentId),
+        ),
+      );
+    const payload = row.payload as {
+      _sunat?: { observations?: string[] };
+      _reconciliation?: unknown;
+      summary_document_id?: string;
+      cancellation_status?: string;
+      cancellation_document_id?: string;
+    };
+    const events = await this.listEvents(organizationId, documentId);
+    const voided = [...events]
+      .reverse()
+      .find((e) => (e.data as { voided_document_id?: string })?.voided_document_id);
+    const stored = (kind: string) => artifacts.find((a) => a.kind === kind);
+    let digest: string | undefined;
+    if (stored("xml_signed") && ["01", "03", "07", "08"].includes(row.documentType)) {
+      const xml = (await this.getArtifact(organizationId, documentId, "xml_signed")).body.toString(
+        "utf8",
+      );
+      digest = xml.match(/<(?:\w+:)?DigestValue[^>]*>([^<]+)<\/(?:\w+:)?DigestValue>/)?.[1]?.trim();
+    }
+    const gre = ["09", "31"].includes(row.documentType) ? greAvailability(row) : undefined;
+    return {
+      ...this.toPublic(row),
+      artifacts: Object.fromEntries(
+        ["xml_signed", "zip", "cdr_xml", "pdf"].map((kind) => [
+          kind,
+          {
+            status: stored(kind)
+              ? "available"
+              : kind === "pdf" &&
+                  (!gre || gre.pdf_status === "available") &&
+                  !!(row.payload as { _canonical?: unknown })._canonical
+                ? "on_demand"
+                : "pending",
+            sha256: stored(kind)?.sha256 ?? null,
+            content_type: stored(kind)?.content_type ?? null,
+          },
+        ]),
+      ),
+      observations: payload._sunat?.observations ?? [],
+      qr: {
+        status: gre?.qr_status ?? (digest ? "available" : "pending"),
+        source: gre ? "sunat_cdr" : "signed_xml",
+        digest: digest ?? null,
+      },
+      relations: {
+        affected_document_id: row.relatedDocumentId,
+        summary_document_id: payload.summary_document_id ?? null,
+        cancellation_document_id:
+          payload.cancellation_document_id ??
+          (voided?.data as { voided_document_id?: string } | undefined)?.voided_document_id ??
+          null,
+      },
+      cancellation_status:
+        row.status === "cancelled" ? "cancelled" : (payload.cancellation_status ?? "not_cancelled"),
+      collection_status: "not_managed",
+      reconciliation: payload._reconciliation ?? null,
+    };
   }
 
   async listEvents(organizationId: string, documentId: string) {
@@ -426,15 +506,18 @@ export class DocumentsService {
       .where(eq(documents.id, documentId));
   }
 
-  async putArtifact(input: {
-    organizationId: string;
-    companyId: string;
-    documentId: string;
-    kind: "xml_signed" | "zip" | "cdr_xml" | "request_json" | "pdf";
-    body: Buffer;
-    contentType: string;
-    objectKey: string;
-  }): Promise<Buffer | undefined> {
+  async putArtifact(
+    input: {
+      organizationId: string;
+      companyId: string;
+      documentId: string;
+      kind: "xml_signed" | "zip" | "cdr_xml" | "request_json" | "pdf";
+      body: Buffer;
+      contentType: string;
+      objectKey: string;
+    },
+    executor: Pick<Db, "insert" | "select" | "update"> = this.db,
+  ): Promise<Buffer | undefined> {
     if (input.kind === "pdf") {
       // Serialize the first render across API/worker processes; preserve historical bytes.
       return this.db.transaction(async (tx) => {
@@ -500,7 +583,7 @@ export class DocumentsService {
     const sha256 = createHash("sha256").update(input.body).digest("hex");
     await this.storage.putObject(input.objectKey, input.body, input.contentType);
 
-    const existing = await this.db
+    const existing = await executor
       .select({ id: documentArtifacts.id })
       .from(documentArtifacts)
       .where(
@@ -512,7 +595,7 @@ export class DocumentsService {
       .limit(1);
 
     if (existing[0]) {
-      await this.db
+      await executor
         .update(documentArtifacts)
         .set({
           objectKey: input.objectKey,
@@ -525,7 +608,7 @@ export class DocumentsService {
       return undefined;
     }
 
-    await this.db.insert(documentArtifacts).values({
+    await executor.insert(documentArtifacts).values({
       id: newId(),
       organizationId: input.organizationId,
       companyId: input.companyId,

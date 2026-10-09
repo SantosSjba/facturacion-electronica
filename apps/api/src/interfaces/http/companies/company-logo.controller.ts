@@ -4,6 +4,7 @@ import {
   Get,
   Header,
   HttpCode,
+  Optional,
   Param,
   ParseUUIDPipe,
   Put,
@@ -25,6 +26,7 @@ import {
   CompanyLogoService,
   MAX_LOGO_BYTES,
 } from "../../../infrastructure/companies/company-logo.service";
+import { AuditService } from "../../../infrastructure/audit/audit.service";
 import type { AuthContext } from "../auth/auth-context";
 import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
@@ -58,7 +60,10 @@ const logoResponseSchema = {
 @ApiResponse({ status: 404, description: "Company not found in the authenticated organization" })
 @Controller(["companies/:companyId/logo", "v1/companies/:companyId/logo"])
 export class CompanyLogoController {
-  constructor(private readonly logos: CompanyLogoService) {}
+  constructor(
+    private readonly logos: CompanyLogoService,
+    @Optional() private readonly audit?: AuditService,
+  ) {}
 
   @Get()
   @Header("Cache-Control", "private, no-store")
@@ -95,14 +100,16 @@ export class CompanyLogoController {
   @UseInterceptors(
     FileInterceptor("file", { limits: { fileSize: MAX_LOGO_BYTES, files: 1, fields: 0 } }),
   )
-  put(
+  async put(
     @CurrentAuth() auth: AuthContext,
     @Param("companyId", new ParseUUIDPipe()) id: string,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (!file?.buffer?.length)
       throw AppError.validation("Selecciona un logo", [{ path: "file", issue: "missing" }]);
-    return this.logos.put(auth.organizationId, id, file.buffer);
+    const result = await this.logos.put(auth.organizationId, id, file.buffer);
+    await this.record(auth, id, "company.logo_updated");
+    return result;
   }
 
   @Delete()
@@ -110,7 +117,22 @@ export class CompanyLogoController {
   @ApiResponse({ status: 204, description: "Logo removed from the company configuration" })
   @RequireScopes("companies:write")
   @ApiOperation({ summary: "Remove company logo from future PDF generation" })
-  remove(@CurrentAuth() auth: AuthContext, @Param("companyId", new ParseUUIDPipe()) id: string) {
-    return this.logos.remove(auth.organizationId, id);
+  async remove(
+    @CurrentAuth() auth: AuthContext,
+    @Param("companyId", new ParseUUIDPipe()) id: string,
+  ) {
+    await this.logos.remove(auth.organizationId, id);
+    await this.record(auth, id, "company.logo_removed");
+  }
+  private record(auth: AuthContext, id: string, action: string) {
+    return this.audit?.append({
+      organizationId: auth.organizationId,
+      companyId: id,
+      actorType: auth.kind,
+      actorId: auth.kind === "api_key" ? auth.apiKeyId : auth.userId,
+      action,
+      resourceType: "company",
+      resourceId: id,
+    });
   }
 }

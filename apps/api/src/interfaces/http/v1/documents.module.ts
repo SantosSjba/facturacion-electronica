@@ -32,11 +32,23 @@ import { PdfRenderProcessor } from "../../../infrastructure/pdf/pdf-render.proce
 import { PreviewService } from "../../../infrastructure/pdf/preview.service";
 import { PreviewsController } from "./previews.controller";
 import { PdfService } from "../../../infrastructure/pdf/pdf.service";
+import { CdrRecoveryService } from "../../../infrastructure/documents/cdr-recovery.service";
+import { DocumentDeliveryService } from "../../../infrastructure/documents/document-delivery.service";
+import { DocumentAccessService } from "../../../infrastructure/documents/document-access.service";
+import { EmailService } from "../../../infrastructure/notifications/email.service";
+import {
+  DocumentIntegrationController,
+  SharedDocumentsController,
+} from "./document-integration.controller";
+import { CapabilitiesController } from "./capabilities.controller";
 
 @Module({
   imports: [CompaniesModule, IdempotencyModule, WebhooksModule],
   controllers: [
     PreviewsController,
+    DocumentIntegrationController,
+    SharedDocumentsController,
+    CapabilitiesController,
     InvoicesController,
     ReceiptsController,
     CreditNotesController,
@@ -63,6 +75,10 @@ import { PdfService } from "../../../infrastructure/pdf/pdf.service";
     SunatPollProcessor,
     PreviewService,
     PdfService,
+    CdrRecoveryService,
+    DocumentDeliveryService,
+    DocumentAccessService,
+    EmailService,
     PdfRenderProcessor,
   ],
   exports: [
@@ -80,6 +96,8 @@ import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 })
 export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
   private workers: Worker<QueueJobData>[] = [];
+  private deliveryTimer?: ReturnType<typeof setInterval>;
+  private sweeping = false;
 
   constructor(
     @Inject(BULLMQ_CONNECTION)
@@ -87,10 +105,15 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
     private readonly sunatSend: SunatSendProcessor,
     private readonly sunatPoll: SunatPollProcessor,
     private readonly pdfRender: PdfRenderProcessor,
+    private readonly delivery: DocumentDeliveryService,
   ) {}
 
   onModuleInit(): void {
     this.workers.push(
+      new Worker<QueueJobData>("document-delivery", async (job) => this.delivery.process(job), {
+        connection: this.connection,
+        concurrency: 2,
+      }),
       new Worker<QueueJobData>("sunat-send", async (job) => this.sunatSend.process(job), {
         connection: this.connection,
         concurrency: 2,
@@ -104,9 +127,26 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
         concurrency: 1,
       }),
     );
+    const sweep = async () => {
+      if (this.sweeping) return;
+      this.sweeping = true;
+      try {
+        await this.delivery.sweep();
+      } catch {
+        /* Durable outbox retries next sweep. */
+      } finally {
+        this.sweeping = false;
+      }
+    };
+    this.deliveryTimer = setInterval(() => {
+      void sweep();
+    }, 30000);
+    this.deliveryTimer.unref();
+    void sweep();
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.deliveryTimer) clearInterval(this.deliveryTimer);
     await Promise.all(this.workers.map((w) => w.close()));
   }
 }

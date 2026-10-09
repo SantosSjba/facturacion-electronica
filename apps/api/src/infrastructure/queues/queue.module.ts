@@ -1,10 +1,4 @@
-import {
-  Global,
-  Inject,
-  Module,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from "@nestjs/common";
+import { Global, Inject, Module, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { Queue, Worker, type ConnectionOptions } from "bullmq";
 
@@ -75,15 +69,15 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
         name === "webhooks" ||
         name === "pdf-render" ||
         name === "notifications" ||
+        name === "document-delivery" ||
         name === "org-export"
       ) {
         continue;
       }
-      const worker = new Worker<QueueJobData>(
-        name,
-        async (job) => processNoopJob(name, job),
-        { connection: this.connection, concurrency: 1 },
-      );
+      const worker = new Worker<QueueJobData>(name, async (job) => processNoopJob(name, job), {
+        connection: this.connection,
+        concurrency: 1,
+      });
       this.workers.push(worker);
     }
   }

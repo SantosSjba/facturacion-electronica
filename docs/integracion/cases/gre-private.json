@@ -1,0 +1,80 @@
+{
+  "document_type": "09",
+  "serie": "T001",
+  "issue_date": "2026-10-08",
+  "issue_time": "10:00:00",
+  "notes": "Mercadería frágil: evitar golpes.",
+  "delivery_customer": {
+    "identity_type": "6",
+    "identity_number": "20123456789",
+    "name": "DESTINATARIO SAC"
+  },
+  "shipment": {
+    "transfer_reason_code": "01",
+    "transport_mode_code": "02",
+    "gross_weight": 125.125,
+    "gross_weight_unit": "KGM",
+    "total_packages": 20,
+    "start_date": "2026-10-10",
+    "start_time": "08:00:00",
+    "vehicles": [
+      {
+        "plate": "ABC123",
+        "tuc": "123456789"
+      },
+      {
+        "plate": "DEF456",
+        "authority_code": "AUT123",
+        "authority_entity_code": "01",
+        "tuc": "987654321"
+      }
+    ],
+    "drivers": [
+      {
+        "identity_type": "1",
+        "identity_number": "12345678",
+        "name": "Juan",
+        "last_name": "Perez",
+        "license": "Q12345678"
+      },
+      {
+        "identity_type": "1",
+        "identity_number": "87654321",
+        "name": "Ana",
+        "last_name": "Lopez",
+        "license": "Q87654321"
+      }
+    ],
+    "origin": {
+      "ubigeo": "150101",
+      "address": "Av. Origen 123",
+      "establishment_code": "0001",
+      "establishment_ruc": "20601234567"
+    },
+    "destination": {
+      "ubigeo": "040101",
+      "address": "Almacén destino 456"
+    }
+  },
+  "related_documents": [
+    {
+      "document_type": "01",
+      "serie_number": "F001-15",
+      "issuer": {
+        "identity_type": "6",
+        "identity_number": "20123456789",
+        "name": "DESTINATARIO SAC"
+      }
+    }
+  ],
+  "lines": [
+    {
+      "id": 1,
+      "quantity": 12.123456789,
+      "unit_code": "NIU",
+      "description": "Bienes a trasladar",
+      "product_code": "PROD1"
+    }
+  ],
+  "company_id": "00000000-0000-4000-8000-000000000001"
+}

@@ -101,3 +101,61 @@ export interface GreDocument {
   printing?: CpeDocument["printing"];
   links: CpeDocument["links"];
 }
+
+export interface CompanyInput {
+  ruc: string;
+  legal_name: string;
+  environment: "sandbox" | "production";
+  trade_name?: string | null;
+  address?: Record<string, unknown> | null;
+  timezone?: string;
+  pdf_format?: "A4" | "A5" | "TICKET80" | "TICKET58";
+  seed_default_series?: boolean;
+}
+export type CompanyPatch = Partial<Omit<CompanyInput, "ruc" | "seed_default_series">> & {
+  status?: "active" | "disabled";
+};
+export interface SeriesInput {
+  document_type: "01" | "03" | "07" | "08" | "09" | "31" | "RA" | "RC";
+  serie: string;
+  next_number?: number;
+  padding?: number;
+  is_active?: boolean;
+}
+export interface DocumentShare {
+  id: string;
+  document_id: string;
+  expires_at: string;
+  allowed_artifacts: string[];
+  url: string;
+}
+export interface DocumentDelivery {
+  id: string;
+  recipient: string;
+  status:
+    | "waiting"
+    | "queued"
+    | "preparing"
+    | "sending"
+    | "retrying"
+    | "sent"
+    | "unknown"
+    | "failed"
+    | "expired";
+  attempts: number;
+  provider_message_id: string | null;
+  error: string | null;
+}
+export type DocumentDetails = (CpeDocument | GreDocument) & {
+  artifacts: Record<string, { status: string; sha256: string | null; content_type: string | null }>;
+  observations: string[];
+  qr: { status: string; source: string; digest: string | null };
+  relations: {
+    affected_document_id: string | null;
+    summary_document_id: string | null;
+    cancellation_document_id: string | null;
+  };
+  cancellation_status: string;
+  collection_status: "not_managed";
+  reconciliation: unknown;
+};

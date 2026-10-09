@@ -17,6 +17,8 @@ export const ORG_PERMISSION_CODES = [
   "series:write",
   "documents:read",
   "documents:write",
+  "documents:deliver",
+  "documents:share",
   "gre:read",
   "gre:write",
   "apikeys:manage",
@@ -27,16 +29,10 @@ export const ORG_PERMISSION_CODES = [
 ] as const;
 
 /** Platform (Factosys ops) permissions — never granted to org roles. */
-export const PLATFORM_PERMISSION_CODES = [
-  "platform:admin",
-  "platform:ops",
-] as const;
+export const PLATFORM_PERMISSION_CODES = ["platform:admin", "platform:ops"] as const;
 
 /** Atomic permissions (org + platform). */
-export const PERMISSION_CODES = [
-  ...ORG_PERMISSION_CODES,
-  ...PLATFORM_PERMISSION_CODES,
-] as const;
+export const PERMISSION_CODES = [...ORG_PERMISSION_CODES, ...PLATFORM_PERMISSION_CODES] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
 export type OrgPermissionCode = (typeof ORG_PERMISSION_CODES)[number];
@@ -67,6 +63,8 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly PermissionCode[]>
   owner: [...ORG_PERMISSION_CODES],
   admin: [...ORG_PERMISSION_CODES],
   operator: [
+    "documents:deliver",
+    "documents:share",
     "companies:read",
     "series:read",
     "series:write",
@@ -88,13 +86,7 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly PermissionCode[]>
     "audit:read",
     "catalog:read",
   ],
-  viewer: [
-    "companies:read",
-    "series:read",
-    "documents:read",
-    "gre:read",
-    "catalog:read",
-  ],
+  viewer: ["companies:read", "series:read", "documents:read", "gre:read", "catalog:read"],
   platform_superadmin: ["platform:admin", "platform:ops"],
   platform_ops: ["platform:ops"],
 };
@@ -112,11 +104,7 @@ export async function seedRbacMatrix(db: Pick<Db, "select" | "insert" | "update"
 }> {
   const permissionIds = {} as Record<PermissionCode, string>;
   for (const code of PERMISSION_CODES) {
-    const existing = await db
-      .select()
-      .from(permissions)
-      .where(eq(permissions.code, code))
-      .limit(1);
+    const existing = await db.select().from(permissions).where(eq(permissions.code, code)).limit(1);
     if (existing[0]) {
       permissionIds[code] = existing[0].id;
     } else {
@@ -156,10 +144,7 @@ export async function seedRbacMatrix(db: Pick<Db, "select" | "insert" | "update"
         .select()
         .from(rolePermissions)
         .where(
-          and(
-            eq(rolePermissions.roleId, roleId),
-            eq(rolePermissions.permissionId, permissionId),
-          ),
+          and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)),
         )
         .limit(1);
       if (existing.length === 0) {

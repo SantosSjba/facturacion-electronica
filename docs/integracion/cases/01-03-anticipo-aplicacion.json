@@ -1,0 +1,37 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "serie": "F001",
+  "operation_type": "0101",
+  "issue_date": "2026-10-08",
+  "currency": "PEN",
+  "totals_mode": "auto",
+  "customer": {
+    "identity_type": "6",
+    "identity_number": "20123456789",
+    "name": "ACME SAC"
+  },
+  "lines": [
+    {
+      "id": 1,
+      "quantity": 1,
+      "unit_code": "NIU",
+      "description": "Servicio de consultoría",
+      "unit_value": 100,
+      "tax_affectation": "10",
+      "igv_percent": 18,
+      "tax_scheme_id": "1000"
+    }
+  ],
+  "prepayments": [
+    {
+      "id": 1,
+      "document_type": "01",
+      "serie_number": "F001-5",
+      "issuer_ruc": "20601234567",
+      "paid_date": "2026-10-01",
+      "amount": 23.6,
+      "base_amount": 20,
+      "tax_affectation": "10"
+    }
+  ]
+}

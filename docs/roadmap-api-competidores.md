@@ -56,15 +56,15 @@ Antes de implementar cada escenario fiscal, contrastar sus códigos, tasas, plaz
 
 ## 3. Orden de implementación
 
-| Fase | Prioridad | Resultado esperado                                                 | Dependencia                                           |
-| ---- | --------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
-| 0    | P0        | Solicitud, XML y totales coherentes; datos soportados sin pérdidas | Ninguna                                               |
-| 1    | P1        | Casos comerciales habituales y fiscalidad ampliada                 | Fase 0                                                |
-| 2    | P1        | PDF útil, QR real, formatos y vistas previas                       | Fase 0; incorporar cada caso de fase 1 al completarlo |
-| 3    | P1        | GRE más completa y representación con QR oficial                   | Fase 0 y base PDF de fase 2                           |
-| 4    | P1/P2     | Consulta/reconciliación, entrega al cliente y mejor integración    | Fase 0; entrega GRE depende de fase 3                 |
-| 5    | P2        | Documentos de retención, percepción y reversión                    | Motor de fase 1 y demanda confirmada                  |
-| 6    | P3        | Compatibilidad TXT y extensiones de mercado seleccionadas          | Contrato JSON estable                                 |
+| Fase | Prioridad | Resultado esperado                                                 | Dependencia                                        |
+| ---- | --------- | ------------------------------------------------------------------ | -------------------------------------------------- |
+| 0    | P0        | Solicitud, XML y totales coherentes; datos soportados sin pérdidas | Ninguna                                            |
+| 1    | P1        | Casos comerciales habituales y fiscalidad ampliada                 | Fase 0                                             |
+| 2    | P1        | PDF útil, QR real, formatos y vistas previas                       | 2026-10-08; [evidencia](./phase2-print-preview.md) |
+| 3    | P1        | GRE más completa y representación con QR oficial                   | 2026-10-08; [evidencia](./phase3-gre.md)           |
+| 4    | P1/P2     | Consulta/reconciliación, entrega al cliente y mejor integración    | 2026-10-08; [evidencia](./phase4-integration.md)   |
+| 5    | P2        | Documentos de retención, percepción y reversión                    | Motor de fase 1 y demanda confirmada               |
+| 6    | P3        | Compatibilidad TXT y extensiones de mercado seleccionadas          | Contrato JSON estable                              |
 
 Los IDs siguientes son tareas propuestas. Cada casilla se marca cuando hay evidencia del criterio de aceptación, no solo cuando existe un endpoint.
 
@@ -130,15 +130,17 @@ Implementación y comprobaciones locales: [Fase 3 GRE](phase3-gre.md). Aceptaci�
 
 Fuentes: A (empresas/certificados y `/invoice/status`); NJ págs. 3, 6-9 y 17-19; NT págs. 3, 16-18; NG págs. 11-12.
 
-- [ ] **F4-01. Consulta útil.** Reutilizar filtros por empresa, tipo y serie/número. Completar respuesta con disponibilidad de artefactos, observaciones SUNAT, información de QR/hash cuando corresponda y relación con baja/RC/RA. Mantener el estado de anulación separado del estado de cobro.
-- [ ] **F4-02. Recuperación y reconciliación.** Recuperar CDR desde SUNAT por identificadores para los tipos que lo soporten, además de consultar tickets. Reconciliar ante timeout o documento previamente registrado; no repetir emisión ni consumir nuevo correlativo. La consulta de validez CPE actual no sustituye esta recuperación.
-- [ ] **F4-03. Entrega de comprobantes.** Envío opcional al destinatario, varios correos y reenvío autorizado. Reutilizar servicio de email, agregar cola, reintentos, deduplicación y estado propio de entrega. Para GRE, enviar representación definitiva al estar aceptada; definir política explícita para CPE pendientes/observados. Una falla de correo no cambia el resultado fiscal.
-- [ ] **F4-04. Acceso a archivos para destinatarios.** Además de descargas autenticadas existentes, evaluar enlaces temporales o una consulta compartida por documento, con token limitado a ese documento y revocable. Mantener MinIO privado; no incluir API keys en enlaces ni exponer listados de la organización.
-- [ ] **F4-05. Onboarding automatizado.** CRUD de empresa/configuración, series y certificados para integradores que administran varios RUC, con scopes específicos, aislamiento por organización, auditoría, rotación y secretos cifrados. Reutilizar la gestión existente del panel y evitar borrado destructivo del historial fiscal.
-- [ ] **F4-06. Documentación para integradores.** Matriz visible de capacidades reales, ejemplos por caso comercial, colección de pruebas y ejemplos cURL/PHP/C#/Java/TypeScript. Documentar idempotencia, tickets, reintentos, webhooks, errores y diferencias sandbox/producción; extender SDK existente conforme se incorporen funciones.
-- [ ] **F4-07. Verificación de salida a producción.** Ampliar checklist existente con los casos NJ págs. 8-9: monedas, impuestos mixtos, notas, baja, consulta y artefactos, añadiendo GRE cuando se habilite. Conservar resultados y separar transporte simulado de aceptación oficial.
+- [x] **F4-01. Consulta útil.** Reutilizar filtros por empresa, tipo y serie/número. Completar respuesta con disponibilidad de artefactos, observaciones SUNAT, información de QR/hash cuando corresponda y relación con baja/RC/RA. Mantener el estado de anulación separado del estado de cobro.
+- [x] **F4-02. Recuperación y reconciliación.** Recuperar CDR desde SUNAT por identificadores para los tipos que lo soporten, además de consultar tickets. Reconciliar ante timeout o documento previamente registrado; no repetir emisión ni consumir nuevo correlativo. La consulta de validez CPE actual no sustituye esta recuperación.
+- [x] **F4-03. Entrega de comprobantes.** Envío opcional al destinatario, varios correos y reenvío autorizado. Reutilizar servicio de email, agregar cola, reintentos, deduplicación y estado propio de entrega. Para GRE, enviar representación definitiva al estar aceptada; definir política explícita para CPE pendientes/observados. Una falla de correo no cambia el resultado fiscal.
+- [x] **F4-04. Acceso a archivos para destinatarios.** Además de descargas autenticadas existentes, evaluar enlaces temporales o una consulta compartida por documento, con token limitado a ese documento y revocable. Mantener MinIO privado; no incluir API keys en enlaces ni exponer listados de la organización.
+- [x] **F4-05. Onboarding automatizado.** CRUD de empresa/configuración, series y certificados para integradores que administran varios RUC, con scopes específicos, aislamiento por organización, auditoría, rotación y secretos cifrados. Reutilizar la gestión existente del panel y evitar borrado destructivo del historial fiscal.
+- [x] **F4-06. Documentación para integradores.** Matriz visible de capacidades reales, ejemplos por caso comercial, colección de pruebas y ejemplos cURL/PHP/C#/Java/TypeScript. Documentar idempotencia, tickets, reintentos, webhooks, errores y diferencias sandbox/producción; extender SDK existente conforme se incorporen funciones.
+- [x] **F4-07. Verificación de salida a producción.** Ampliar checklist existente con los casos NJ págs. 8-9: monedas, impuestos mixtos, notas, baja, consulta y artefactos, añadiendo GRE cuando se habilite. Conservar resultados y separar transporte simulado de aceptación oficial.
 
 **Aceptación:** consultar/reconciliar no duplica documentos; errores distinguen validación, rechazo SUNAT y transporte. Un mensaje de correo tiene estado rastreable y reintentos sin duplicación deliberada por evento. Enlaces y API administrativa no permiten acceso entre organizaciones. Cada función pública nueva incluye contrato, ejemplo y comportamiento de error.
+
+Implementación y evidencia local: [Fase 4 — integración, consulta y entrega](phase4-integration.md). Certificado, aceptación SUNAT y entrega real al buzón pendientes de verificación externa.
 
 ## Fase 5. Documentos fiscales especializados
 
@@ -176,8 +178,8 @@ Fuentes: NT págs. 3-5 y 13-18; NJ págs. 2, 7 y 9; A ejemplos de contingencia y
 | ---- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | 0    | Implementada; verificación local completada | Líneas, impuestos mixtos/gratuitas, `strict`, firma, XSD, snapshot y PDF; aceptación SUNAT real pendiente | 2026-10-08; ver [evidencia](./phase0-cpe-integrity.md) |
 | 1    | Implementada; verificación local            | Contrato, cálculo, XML/PDF, SDK, anticipos concurrentes; SUNAT real pendiente                             | 2026-10-08; [evidencia](./phase1-commercial-cpe.md)    |
-| 2    | Pendiente; PDF básico existente             | QR leído, formatos revisados y preview sin emisión                                                        | Por completar                                          |
-| 3    | Pendiente; emisión GRE base existente       | Campos avanzados, QR oficial y PDF GRE                                                                    | Por completar                                          |
-| 4    | Pendiente; infraestructura existente        | Reconciliación, entrega, scopes y ejemplos                                                                | Por completar                                          |
+| 2    | Implementada; verificación local            | QR leído, formatos revisados y preview sin emisión                                                        | 2026-10-08; [evidencia](./phase2-print-preview.md)     |
+| 3    | Implementada; verificación local            | Campos avanzados, QR oficial y PDF GRE                                                                    | 2026-10-08; [evidencia](./phase3-gre.md)               |
+| 4    | Implementada; verificación local            | Reconciliación, entrega, scopes y ejemplos                                                                | 2026-10-08; [evidencia](./phase4-integration.md)       |
 | 5    | Pendiente; sujeto a demanda                 | Documentos propios validados                                                                              | Por completar                                          |
 | 6    | Opcional                                    | Necesidad confirmada y criterios de cada extensión                                                        | Por completar                                          |

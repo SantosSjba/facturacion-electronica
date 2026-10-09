@@ -4,6 +4,10 @@ export const MACHINE_SCOPES = [
   "documents:read",
   "documents:write",
   "credentials:manage",
+  "series:read",
+  "series:write",
+  "documents:deliver",
+  "documents:share",
   "webhooks:manage",
   "validations:cpe",
 ] as const;

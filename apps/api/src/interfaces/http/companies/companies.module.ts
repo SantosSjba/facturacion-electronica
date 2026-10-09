@@ -9,9 +9,16 @@ import { SeriesService } from "../../../infrastructure/series/series.service";
 import { CompaniesController } from "./companies.controller";
 import { CredentialsController } from "./credentials.controller";
 import { SeriesController } from "./series.controller";
+import { IntegratorCompaniesController } from "./integrator-companies.controller";
 
 @Module({
-  controllers: [CompaniesController, CompanyLogoController, CredentialsController, SeriesController],
+  controllers: [
+    CompaniesController,
+    CompanyLogoController,
+    CredentialsController,
+    SeriesController,
+    IntegratorCompaniesController,
+  ],
   providers: [
     CompaniesService,
     CompanyLogoService,
@@ -19,6 +26,12 @@ import { SeriesController } from "./series.controller";
     SeriesService,
     CredentialsVault,
   ],
-  exports: [CompaniesService, CompanyLogoService, CredentialsService, SeriesService, CredentialsVault],
+  exports: [
+    CompaniesService,
+    CompanyLogoService,
+    CredentialsService,
+    SeriesService,
+    CredentialsVault,
+  ],
 })
 export class CompaniesModule {}

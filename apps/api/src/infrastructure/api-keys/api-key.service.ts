@@ -16,6 +16,10 @@ export const MACHINE_SCOPES = [
   "documents:read",
   "documents:write",
   "credentials:manage",
+  "series:read",
+  "series:write",
+  "documents:deliver",
+  "documents:share",
   "webhooks:manage",
   "validations:cpe",
 ] as const;
@@ -125,6 +129,7 @@ export class ApiKeyService {
         scopes: apiKeys.scopes,
         status: apiKeys.status,
         orgStatus: organizations.status,
+        environmentConstraint: apiKeys.environmentConstraint,
       })
       .from(apiKeys)
       .innerJoin(organizations, eq(organizations.id, apiKeys.organizationId))
@@ -150,6 +155,7 @@ export class ApiKeyService {
     return {
       kind: "api_key",
       organizationId: row.organizationId,
+      environmentConstraint: row.environmentConstraint as "sandbox" | "production" | null,
       apiKeyId: row.id,
       scopes: row.scopes,
     };

@@ -31,3 +31,4 @@ export { notifications } from "./notifications";
 export { notificationDeliveries } from "./notification-deliveries";
 export { notificationPreferences } from "./notification-preferences";
 export { orgExports } from "./org-exports";
+export { documentDeliveries, documentShares } from "./document-delivery";

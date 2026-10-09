@@ -3,16 +3,13 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
-import {
-  DOCUMENT_TYPES,
-  SeriesService,
-} from "../../../infrastructure/series/series.service";
+import { DOCUMENT_TYPES, SeriesService } from "../../../infrastructure/series/series.service";
 import type { UserAuthContext } from "../auth/auth-context";
 import { RequirePermissions } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-const createSchema = z.object({
+export const createSchema = z.object({
   document_type: z.enum(DOCUMENT_TYPES),
   serie: z.string().min(1).max(8),
   next_number: z.number().int().positive().optional(),
@@ -20,7 +17,7 @@ const createSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
-const patchSchema = z.object({
+export const patchSchema = z.object({
   is_active: z.boolean().optional(),
   padding: z.number().int().positive().optional(),
 });
@@ -43,10 +40,7 @@ export class SeriesController {
   @Get()
   @RequirePermissions("series:read")
   @ApiOperation({ summary: "List document series" })
-  list(
-    @CurrentAuth() auth: UserAuthContext,
-    @Param("companyId") companyId: string,
-  ) {
+  list(@CurrentAuth() auth: UserAuthContext, @Param("companyId") companyId: string) {
     this.assertUser(auth);
     return this.series.list(auth.organizationId, companyId);
   }
@@ -104,9 +98,7 @@ export class SeriesController {
     });
   }
 
-  private assertUser(
-    auth: UserAuthContext | { kind: string },
-  ): asserts auth is UserAuthContext {
+  private assertUser(auth: UserAuthContext | { kind: string }): asserts auth is UserAuthContext {
     if (auth.kind !== "user") {
       throw AppError.forbidden("Console JWT required");
     }

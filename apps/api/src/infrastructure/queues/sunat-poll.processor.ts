@@ -118,6 +118,7 @@ export class SunatPollProcessor {
       if (cdr?.status === "rejected") result.status = "rejected";
       else if (result.status !== "rejected" && cdr) result.status = cdr.status;
       if (cdr) {
+        await this.documents.patchPayload(documentId, { _sunat: { observations: cdr.notes } });
         result.sunatCode = cdr.sunatCode;
         result.sunatMessage = cdr.sunatMessage;
       }
@@ -216,6 +217,12 @@ export class SunatPollProcessor {
       });
 
       const cdr = parseCdrZip(result.rawCdrZip);
+      const reconciliation = (doc.payload as { _reconciliation?: Record<string, unknown> })
+        ._reconciliation;
+      await this.documents.patchPayload(documentId, {
+        _sunat: { observations: cdr.observations },
+        ...(reconciliation ? { _reconciliation: { ...reconciliation, state: "recovered" } } : {}),
+      });
       const cdrKey = buildDocumentObjectKey({
         organizationId,
         companyId,
@@ -311,13 +318,20 @@ export class SunatPollProcessor {
   ): Promise<void> {
     const payload = (rcDoc.payload ?? {}) as {
       pooled_document_ids?: string[];
+      _canonical?: { lines?: { status?: string }[] };
     };
     const ids = payload.pooled_document_ids ?? [];
     for (const id of ids) {
       try {
+        const cancelled =
+          summaryStatus === "accepted" &&
+          payload._canonical?.lines?.[ids.indexOf(id)]?.status === "3";
         await this.documents.patchPayload(id, {
           summary_status: summaryStatus,
           summary_document_id: rcDoc.id,
+          ...(cancelled
+            ? { cancellation_status: "cancelled", cancellation_document_id: rcDoc.id }
+            : {}),
         });
         await this.documents.appendEvent({
           organizationId,

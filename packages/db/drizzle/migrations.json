@@ -110,5 +110,12 @@
     "tag": "company_pdf_format",
     "up": "0016_company_pdf_format.sql",
     "down": "0016_company_pdf_format.down.sql"
+  },
+  {
+    "id": "0017_document_delivery",
+    "when": 17,
+    "tag": "document_delivery",
+    "up": "0017_document_delivery.sql",
+    "down": "0017_document_delivery.down.sql"
   }
 ]

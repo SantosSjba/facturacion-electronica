@@ -5,6 +5,7 @@ export const QUEUE_NAMES = [
   "pdf-render",
   "notifications",
   "org-export",
+  "document-delivery",
 ] as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[number];

@@ -1,0 +1,11 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "reference_date": "2026-10-08",
+  "documents": [
+    {
+      "document_type": "01",
+      "serie_number": "F001-1",
+      "reason": "Error de emisión"
+    }
+  ]
+}

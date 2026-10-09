@@ -5,7 +5,7 @@ export type CdrFixtureKind = "accepted" | "accepted_with_observation" | "rejecte
 
 const CODE_BY_KIND: Record<CdrFixtureKind, string> = {
   accepted: "0",
-  accepted_with_observation: "98",
+  accepted_with_observation: "0",
   rejected: "2324",
 };
 
@@ -26,17 +26,11 @@ export function buildApplicationResponseXml(
   const description = DESC_BY_KIND[kind];
   const today = new Date().toISOString().slice(0, 10);
 
-  const root = create({ version: "1.0", encoding: "UTF-8" }).ele(
-    "ar:ApplicationResponse",
-    {
-      "xmlns:ar":
-        "urn:oasis:names:specification:ubl:schema:xsd:ApplicationResponse-2",
-      "xmlns:cac":
-        "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
-      "xmlns:cbc":
-        "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-    },
-  );
+  const root = create({ version: "1.0", encoding: "UTF-8" }).ele("ar:ApplicationResponse", {
+    "xmlns:ar": "urn:oasis:names:specification:ubl:schema:xsd:ApplicationResponse-2",
+    "xmlns:cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+    "xmlns:cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  });
 
   root.ele("cbc:UBLVersionID").txt("2.0").up();
   root.ele("cbc:CustomizationID").txt("1.0").up();
@@ -44,6 +38,8 @@ export function buildApplicationResponseXml(
   root.ele("cbc:IssueDate").txt(today).up();
   root.ele("cbc:IssueTime").txt("00:00:00").up();
   root.ele("cbc:ResponseDate").txt(today).up();
+  if (kind === "accepted_with_observation")
+    root.ele("cbc:Note").txt("4000 - Observación de prueba").up();
 
   root
     .ele("cac:SenderParty")
@@ -73,12 +69,7 @@ export function buildApplicationResponseXml(
     .txt(description)
     .up()
     .up();
-  documentResponse
-    .ele("cac:DocumentReference")
-    .ele("cbc:ID")
-    .txt(documentReferenceId)
-    .up()
-    .up();
+  documentResponse.ele("cac:DocumentReference").ele("cbc:ID").txt(documentReferenceId).up().up();
 
   return root.end({ prettyPrint: false });
 }
@@ -88,10 +79,7 @@ export function buildCdrZipFixture(
   kind: CdrFixtureKind,
   opts?: { documentReferenceId?: string; xmlEntryName?: string },
 ): Buffer {
-  const xml = buildApplicationResponseXml(
-    kind,
-    opts?.documentReferenceId ?? "F001-00000001",
-  );
+  const xml = buildApplicationResponseXml(kind, opts?.documentReferenceId ?? "F001-00000001");
   const entry = opts?.xmlEntryName ?? "R-20601234567-01-F001-1.xml";
   const zip = new AdmZip();
   zip.addFile(entry, Buffer.from(xml, "utf8"));

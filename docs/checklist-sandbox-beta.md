@@ -6,11 +6,11 @@ Fuente de producto: [22-sandbox-setup](https://github.com/SantosSjba/planificaci
 
 ## Modos
 
-| Modo | Env | Uso |
-| --- | --- | --- |
+| Modo                 | Env                                                                                          | Uso                                 |
+| -------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `local-rules` / Fake | `SUNAT_BILL_MODE=fake`, `SUNAT_GRE_MODE=fake`, `SUNAT_VALIDEZ_MODE=fake`, `PDF_RI_MODE=fake` | CI, onboarding, `pnpm demo:api-mvp` |
-| `mock-cdr` | Igual Fake (CDR sintético en `@factosys/sunat-soap`) | Demos / SDK |
-| `sunat-beta` | `SUNAT_BILL_MODE=beta` (+ GRE/validez beta) | RUC prueba + .pfx + SOL reales |
+| `mock-cdr`           | Igual Fake (CDR sintético en `@factosys/sunat-soap`)                                         | Demos / SDK                         |
+| `sunat-beta`         | `SUNAT_BILL_MODE=beta` (+ GRE/validez beta)                                                  | RUC prueba + .pfx + SOL reales      |
 
 ## Infra local
 
@@ -60,3 +60,34 @@ pnpm demo:api-mvp
 
 - [ ] `OTEL_ENABLED=0` (default) — emit sin exporter
 - [ ] `OTEL_ENABLED=1` — spans Console; o `OTEL_EXPORTER_OTLP_ENDPOINT` para OTLP HTTP
+
+## Salida a producción — fases 0 a 4
+
+Estas casillas requieren ejecución en el ambiente indicado. Las pruebas con Fake no completan aceptación oficial.
+
+| Evidencia local (2026-10-08)      | Resultado                                 | Límite                                                                      |
+| --------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
+| API unitarias                     | 100 aprobadas                             | Servicios locales/mocks                                                     |
+| Suites aisladas fiscal 0–4 y logo | 33 aprobadas (13 de Fase 4)               | Postgres/MinIO locales y transporte Fake/controlado                         |
+| SOAP / SDK                        | 21 / 11 aprobadas                         | Contrato probado sin SUNAT real                                             |
+| Ejemplos JSON                     | 26 pasan schemas estrictos                | No emiten ni consultan SUNAT                                                |
+| Suite heredada app.e2e            | 16 fallos en organización demo compartida | Cuotas llenas, rate limit y fixtures GRE antiguos; requiere fixture aislado |
+| SUNAT oficial y correo real       | Pendientes                                | Requieren certificado/credenciales/proveedor                                |
+
+- [ ] Migración 0017 aplicada en el despliegue; Postgres/Redis/MinIO privados y worker `document-delivery` operativo.
+- [ ] API keys por organización y ambiente con scopes mínimos; recursos de otra empresa/organización bloqueados; 401/403/404 verificados.
+- [ ] Certificado válido para el emisor, SOL y OAuth GRE; secretos cifrados, master key protegida, rotación y revocación comprobadas. No usar PFX generado por los tests.
+- [ ] Emisión real: contado/crédito/cuotas, PEN/USD/tipo de cambio, impuestos mixtos/gratuitos, descuentos/cargos, anticipos, detracción, ICBPER/ISC/IVAP y exportación con datos válidos.
+- [ ] Actualizar catálogo XSL para anticipos con ISC; conservar XML firmado y resultado XSD/XSL por caso.
+- [ ] Notas por devolución/descuento/cuotas y débito contra documento real; comprobar importes y referencia.
+- [ ] Boleta en RC y baja CPE por RA/RC: ticket, CDR y relación con documento original; anulación separada de cobranza.
+- [ ] GRE 09 público/privado, M1/L y 31 con secundarios/subcontratación/aduanas: CDR oficial, QR oficial leído y PDF definitivo. No usar RA/RC como baja GRE.
+- [ ] Recuperar CDR de factura/notas F en producción y RC/RA por ticket: identidad y RUC correctos, sin nuevo XML/correlativo; registrar consultas fallidas, límites y conciliación de documentos previamente registrados.
+- [ ] Consulta/listado/trace y descargas XML/CDR/PDF/QR coinciden con el resultado SUNAT; logo histórico no cambia después de rotarlo.
+- [ ] SMTP/Resend real: remitente verificado, SPF/DKIM/DMARC, adjuntos en buzón propio, varios destinatarios, reintento seguro e incierto `unknown` sin repetición automática. `sent` no acredita lectura.
+- [ ] Outbox tras caída del worker/Redis: preparación recuperable; envío incierto requiere revisión autorizada; nunca alterar estado fiscal por error de email.
+- [ ] Enlaces bajo HTTPS: restricciones de artefactos, vencimiento y revocación efectivos, sin API key ni datos del cliente en metadata. Proxy/logs no almacenan token, ni cachean descarga privada.
+- [ ] Webhook real: firma HMAC validada, eventos deduplicados, respuesta rápida y procesamiento independiente; respaldos/restauración de DB y MinIO verificados.
+- [ ] Guardar evidencia sin secretos: fecha/ambiente/tipo/serie-número, request_id, hashes XML/CDR/PDF, código SUNAT, lectura de QR y resultado de entrega; separar Fake, beta y producción.
+
+Contrato y ejemplos: [Fase 4](phase4-integration.md), [guía integradores](integracion/README.md). La implementación local está terminada; el pase oficial requiere completar las casillas externas.

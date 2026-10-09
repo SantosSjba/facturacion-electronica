@@ -10,6 +10,19 @@ import { receiptCreateSchema } from "../../interfaces/http/dto/receipt-create.sc
 import { voidedDocumentCreateSchema } from "../../interfaces/http/dto/voided-document-create.schema";
 
 import { previewCreateSchema } from "../../interfaces/http/dto/preview-create.schema";
+import {
+  deliveryRequestSchema,
+  deliveryRetrySchema,
+  shareRequestSchema,
+} from "../../interfaces/http/v1/document-integration.controller";
+import {
+  integratorCompanyCreateSchema,
+  integratorCompanyPatchSchema,
+  integratorSeriesCreateSchema,
+  integratorSeriesPatchSchema,
+  integratorSolSchema,
+  integratorGreSchema,
+} from "../../interfaces/http/companies/integrator-companies.controller";
 
 const webhookCreateSchema = z.object({
   url: z.string().url(),
@@ -49,6 +62,64 @@ const REQUEST_BODIES: {
   description: string;
   example?: Record<string, unknown>;
 }[] = [
+  {
+    path: "/v1/documents/{id}/deliveries",
+    method: "post",
+    schema: deliveryRequestSchema,
+    description:
+      "Entrega solo tras aceptación. Idempotency-Key obligatorio; hasta diez correos. Estado propio por destinatario.",
+  },
+  {
+    path: "/v1/documents/{id}/deliveries/{deliveryId}/retry",
+    method: "post",
+    schema: deliveryRetrySchema,
+    description:
+      "Autoriza reintento explícito de entrega fallida, desconocida o vencida; requiere motivo.",
+  },
+  {
+    path: "/v1/documents/{id}/shares",
+    method: "post",
+    schema: shareRequestSchema,
+    description:
+      "Token limitado a un documento, máximo siete días; URL relativa, revocable. Archivos requieren aceptación.",
+  },
+  {
+    path: "/v1/companies",
+    method: "post",
+    schema: integratorCompanyCreateSchema,
+    description:
+      "Onboarding por API, scope companies:write. RUC inmutable; series iniciales opcionales.",
+  },
+  {
+    path: "/v1/companies/{id}",
+    method: "patch",
+    schema: integratorCompanyPatchSchema,
+    description: "Configuración/desactivación de empresa sin borrar historial fiscal.",
+  },
+  {
+    path: "/v1/companies/{id}/series",
+    method: "post",
+    schema: integratorSeriesCreateSchema,
+    description: "Crear serie. Scope series:write. No reserva correlativo.",
+  },
+  {
+    path: "/v1/companies/{id}/series/{seriesId}",
+    method: "patch",
+    schema: integratorSeriesPatchSchema,
+    description: "Cambiar padding/estado, sin reiniciar contador.",
+  },
+  {
+    path: "/v1/companies/{id}/sol-credentials",
+    method: "put",
+    schema: integratorSolSchema,
+    description: "Credenciales SOL cifradas. username=RUC+usuario. Scope credentials:manage.",
+  },
+  {
+    path: "/v1/companies/{id}/gre-credentials",
+    method: "put",
+    schema: integratorGreSchema,
+    description: "Rotación cifrada de OAuth GRE. Invalida token cacheado.",
+  },
   {
     path: "/v1/despatch-advices/{id}/reconcile-ticket",
     method: "post",

@@ -1,0 +1,43 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "serie": "F001",
+  "operation_type": "0200",
+  "issue_date": "2026-10-08",
+  "currency": "USD",
+  "totals_mode": "auto",
+  "customer": {
+    "identity_type": "7",
+    "identity_number": "PASSPORT01",
+    "name": "FOREIGN CUSTOMER",
+    "non_resident": true,
+    "address": {
+      "line": "Foreign street",
+      "country_code": "US"
+    }
+  },
+  "lines": [
+    {
+      "id": 1,
+      "quantity": 1,
+      "unit_code": "NIU",
+      "description": "Servicio de consultoría",
+      "unit_value": 100,
+      "tax_affectation": "40",
+      "igv_percent": 0,
+      "tax_scheme_id": "9995"
+    }
+  ],
+  "exchange_rate": {
+    "source_currency": "USD",
+    "target_currency": "PEN",
+    "rate": 3.7,
+    "date": "2026-10-08",
+    "source": "Contract rate"
+  },
+  "despatch_references": [
+    {
+      "document_type": "09",
+      "serie_number": "T001-1"
+    }
+  ]
+}

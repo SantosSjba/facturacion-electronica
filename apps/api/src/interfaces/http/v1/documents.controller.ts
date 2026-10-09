@@ -80,8 +80,9 @@ export class DocumentsController {
   ) {
     const orgId = this.orgId(auth);
     const typeFilter = parseDocumentTypes(query.document_type);
-    return this.documents.list(orgId, {
+    const page = await this.documents.list(orgId, {
       companyId: query.company_id,
+      environment: auth.kind === "api_key" ? (auth.environmentConstraint ?? undefined) : undefined,
       ...typeFilter,
       status: query.status,
       dateFrom: query.date_from,
@@ -90,6 +91,10 @@ export class DocumentsController {
       limit: query.limit,
       cursor: query.cursor,
     });
+    return {
+      ...page,
+      items: await Promise.all(page.items.map((r) => this.documents.getDetails(orgId, r.id))),
+    };
   }
 
   @Get(":id")
@@ -104,8 +109,7 @@ export class DocumentsController {
   @ApiResponse({ status: 404, description: "No existe o no pertenece al tenant." })
   async get(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
     const orgId = this.orgId(auth);
-    const row = await this.documents.getById(orgId, id);
-    return this.documents.toPublic(row);
+    return this.documents.getDetails(orgId, id);
   }
 
   @Get(":id/trace")

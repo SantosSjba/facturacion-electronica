@@ -1,169 +1,145 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 import { loadPfx } from "@factosys/sunat-sign";
-import { credentials, newId, type Db } from "@factosys/db";
+import { companies, credentials, newId, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
-
+import type Redis from "ioredis";
 import { CredentialsVault } from "../crypto/credentials-vault";
 import { CompaniesService } from "../companies/companies.service";
 import { DB } from "../persistence/db.tokens";
+import { REDIS } from "../redis/redis.tokens";
 
 @Injectable()
 export class CredentialsService {
   constructor(
     @Inject(DB) private readonly db: Db,
-    private readonly companies: CompaniesService,
+    private readonly companyService: CompaniesService,
     private readonly vault: CredentialsVault,
+    @Optional() @Inject(REDIS) private readonly redis?: Redis,
   ) {}
-
   async putCertificate(
-    organizationId: string,
+    org: string,
     companyId: string,
     pfx: Buffer,
     password: string,
   ): Promise<void> {
-    await this.companies.requireCompany(organizationId, companyId);
-
+    await this.companyService.requireCompany(org, companyId);
     let meta: ReturnType<typeof loadPfx>;
     try {
       meta = loadPfx(pfx, password);
-    } catch (cause) {
+    } catch {
       throw AppError.validation("Invalid PFX or password", [
-        { path: "file", issue: cause instanceof Error ? cause.message : "load failed" },
+        { path: "file", issue: "Cannot load certificate" },
       ]);
     }
-
-    const notAfter = new Date(meta.notAfter);
-    const status = notAfter.getTime() < Date.now() ? "expired" : "active";
-
-    const credentialId = await this.upsertCredentialRow({
-      organizationId,
+    const status = new Date(meta.notAfter).getTime() < Date.now() ? "expired" : "active";
+    await this.rotate(
+      org,
       companyId,
-      kind: "certificate",
+      "certificate",
       status,
-      publicMetadata: {
+      {
         subject_cn: meta.subjectCn ?? meta.subject,
         subject: meta.subject,
         not_before: meta.notBefore,
         not_after: meta.notAfter,
       },
-    });
-
-    const key = this.vault.buildObjectKey({
-      organizationId,
-      companyId,
-      kind: "certificate",
-      credentialId,
-    });
-    const { secretRef } = await this.vault.putSecret(key, {
-      pfx_base64: pfx.toString("base64"),
-      password,
-    });
-
-    await this.db
-      .update(credentials)
-      .set({ secretRef, updatedAt: new Date(), rotatedAt: new Date() })
-      .where(eq(credentials.id, credentialId));
+      { pfx_base64: pfx.toString("base64"), password },
+    );
   }
-
   async putSol(
-    organizationId: string,
+    org: string,
     companyId: string,
     input: { username: string; password: string },
   ): Promise<void> {
-    await this.companies.requireCompany(organizationId, companyId);
-    const credentialId = await this.upsertCredentialRow({
-      organizationId,
-      companyId,
-      kind: "sol",
-      status: "active",
-      publicMetadata: { sol_username: input.username },
-    });
-    const key = this.vault.buildObjectKey({
-      organizationId,
-      companyId,
-      kind: "sol",
-      credentialId,
-    });
-    const { secretRef } = await this.vault.putSecret(key, {
-      username: input.username,
-      password: input.password,
-    });
-    await this.db
-      .update(credentials)
-      .set({ secretRef, updatedAt: new Date(), rotatedAt: new Date() })
-      .where(eq(credentials.id, credentialId));
+    const company = await this.companyService.requireCompany(org, companyId);
+    if (!input.username.startsWith(company.ruc) || input.username.length <= 11)
+      throw AppError.validation("SOL username must include this company's RUC and user", [], {
+        httpStatus: 422,
+      });
+    await this.rotate(org, companyId, "sol", "active", { sol_username: input.username }, input);
+    await this.redis?.del("gre:oauth:" + companyId);
   }
-
   async putGre(
-    organizationId: string,
+    org: string,
     companyId: string,
     input: { clientId: string; clientSecret: string },
   ): Promise<void> {
-    await this.companies.requireCompany(organizationId, companyId);
-    const credentialId = await this.upsertCredentialRow({
-      organizationId,
+    await this.companyService.requireCompany(org, companyId);
+    await this.rotate(
+      org,
       companyId,
-      kind: "gre",
-      status: "active",
-      publicMetadata: { gre_client_id: input.clientId },
-    });
-    const key = this.vault.buildObjectKey({
-      organizationId,
-      companyId,
-      kind: "gre",
-      credentialId,
-    });
-    const { secretRef } = await this.vault.putSecret(key, {
-      client_id: input.clientId,
-      client_secret: input.clientSecret,
-    });
-    await this.db
-      .update(credentials)
-      .set({ secretRef, updatedAt: new Date(), rotatedAt: new Date() })
-      .where(eq(credentials.id, credentialId));
+      "gre",
+      "active",
+      { gre_client_id: input.clientId },
+      { client_id: input.clientId, client_secret: input.clientSecret },
+    );
+    await this.redis?.del("gre:oauth:" + companyId);
   }
-
-  private async upsertCredentialRow(input: {
-    organizationId: string;
-    companyId: string;
-    kind: "certificate" | "sol" | "gre";
-    status: string;
-    publicMetadata: Record<string, unknown>;
-  }): Promise<string> {
-    const existing = await this.db
-      .select()
-      .from(credentials)
+  async revoke(org: string, companyId: string, kind: "certificate" | "sol" | "gre") {
+    await this.companyService.requireCompany(org, companyId);
+    const rows = await this.db
+      .update(credentials)
+      .set({ status: "revoked", updatedAt: new Date() })
       .where(
         and(
-          eq(credentials.companyId, input.companyId),
-          eq(credentials.kind, input.kind),
+          eq(credentials.organizationId, org),
+          eq(credentials.companyId, companyId),
+          eq(credentials.kind, kind),
         ),
       )
-      .limit(1);
-
-    if (existing[0]) {
-      await this.db
-        .update(credentials)
-        .set({
-          status: input.status,
-          publicMetadata: input.publicMetadata,
-          updatedAt: new Date(),
-        })
-        .where(eq(credentials.id, existing[0].id));
-      return existing[0].id;
-    }
-
-    const id = newId();
-    await this.db.insert(credentials).values({
-      id,
-      organizationId: input.organizationId,
-      companyId: input.companyId,
-      kind: input.kind,
-      status: input.status,
-      secretRef: "pending",
-      publicMetadata: input.publicMetadata,
+      .returning({ id: credentials.id });
+    if (!rows.length) throw AppError.notFound("Credential not found");
+    await this.redis?.del("gre:oauth:" + companyId);
+  }
+  private async rotate(
+    org: string,
+    companyId: string,
+    kind: "certificate" | "sol" | "gre",
+    status: string,
+    metadata: Record<string, unknown>,
+    secret: unknown,
+  ) {
+    await this.db.transaction(async (tx) => {
+      const [company] = await tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.organizationId, org)))
+        .for("update");
+      if (!company) throw AppError.notFound("Company not found");
+      const [existing] = await tx
+        .select()
+        .from(credentials)
+        .where(and(eq(credentials.companyId, companyId), eq(credentials.kind, kind)));
+      const credentialId = existing?.id ?? newId();
+      // Immutable encrypted object; switch reference only after the new object is persisted.
+      const key =
+        this.vault.buildObjectKey({ organizationId: org, companyId, kind, credentialId }) +
+        "/" +
+        newId();
+      const { secretRef } = await this.vault.putSecret(key, secret);
+      if (existing)
+        await tx
+          .update(credentials)
+          .set({
+            status,
+            secretRef,
+            publicMetadata: metadata,
+            updatedAt: new Date(),
+            rotatedAt: new Date(),
+          })
+          .where(eq(credentials.id, credentialId));
+      else
+        await tx.insert(credentials).values({
+          id: credentialId,
+          organizationId: org,
+          companyId,
+          kind,
+          status,
+          secretRef,
+          publicMetadata: metadata,
+          rotatedAt: new Date(),
+        });
     });
-    return id;
   }
 }

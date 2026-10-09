@@ -1,0 +1,81 @@
+{
+  "document_type": "09",
+  "serie": "T001",
+  "issue_date": "2026-10-08",
+  "issue_time": "10:00:00",
+  "notes": "Mercadería frágil: evitar golpes.",
+  "delivery_customer": {
+    "identity_type": "6",
+    "identity_number": "20123456789",
+    "name": "DESTINATARIO SAC"
+  },
+  "shipment": {
+    "transfer_reason_code": "09",
+    "transport_mode_code": "01",
+    "gross_weight": 125.125,
+    "gross_weight_unit": "KGM",
+    "selected_items_weight": 124,
+    "weight_difference_reason": "Peso de embalaje",
+    "total_packages": 20,
+    "start_date": "2026-10-10",
+    "start_time": "08:00:00",
+    "handover_date": "2026-10-09",
+    "carrier": {
+      "identity_type": "6",
+      "identity_number": "20600000000",
+      "name": "DESTINATARIO SAC",
+      "mtc_registration": "MTC123",
+      "authorization": {
+        "entity_code": "01",
+        "number": "AUT123"
+      }
+    },
+    "origin": {
+      "ubigeo": "150101",
+      "address": "Av. Origen 123",
+      "establishment_code": "0001",
+      "establishment_ruc": "20601234567"
+    },
+    "destination": {
+      "ubigeo": "040101",
+      "address": "Almacén destino 456"
+    },
+    "containers": [
+      {
+        "id": "MSCU1234567",
+        "seal": "PRECINTO123"
+      }
+    ],
+    "port_code": "014"
+  },
+  "related_documents": [
+    {
+      "document_type": "01",
+      "serie_number": "F001-15",
+      "issuer": {
+        "identity_type": "6",
+        "identity_number": "20123456789",
+        "name": "DESTINATARIO SAC"
+      }
+    },
+    {
+      "document_type": "50",
+      "serie_number": "118-2026-10-12345",
+      "description": "Declaración Aduanera de Mercancías"
+    }
+  ],
+  "lines": [
+    {
+      "id": 1,
+      "quantity": 12.123456789,
+      "unit_code": "NIU",
+      "description": "Bienes a trasladar",
+      "product_code": "PROD1",
+      "tariff_heading": "1234567890",
+      "normalized_good": false,
+      "customs_document_number": "118-2026-10-12345",
+      "customs_item_number": "1"
+    }
+  ],
+  "company_id": "00000000-0000-4000-8000-000000000001"
+}

@@ -1,0 +1,1541 @@
+{
+  "info": {
+    "name": "Factosys Fase 4",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pruebas de integración; configure variables, use sandbox y keys distintas por solicitud. CDR fixtures no acreditan aceptación real."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "api_key",
+      "value": ""
+    },
+    {
+      "key": "company_id",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "document_id",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "share_id",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "series_id",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "delivery_id",
+      "value": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "share_token",
+      "value": ""
+    },
+    {
+      "key": "sol_username",
+      "value": ""
+    },
+    {
+      "key": "sol_password",
+      "value": ""
+    },
+    {
+      "key": "gre_client_id",
+      "value": ""
+    },
+    {
+      "key": "gre_client_secret",
+      "value": ""
+    },
+    {
+      "key": "idempotency_key",
+      "value": "replace-for-each-new-request"
+    }
+  ],
+  "item": [
+    {
+      "name": "Capacidades",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/capabilities",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "capabilities"]
+        }
+      }
+    },
+    {
+      "name": "Empresas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies"]
+        }
+      }
+    },
+    {
+      "name": "Crear empresa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ruc\": \"20100070970\",\n  \"legal_name\": \"EMPRESA DE PRUEBA\",\n  \"environment\": \"sandbox\",\n  \"seed_default_series\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Casos comerciales y GRE",
+      "item": [
+        {
+          "name": "01-01-credito-cuotas.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"payment_terms\": {\n    \"condition\": \"credit\",\n    \"currency\": \"PEN\",\n    \"outstanding_amount\": 118,\n    \"installments\": [\n      {\n        \"number\": 1,\n        \"due_date\": \"2026-11-08\",\n        \"amount\": 50\n      },\n      {\n        \"number\": 2,\n        \"due_date\": \"2026-12-08\",\n        \"amount\": 68\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-02-descuentos-cargos.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"adjustments\": [\n        {\n          \"code\": \"00\",\n          \"base_amount\": 100,\n          \"amount\": 10,\n          \"factor\": 0.1\n        },\n        {\n          \"code\": \"48\",\n          \"base_amount\": 90,\n          \"amount\": 2\n        }\n      ]\n    }\n  ],\n  \"adjustments\": [\n    {\n      \"code\": \"02\",\n      \"base_amount\": 90,\n      \"amount\": 5\n    },\n    {\n      \"code\": \"50\",\n      \"base_amount\": 100,\n      \"amount\": 3\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-03-anticipo-aplicacion.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"prepayments\": [\n    {\n      \"id\": 1,\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-5\",\n      \"issuer_ruc\": \"20601234567\",\n      \"paid_date\": \"2026-10-01\",\n      \"amount\": 23.6,\n      \"base_amount\": 20,\n      \"tax_affectation\": \"10\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-04-detraccion.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"1001\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"detraction\": {\n    \"goods_code\": \"037\",\n    \"percent\": 12,\n    \"amount\": 14,\n    \"account\": \"00123456789\",\n    \"payment_means_code\": \"001\",\n    \"currency\": \"PEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-05-icbper.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"icbper\": {\n        \"quantity\": 1,\n        \"per_unit_amount\": 0.5\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-06-isc-sistema-01.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"isc\": {\n        \"system\": \"01\",\n        \"percent\": 10\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-07-isc-sistema-02.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"isc\": {\n        \"system\": \"02\",\n        \"per_unit_amount\": 5\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-08-isc-sistema-03.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"isc\": {\n        \"system\": \"03\",\n        \"retail_unit_price\": 150,\n        \"factor\": 0.8,\n        \"percent\": 10\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-09-ivap.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"17\",\n      \"igv_percent\": 4,\n      \"tax_scheme_id\": \"1016\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-10-exportacion.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0200\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"USD\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"7\",\n    \"identity_number\": \"PASSPORT01\",\n    \"name\": \"FOREIGN CUSTOMER\",\n    \"non_resident\": true,\n    \"address\": {\n      \"line\": \"Foreign street\",\n      \"country_code\": \"US\"\n    }\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"40\",\n      \"igv_percent\": 0,\n      \"tax_scheme_id\": \"9995\"\n    }\n  ],\n  \"exchange_rate\": {\n    \"source_currency\": \"USD\",\n    \"target_currency\": \"PEN\",\n    \"rate\": 3.7,\n    \"date\": \"2026-10-08\",\n    \"source\": \"Contract rate\"\n  },\n  \"despatch_references\": [\n    {\n      \"document_type\": \"09\",\n      \"serie_number\": \"T001-1\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-11-detraccion-hidrobiologia.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"1002\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"hydrobiology\": {\n        \"vessel_registration\": \"ABC\",\n        \"vessel_name\": \"BARCO\",\n        \"species\": \"ANCHOVETA\",\n        \"quantity\": 1,\n        \"unloading_place\": \"CALLAO\",\n        \"unloading_date\": \"2026-10-08\"\n      }\n    }\n  ],\n  \"detraction\": {\n    \"goods_code\": \"004\",\n    \"percent\": 10,\n    \"amount\": 12,\n    \"account\": \"00123456789\",\n    \"payment_means_code\": \"001\",\n    \"currency\": \"PEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-12-detraccion-pasajeros.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"1003\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"passenger_transport\": {\n        \"vehicle_plate\": \"ABC123\",\n        \"service_date\": \"2026-10-08\",\n        \"origin\": \"LIMA\",\n        \"destination\": \"CALLAO\"\n      }\n    }\n  ],\n  \"detraction\": {\n    \"goods_code\": \"028\",\n    \"percent\": 10,\n    \"amount\": 12,\n    \"account\": \"00123456789\",\n    \"payment_means_code\": \"001\",\n    \"currency\": \"PEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-13-detraccion-carga.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"1004\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"cargo_transport\": {\n        \"origin\": {\n          \"ubigeo\": \"150101\",\n          \"address\": \"LIMA\"\n        },\n        \"destination\": {\n          \"ubigeo\": \"070101\",\n          \"address\": \"CALLAO\"\n        },\n        \"trip_description\": \"VIAJE UNO\",\n        \"reference_amount\": 200,\n        \"reference_load_amount\": 200,\n        \"reference_vehicle_amount\": 200,\n        \"trips\": [\n          {\n            \"configuration\": \"C3\",\n            \"tons\": 10,\n            \"effective_tons\": 8,\n            \"reference_amount\": 200\n          }\n        ]\n      }\n    }\n  ],\n  \"detraction\": {\n    \"goods_code\": \"027\",\n    \"percent\": 4,\n    \"amount\": 8,\n    \"account\": \"00123456789\",\n    \"payment_means_code\": \"001\",\n    \"currency\": \"PEN\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "01-14-anticipo-isc.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/invoices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "invoices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"F001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\",\n      \"isc\": {\n        \"system\": \"01\",\n        \"percent\": 10\n      }\n    }\n  ],\n  \"prepayments\": [\n    {\n      \"id\": 1,\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-5\",\n      \"issuer_ruc\": \"20601234567\",\n      \"paid_date\": \"2026-10-01\",\n      \"amount\": 25.96,\n      \"base_amount\": 20,\n      \"tax_affectation\": \"10\",\n      \"isc_amount\": 2,\n      \"isc_percent\": 10,\n      \"isc_system\": \"01\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "gre-public.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/despatch-advices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "despatch-advices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_type\": \"09\",\n  \"serie\": \"T001\",\n  \"issue_date\": \"2026-10-08\",\n  \"issue_time\": \"10:00:00\",\n  \"notes\": \"Mercadería frágil: evitar golpes.\",\n  \"delivery_customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"shipment\": {\n    \"transfer_reason_code\": \"01\",\n    \"transport_mode_code\": \"01\",\n    \"gross_weight\": 125.125,\n    \"gross_weight_unit\": \"KGM\",\n    \"total_packages\": 20,\n    \"start_date\": \"2026-10-10\",\n    \"start_time\": \"08:00:00\",\n    \"handover_date\": \"2026-10-09\",\n    \"carrier\": {\n      \"identity_type\": \"6\",\n      \"identity_number\": \"20600000000\",\n      \"name\": \"DESTINATARIO SAC\",\n      \"mtc_registration\": \"MTC123\",\n      \"authorization\": {\n        \"entity_code\": \"01\",\n        \"number\": \"AUT123\"\n      }\n    },\n    \"origin\": {\n      \"ubigeo\": \"150101\",\n      \"address\": \"Av. Origen 123\",\n      \"establishment_code\": \"0001\",\n      \"establishment_ruc\": \"20601234567\"\n    },\n    \"destination\": {\n      \"ubigeo\": \"040101\",\n      \"address\": \"Almacén destino 456\"\n    }\n  },\n  \"related_documents\": [\n    {\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-15\",\n      \"issuer\": {\n        \"identity_type\": \"6\",\n        \"identity_number\": \"20123456789\",\n        \"name\": \"DESTINATARIO SAC\"\n      }\n    }\n  ],\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 12.123456789,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Bienes a trasladar\",\n      \"product_code\": \"PROD1\"\n    }\n  ],\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "gre-private.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/despatch-advices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "despatch-advices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_type\": \"09\",\n  \"serie\": \"T001\",\n  \"issue_date\": \"2026-10-08\",\n  \"issue_time\": \"10:00:00\",\n  \"notes\": \"Mercadería frágil: evitar golpes.\",\n  \"delivery_customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"shipment\": {\n    \"transfer_reason_code\": \"01\",\n    \"transport_mode_code\": \"02\",\n    \"gross_weight\": 125.125,\n    \"gross_weight_unit\": \"KGM\",\n    \"total_packages\": 20,\n    \"start_date\": \"2026-10-10\",\n    \"start_time\": \"08:00:00\",\n    \"vehicles\": [\n      {\n        \"plate\": \"ABC123\",\n        \"tuc\": \"123456789\"\n      },\n      {\n        \"plate\": \"DEF456\",\n        \"authority_code\": \"AUT123\",\n        \"authority_entity_code\": \"01\",\n        \"tuc\": \"987654321\"\n      }\n    ],\n    \"drivers\": [\n      {\n        \"identity_type\": \"1\",\n        \"identity_number\": \"12345678\",\n        \"name\": \"Juan\",\n        \"last_name\": \"Perez\",\n        \"license\": \"Q12345678\"\n      },\n      {\n        \"identity_type\": \"1\",\n        \"identity_number\": \"87654321\",\n        \"name\": \"Ana\",\n        \"last_name\": \"Lopez\",\n        \"license\": \"Q87654321\"\n      }\n    ],\n    \"origin\": {\n      \"ubigeo\": \"150101\",\n      \"address\": \"Av. Origen 123\",\n      \"establishment_code\": \"0001\",\n      \"establishment_ruc\": \"20601234567\"\n    },\n    \"destination\": {\n      \"ubigeo\": \"040101\",\n      \"address\": \"Almacén destino 456\"\n    }\n  },\n  \"related_documents\": [\n    {\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-15\",\n      \"issuer\": {\n        \"identity_type\": \"6\",\n        \"identity_number\": \"20123456789\",\n        \"name\": \"DESTINATARIO SAC\"\n      }\n    }\n  ],\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 12.123456789,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Bienes a trasladar\",\n      \"product_code\": \"PROD1\"\n    }\n  ],\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "gre-m1.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/despatch-advices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "despatch-advices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_type\": \"09\",\n  \"serie\": \"T001\",\n  \"issue_date\": \"2026-10-08\",\n  \"issue_time\": \"10:00:00\",\n  \"notes\": \"Mercadería frágil: evitar golpes.\",\n  \"delivery_customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"shipment\": {\n    \"transfer_reason_code\": \"01\",\n    \"transport_mode_code\": \"01\",\n    \"gross_weight\": 125.125,\n    \"gross_weight_unit\": \"KGM\",\n    \"total_packages\": 20,\n    \"start_date\": \"2026-10-10\",\n    \"start_time\": \"08:00:00\",\n    \"handover_date\": \"2026-10-09\",\n    \"vehicles\": [\n      {\n        \"plate\": \"ABC123\"\n      }\n    ],\n    \"origin\": {\n      \"ubigeo\": \"150101\",\n      \"address\": \"Av. Origen 123\",\n      \"establishment_code\": \"0001\",\n      \"establishment_ruc\": \"20601234567\"\n    },\n    \"destination\": {\n      \"ubigeo\": \"040101\",\n      \"address\": \"Almacén destino 456\"\n    },\n    \"vehicle_m1_l\": true\n  },\n  \"related_documents\": [\n    {\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-15\",\n      \"issuer\": {\n        \"identity_type\": \"6\",\n        \"identity_number\": \"20123456789\",\n        \"name\": \"DESTINATARIO SAC\"\n      }\n    }\n  ],\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 12.123456789,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Bienes a trasladar\",\n      \"product_code\": \"PROD1\"\n    }\n  ],\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "gre-carrier.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/despatch-advices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "despatch-advices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_type\": \"31\",\n  \"serie\": \"V001\",\n  \"issue_date\": \"2026-10-08\",\n  \"issue_time\": \"10:00:00\",\n  \"notes\": \"Mercadería frágil: evitar golpes.\",\n  \"shipper\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"delivery_customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"shipment\": {\n    \"gross_weight\": 125.125,\n    \"gross_weight_unit\": \"KGM\",\n    \"total_packages\": 20,\n    \"start_date\": \"2026-10-10\",\n    \"start_time\": \"08:00:00\",\n    \"vehicles\": [\n      {\n        \"plate\": \"ABC123\",\n        \"tuc\": \"123456789\"\n      },\n      {\n        \"plate\": \"DEF456\",\n        \"authority_code\": \"AUT123\",\n        \"authority_entity_code\": \"01\",\n        \"tuc\": \"987654321\"\n      }\n    ],\n    \"drivers\": [\n      {\n        \"identity_type\": \"1\",\n        \"identity_number\": \"12345678\",\n        \"name\": \"Juan\",\n        \"last_name\": \"Perez\",\n        \"license\": \"Q12345678\"\n      },\n      {\n        \"identity_type\": \"1\",\n        \"identity_number\": \"87654321\",\n        \"name\": \"Ana\",\n        \"last_name\": \"Lopez\",\n        \"license\": \"Q87654321\"\n      }\n    ],\n    \"origin\": {\n      \"ubigeo\": \"150101\",\n      \"address\": \"Av. Origen 123\",\n      \"establishment_code\": \"0001\",\n      \"establishment_ruc\": \"20601234567\"\n    },\n    \"destination\": {\n      \"ubigeo\": \"040101\",\n      \"address\": \"Almacén destino 456\"\n    },\n    \"subcontracted\": true,\n    \"subcontractor\": {\n      \"identity_type\": \"6\",\n      \"identity_number\": \"20100070970\",\n      \"name\": \"DESTINATARIO SAC\"\n    },\n    \"freight_payer\": \"third_party\",\n    \"freight_payer_party\": {\n      \"identity_type\": \"6\",\n      \"identity_number\": \"20123456789\",\n      \"name\": \"DESTINATARIO SAC\"\n    },\n    \"mtc_registration\": \"MTC123\",\n    \"authorization\": {\n      \"entity_code\": \"01\",\n      \"number\": \"AUT123\"\n    }\n  },\n  \"related_documents\": [\n    {\n      \"document_type\": \"09\",\n      \"serie_number\": \"T001-15\",\n      \"issuer\": {\n        \"identity_type\": \"6\",\n        \"identity_number\": \"20123456789\",\n        \"name\": \"DESTINATARIO SAC\"\n      }\n    },\n    {\n      \"document_type\": \"50\",\n      \"serie_number\": \"118-2026-10-12345\",\n      \"description\": \"Declaración Aduanera de Mercancías\"\n    }\n  ],\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 12.123456789,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Bienes a trasladar\",\n      \"product_code\": \"PROD1\",\n      \"tariff_heading\": \"1234567890\",\n      \"normalized_good\": false\n    }\n  ],\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "gre-export.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/despatch-advices",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "despatch-advices"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_type\": \"09\",\n  \"serie\": \"T001\",\n  \"issue_date\": \"2026-10-08\",\n  \"issue_time\": \"10:00:00\",\n  \"notes\": \"Mercadería frágil: evitar golpes.\",\n  \"delivery_customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"DESTINATARIO SAC\"\n  },\n  \"shipment\": {\n    \"transfer_reason_code\": \"09\",\n    \"transport_mode_code\": \"01\",\n    \"gross_weight\": 125.125,\n    \"gross_weight_unit\": \"KGM\",\n    \"selected_items_weight\": 124,\n    \"weight_difference_reason\": \"Peso de embalaje\",\n    \"total_packages\": 20,\n    \"start_date\": \"2026-10-10\",\n    \"start_time\": \"08:00:00\",\n    \"handover_date\": \"2026-10-09\",\n    \"carrier\": {\n      \"identity_type\": \"6\",\n      \"identity_number\": \"20600000000\",\n      \"name\": \"DESTINATARIO SAC\",\n      \"mtc_registration\": \"MTC123\",\n      \"authorization\": {\n        \"entity_code\": \"01\",\n        \"number\": \"AUT123\"\n      }\n    },\n    \"origin\": {\n      \"ubigeo\": \"150101\",\n      \"address\": \"Av. Origen 123\",\n      \"establishment_code\": \"0001\",\n      \"establishment_ruc\": \"20601234567\"\n    },\n    \"destination\": {\n      \"ubigeo\": \"040101\",\n      \"address\": \"Almacén destino 456\"\n    },\n    \"containers\": [\n      {\n        \"id\": \"MSCU1234567\",\n        \"seal\": \"PRECINTO123\"\n      }\n    ],\n    \"port_code\": \"014\"\n  },\n  \"related_documents\": [\n    {\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-15\",\n      \"issuer\": {\n        \"identity_type\": \"6\",\n        \"identity_number\": \"20123456789\",\n        \"name\": \"DESTINATARIO SAC\"\n      }\n    },\n    {\n      \"document_type\": \"50\",\n      \"serie_number\": \"118-2026-10-12345\",\n      \"description\": \"Declaración Aduanera de Mercancías\"\n    }\n  ],\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 12.123456789,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Bienes a trasladar\",\n      \"product_code\": \"PROD1\",\n      \"tariff_heading\": \"1234567890\",\n      \"normalized_good\": false,\n      \"customs_document_number\": \"118-2026-10-12345\",\n      \"customs_item_number\": \"1\"\n    }\n  ],\n  \"company_id\": \"{{company_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "boleta.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/receipts",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "receipts"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"B001\",\n  \"operation_type\": \"0101\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 100,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"send_individually\": true,\n  \"include_in_daily_summary\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "nota-devolucion.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/credit-notes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "credit-notes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"FC01\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 10,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"note_type\": \"06\",\n  \"reason\": \"Ajuste comercial\",\n  \"affected_document\": {\n    \"document_type\": \"01\",\n    \"serie_number\": \"F001-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "nota-descuento.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/credit-notes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "credit-notes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"FC01\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 10,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"note_type\": \"05\",\n  \"reason\": \"Ajuste comercial\",\n  \"affected_document\": {\n    \"document_type\": \"01\",\n    \"serie_number\": \"F001-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "nota-debito.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/debit-notes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "debit-notes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"FD01\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 10,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"note_type\": \"02\",\n  \"reason\": \"Aumento del valor\",\n  \"affected_document\": {\n    \"document_type\": \"01\",\n    \"serie_number\": \"F001-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "nota-cuotas.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/credit-notes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "credit-notes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"serie\": \"FC01\",\n  \"issue_date\": \"2026-10-08\",\n  \"currency\": \"PEN\",\n  \"totals_mode\": \"auto\",\n  \"customer\": {\n    \"identity_type\": \"6\",\n    \"identity_number\": \"20123456789\",\n    \"name\": \"ACME SAC\"\n  },\n  \"lines\": [\n    {\n      \"id\": 1,\n      \"quantity\": 1,\n      \"unit_code\": \"NIU\",\n      \"description\": \"Servicio de consultoría\",\n      \"unit_value\": 0,\n      \"tax_affectation\": \"10\",\n      \"igv_percent\": 18,\n      \"tax_scheme_id\": \"1000\"\n    }\n  ],\n  \"payment_terms\": {\n    \"condition\": \"credit\",\n    \"currency\": \"PEN\",\n    \"outstanding_amount\": 118,\n    \"installments\": [\n      {\n        \"number\": 1,\n        \"due_date\": \"2026-11-08\",\n        \"amount\": 50\n      },\n      {\n        \"number\": 2,\n        \"due_date\": \"2026-12-08\",\n        \"amount\": 68\n      }\n    ]\n  },\n  \"note_type\": \"13\",\n  \"reason\": \"Corrección de cuotas\",\n  \"affected_document\": {\n    \"document_type\": \"01\",\n    \"serie_number\": \"F001-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "resumen-diario.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/daily-summaries",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "daily-summaries"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"reference_date\": \"2026-10-08\",\n  \"document_ids\": [\n    \"00000000-0000-4000-8000-000000000001\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "baja-factura.json",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/voided-documents",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "voided-documents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"reference_date\": \"2026-10-08\",\n  \"documents\": [\n    {\n      \"document_type\": \"01\",\n      \"serie_number\": \"F001-1\",\n      \"reason\": \"Error de emisión\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consulta filtrada",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents?company_id={{company_id}}&document_type=01&serie_number=F001-1",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents"],
+          "query": [
+            {
+              "key": "company_id",
+              "value": "{{company_id}}"
+            },
+            {
+              "key": "document_type",
+              "value": "01"
+            },
+            {
+              "key": "serie_number",
+              "value": "F001-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Consultar empresa",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Configurar PDF",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pdf_format\": \"TICKET80\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Series",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/series",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "series"]
+        }
+      }
+    },
+    {
+      "name": "Crear serie",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/series",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "series"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"document_type\": \"01\",\n  \"serie\": \"F002\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Configurar serie",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/series/{{series_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "series", "{{series_id}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"padding\": 8\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Rotar SOL",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/sol-credentials",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "sol-credentials"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{sol_username}}\",\n  \"password\": \"{{sol_password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Rotar OAuth GRE",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/gre-credentials",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "gre-credentials"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"client_id\": \"{{gre_client_id}}\",\n  \"client_secret\": \"{{gre_client_secret}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Revocar SOL",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/companies/{{company_id}}/credentials/sol",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "companies", "{{company_id}}", "credentials", "sol"]
+        }
+      }
+    },
+    {
+      "name": "Estado y artefactos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Recuperar CDR",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/recover-cdr",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "recover-cdr"]
+        }
+      }
+    },
+    {
+      "name": "Entregar correo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotency_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/deliveries",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "deliveries"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recipients\": [\n    \"destinatario@example.invalid\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Reconciliar GRE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/despatch-advices/{{document_id}}/reconcile-ticket",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "despatch-advices", "{{document_id}}", "reconcile-ticket"]
+        }
+      }
+    },
+    {
+      "name": "Reintento autorizado de correo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/deliveries/{{delivery_id}}/retry",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "deliveries", "{{delivery_id}}", "retry"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Reenvío revisado por soporte\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Consultar entregas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/deliveries",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "deliveries"]
+        }
+      }
+    },
+    {
+      "name": "Compartir PDF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/shares",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "shares"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"allowed_artifacts\": [\n    \"pdf\"\n  ],\n  \"ttl_seconds\": 3600\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Listar enlaces",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/shares",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "shares"]
+        }
+      }
+    },
+    {
+      "name": "Consulta de destinatario",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/v1/shared-documents/{{share_token}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "shared-documents", "{{share_token}}"]
+        }
+      }
+    },
+    {
+      "name": "Revocar enlace",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/shares/{{share_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "shares", "{{share_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Consultar traza",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/trace",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "trace"]
+        }
+      }
+    },
+    {
+      "name": "Archivo xml",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/xml",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "xml"]
+        }
+      }
+    },
+    {
+      "name": "Archivo pdf",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/pdf",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "pdf"]
+        }
+      }
+    },
+    {
+      "name": "Archivo cdr",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/cdr",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "cdr"]
+        }
+      }
+    },
+    {
+      "name": "Archivo qr",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/v1/documents/{{document_id}}/qr",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "documents", "{{document_id}}", "qr"]
+        }
+      }
+    }
+  ]
+}

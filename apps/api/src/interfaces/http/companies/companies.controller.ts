@@ -9,7 +9,7 @@ import { RequirePermissions } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
-const createSchema = z.object({
+export const createSchema = z.object({
   ruc: z.string().regex(/^\d{11}$/),
   legal_name: z.string().min(1),
   trade_name: z.string().nullable().optional(),
@@ -21,7 +21,7 @@ const createSchema = z.object({
   seed_default_series: z.boolean().optional().default(true),
 });
 
-const patchSchema = z.object({
+export const patchSchema = z.object({
   environment: z.enum(["sandbox", "production"]).optional(),
   legal_name: z.string().min(1).optional(),
   trade_name: z.string().nullable().optional(),

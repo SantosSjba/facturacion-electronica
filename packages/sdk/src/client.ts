@@ -12,6 +12,12 @@ import type {
   CpeQr,
   DespatchInput,
   GreDocument,
+  CompanyInput,
+  CompanyPatch,
+  SeriesInput,
+  DocumentShare,
+  DocumentDelivery,
+  DocumentDetails,
 } from "./types";
 
 export class FactosysClient {
@@ -91,7 +97,9 @@ export class FactosysClient {
           };
         }
         const err = mapError(res.status, errBody);
-        if (isRetryable(err) && attempt <= this.maxRetries) {
+        const method = (opts.method ?? (opts.body !== undefined ? "POST" : "GET")).toUpperCase();
+        const safeRetry = ["GET", "PUT", "DELETE"].includes(method) || !!idem;
+        if (safeRetry && isRetryable(err) && attempt <= this.maxRetries) {
           await sleep(Math.min(1000 * attempt, 5000));
           continue;
         }
@@ -118,6 +126,46 @@ export class FactosysClient {
   };
 
   companies = {
+    list: () => this.request("/v1/companies"),
+    get: (id: string) => this.request(`/v1/companies/${encodeURIComponent(id)}`),
+    create: (body: CompanyInput) => this.request("/v1/companies", { method: "POST", body }),
+    update: (id: string, body: CompanyPatch) =>
+      this.request(`/v1/companies/${encodeURIComponent(id)}`, { method: "PATCH", body }),
+    listSeries: (id: string) => this.request(`/v1/companies/${encodeURIComponent(id)}/series`),
+    createSeries: (id: string, body: SeriesInput) =>
+      this.request(`/v1/companies/${encodeURIComponent(id)}/series`, { method: "POST", body }),
+    updateSeries: (
+      id: string,
+      seriesId: string,
+      body: Pick<SeriesInput, "padding" | "is_active">,
+    ) =>
+      this.request(
+        `/v1/companies/${encodeURIComponent(id)}/series/${encodeURIComponent(seriesId)}`,
+        { method: "PATCH", body },
+      ),
+    putSolCredentials: (id: string, username: string, password: string) =>
+      this.request<undefined>(`/v1/companies/${encodeURIComponent(id)}/sol-credentials`, {
+        method: "PUT",
+        body: { username, password },
+      }),
+    putGreCredentials: (id: string, clientId: string, clientSecret: string) =>
+      this.request<undefined>(`/v1/companies/${encodeURIComponent(id)}/gre-credentials`, {
+        method: "PUT",
+        body: { client_id: clientId, client_secret: clientSecret },
+      }),
+    putCertificate: (id: string, file: Blob, password: string, filename = "certificate.pfx") => {
+      const body = new FormData();
+      body.append("file", file, filename);
+      body.append("password", password);
+      return this.request<undefined>(`/v1/companies/${encodeURIComponent(id)}/certificate`, {
+        method: "PUT",
+        body,
+      });
+    },
+    revokeCredential: (id: string, kind: "certificate" | "sol" | "gre") =>
+      this.request<undefined>(`/v1/companies/${encodeURIComponent(id)}/credentials/${kind}`, {
+        method: "DELETE",
+      }),
     getLogo: (companyId: string) =>
       this.request<CompanyLogoResponse>(`/v1/companies/${encodeURIComponent(companyId)}/logo`),
     putLogo: (companyId: string, file: Blob, filename = "logo.png") => {
@@ -178,10 +226,62 @@ export class FactosysClient {
       this.request<ArrayBuffer>("/v1/previews/pdf", { method: "POST", body }),
   };
   documents = {
+    list: (
+      filters: {
+        company_id?: string;
+        document_type?: string;
+        serie_number?: string;
+        status?: string;
+        date_from?: string;
+        date_to?: string;
+        cursor?: string;
+        limit?: number;
+      } = {},
+    ) =>
+      this.request<{ items: DocumentDetails[]; next_cursor: string | null }>(
+        "/v1/documents?" +
+          new URLSearchParams(
+            Object.entries(filters)
+              .filter(([, v]) => v !== undefined)
+              .map(([k, v]) => [k, String(v)]),
+          ),
+      ),
+    recoverCdr: (id: string) =>
+      this.request<DocumentDetails>(`/v1/documents/${encodeURIComponent(id)}/recover-cdr`, {
+        method: "POST",
+      }),
+    deliver: (id: string, recipients: string[], idempotencyKey: string) =>
+      this.request<DocumentDelivery[]>(`/v1/documents/${encodeURIComponent(id)}/deliveries`, {
+        method: "POST",
+        body: { recipients },
+        idempotencyKey,
+      }),
+    listDeliveries: (id: string) =>
+      this.request<DocumentDelivery[]>(`/v1/documents/${encodeURIComponent(id)}/deliveries`),
+    retryDelivery: (id: string, deliveryId: string, reason: string) =>
+      this.request<DocumentDelivery[]>(
+        `/v1/documents/${encodeURIComponent(id)}/deliveries/${encodeURIComponent(deliveryId)}/retry`,
+        { method: "POST", body: { reason } },
+      ),
+    createShare: (
+      id: string,
+      allowedArtifacts: ("pdf" | "xml" | "cdr" | "qr")[] = ["pdf"],
+      ttlSeconds = 86400,
+    ) =>
+      this.request<DocumentShare>(`/v1/documents/${encodeURIComponent(id)}/shares`, {
+        method: "POST",
+        body: { allowed_artifacts: allowedArtifacts, ttl_seconds: ttlSeconds },
+      }),
+    listShares: (id: string) => this.request(`/v1/documents/${encodeURIComponent(id)}/shares`),
+    revokeShare: (id: string, shareId: string) =>
+      this.request<undefined>(
+        `/v1/documents/${encodeURIComponent(id)}/shares/${encodeURIComponent(shareId)}`,
+        { method: "DELETE" },
+      ),
     getQr: (id: string) => this.request<CpeQr>(`/v1/documents/${encodeURIComponent(id)}/qr`),
     getQrImage: (id: string) =>
       this.request<ArrayBuffer>(`/v1/documents/${encodeURIComponent(id)}/qr.png`),
-    get: (id: string) => this.request(`/v1/documents/${id}`),
+    get: (id: string) => this.request<DocumentDetails>(`/v1/documents/${encodeURIComponent(id)}`),
     getXml: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/xml`),
     getPdf: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/pdf`),
     getCdr: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/cdr`),

@@ -2,11 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Job } from "bullmq";
 import { createHash } from "node:crypto";
-import {
-  createBillServiceFromEnv,
-  parseCdrZip,
-  type BillServicePort,
-} from "@factosys/sunat-soap";
+import { createBillServiceFromEnv, parseCdrZip, type BillServicePort } from "@factosys/sunat-soap";
 import type { DocumentStatus } from "@factosys/domain";
 
 import type { Env } from "../config/env.schema";
@@ -59,17 +55,11 @@ export class SunatSendProcessor {
   ): Promise<{ ok: true; status: string }> {
     const doc = await this.documents.getById(organizationId, documentId);
     if (doc.status !== "queued") {
-      this.logger.warn(
-        `Skip sunat-send for ${documentId} status=${doc.status}`,
-      );
+      this.logger.warn(`Skip sunat-send for ${documentId} status=${doc.status}`);
       return { ok: true, status: doc.status };
     }
 
-    const zipArtifact = await this.documents.getArtifact(
-      organizationId,
-      documentId,
-      "zip",
-    );
+    const zipArtifact = await this.documents.getArtifact(organizationId, documentId, "zip");
     const sol = await this.credentials.resolveSol(companyId);
     const ruc = sol.username.replace(/[A-Za-z].*$/, "") || "00000000000";
     const zipName =
@@ -99,6 +89,7 @@ export class SunatSendProcessor {
       });
 
       const cdr = parseCdrZip(result.rawCdrZip);
+      await this.documents.patchPayload(documentId, { _sunat: { observations: cdr.observations } });
       const cdrKey = buildDocumentObjectKey({
         organizationId,
         companyId,
@@ -136,8 +127,7 @@ export class SunatSendProcessor {
 
       return { ok: true, status: nextStatus };
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : "SendBill failed";
+      const message = cause instanceof Error ? cause.message : "SendBill failed";
       this.logger.error(`sunat-send failed for ${documentId}: ${message}`);
       await this.documents.transitionStatus(documentId, "sent", "failed", {
         error: { message },

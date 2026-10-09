@@ -43,6 +43,18 @@ const REDACT_PATHS = [
               paths: [...REDACT_PATHS],
               censor: "[Redacted]",
             },
+            serializers: {
+              req: (req: { url?: string; headers?: Record<string, unknown> }) => {
+                if (!req.url?.includes("/v1/shared-documents/")) return req;
+                return {
+                  ...req,
+                  url: req.url.replace(/(\/v1\/shared-documents\/)[^/?]+/, "$1[Redacted]"),
+                  params: undefined,
+                  query: undefined,
+                  headers: { ...req.headers, referer: "[Redacted]" },
+                };
+              },
+            },
             transport: isDev
               ? {
                   target: "pino-pretty",
