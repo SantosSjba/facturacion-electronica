@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Header,
-  Param,
-  Query,
-  StreamableFile,
-} from "@nestjs/common";
+import { Controller, Get, Header, Param, Query, StreamableFile } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
@@ -13,10 +6,7 @@ import { AppError } from "@factosys/shared";
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
 import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 import type { AuthContext } from "../auth/auth-context";
-import {
-  ApiKeyAuth,
-  RequireScopes,
-} from "../decorators/auth.decorators";
+import { ApiKeyAuth, RequireScopes } from "../decorators/auth.decorators";
 import { CurrentAuth } from "../decorators/current-auth.decorator";
 import { ZodValidationPipe } from "../pipes/zod-validation.pipe";
 
@@ -52,9 +42,10 @@ const listQuerySchema = z.object({
 
 type ListQuery = z.infer<typeof listQuerySchema>;
 
-function parseDocumentTypes(
-  raw: string | undefined,
-): { documentType?: string; documentTypes?: string[] } {
+function parseDocumentTypes(raw: string | undefined): {
+  documentType?: string;
+  documentTypes?: string[];
+} {
   if (!raw?.trim()) return {};
   const types = raw
     .split(",")
@@ -145,10 +136,7 @@ export class DocumentsController {
     description: "Descarga el XML firmado cuando está disponible en almacenamiento.",
   })
   @Header("Content-Type", "application/xml")
-  async xml(
-    @CurrentAuth() auth: AuthContext,
-    @Param("id") id: string,
-  ): Promise<StreamableFile> {
+  async xml(@CurrentAuth() auth: AuthContext, @Param("id") id: string): Promise<StreamableFile> {
     const orgId = this.orgId(auth);
     const art = await this.documents.getArtifact(orgId, id, "xml_signed");
     return new StreamableFile(art.body, {
@@ -164,15 +152,31 @@ export class DocumentsController {
     summary: "Descargar CDR (ZIP)",
     description: "Descarga el CDR de SUNAT (ZIP) cuando el documento fue aceptado/rechazado.",
   })
-  async cdr(
-    @CurrentAuth() auth: AuthContext,
-    @Param("id") id: string,
-  ): Promise<StreamableFile> {
+  async cdr(@CurrentAuth() auth: AuthContext, @Param("id") id: string): Promise<StreamableFile> {
     const orgId = this.orgId(auth);
     const art = await this.documents.getArtifact(orgId, id, "cdr_xml");
     return new StreamableFile(art.body, {
       type: "application/zip",
       disposition: `attachment; filename="${id}-cdr.zip"`,
+    });
+  }
+
+  @Get(":id/qr")
+  @ApiKeyAuth()
+  @RequireScopes("documents:read")
+  @ApiOperation({ summary: "Datos y PNG del QR CPE basado en XML firmado" })
+  qr(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
+    return this.pdf.getQr(this.orgId(auth), id);
+  }
+
+  @Get(":id/qr.png")
+  @ApiKeyAuth()
+  @RequireScopes("documents:read")
+  @ApiOperation({ summary: "Descargar QR CPE en PNG" })
+  async qrImage(@CurrentAuth() auth: AuthContext, @Param("id") id: string) {
+    const qr = await this.pdf.getQr(this.orgId(auth), id);
+    return new StreamableFile(Buffer.from(qr.data_url.split(",")[1] ?? "", "base64"), {
+      type: "image/png",
     });
   }
 

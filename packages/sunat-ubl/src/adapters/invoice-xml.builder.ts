@@ -69,6 +69,7 @@ export class XmlInvoiceBuilder implements BuildInvoiceXmlPort {
       .txt(canonical.document_type)
       .up();
     appendLegends(root, canonical);
+    if (canonical.observations) root.ele("cbc:Note").txt(canonical.observations).up();
     root.ele("cbc:DocumentCurrencyCode", ListUri.currency()).txt(cur).up();
 
     if (canonical.purchase_order)

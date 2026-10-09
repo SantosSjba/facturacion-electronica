@@ -53,6 +53,8 @@ export const cpeTotalsInputSchema = z
   .strict();
 
 export const cpeOptionalFields = {
+  pdf_format: z.enum(["A4", "A5", "TICKET80", "TICKET58"]).optional(),
+  observations: z.string().max(2000).optional(),
   issue_time: z.iso.time({ precision: 0 }).optional(),
   due_date: z.iso.date().optional(),
   purchase_order: z.string().min(1).optional(),

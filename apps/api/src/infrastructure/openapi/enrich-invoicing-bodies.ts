@@ -9,6 +9,8 @@ import { invoiceCreateSchema } from "../../interfaces/http/dto/invoice-create.sc
 import { receiptCreateSchema } from "../../interfaces/http/dto/receipt-create.schema";
 import { voidedDocumentCreateSchema } from "../../interfaces/http/dto/voided-document-create.schema";
 
+import { previewCreateSchema } from "../../interfaces/http/dto/preview-create.schema";
+
 const webhookCreateSchema = z.object({
   url: z.string().url(),
   events: z.array(z.string().min(1)).optional(),
@@ -47,6 +49,13 @@ const REQUEST_BODIES: {
   description: string;
   example?: Record<string, unknown>;
 }[] = [
+  ...["validate", "xml", "pdf"].map((output) => ({
+    path: `/v1/previews/${output}`,
+    method: "post" as const,
+    schema: previewCreateSchema,
+    description:
+      "Vista previa CPE local sin certificado, envío ni reserva de correlativos; número 1 referencial. Scope documents:write; 500 líneas / 200 KB máximo. PDF marcado sin QR fiscal.",
+  })),
   {
     path: "/v1/invoices",
     method: "post",

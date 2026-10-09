@@ -1,11 +1,17 @@
 import { commercialSections, commercialLineDetails } from "./commercial-pdf";
 import { createHash } from "node:crypto";
+import { formatUnit } from "@factosys/sunat-ubl";
 
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppError } from "@factosys/shared";
 import {
   buildQrPayload,
+  buildQrImage,
+  readSignedCpeQr,
+  readSummaryXml,
+  PDF_TEMPLATE_VERSION,
+  type PdfFormat,
   createPdfRenderer,
   extractDigestValue,
   type PdfDocumentType,
@@ -20,7 +26,8 @@ import { DocumentsService } from "../documents/documents.service";
 import { QueueProducer } from "../queues/queue.producer";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 
-const PDF_TYPES = new Set(["01", "03", "07", "08"]);
+const CPE_TYPES = new Set(["01", "03", "07", "08"]);
+const PDF_TYPES = new Set([...CPE_TYPES, "RC", "RA"]);
 
 @Injectable()
 export class PdfService {
@@ -123,21 +130,179 @@ export class PdfService {
       // No stored PDF yet; continue rendering.
     }
 
-    const xmlArt = await this.documents.getArtifact(organizationId, documentId, "xml_signed");
-    const signedXml = xmlArt.body.toString("utf8");
-    const digest = extractDigestValue(signedXml);
-    if (!digest) {
-      throw AppError.internal("Signed XML missing DigestValue");
-    }
+    const input = await this.renderInput(organizationId, doc);
 
+    const bytes = await this.renderer.render(input);
+    const body = Buffer.from(bytes);
+    const sha256 = createHash("sha256").update(body).digest("hex");
+    const objectKey = buildDocumentObjectKey({
+      organizationId,
+      companyId: doc.companyId,
+      documentId,
+      kind: "pdf",
+      sha256,
+      ext: "pdf",
+    });
+
+    const storedBody = await this.documents.putArtifact({
+      organizationId,
+      companyId: doc.companyId,
+      documentId,
+      kind: "pdf",
+      body,
+      contentType: "application/pdf",
+      objectKey,
+    });
+
+    return storedBody ?? body;
+  }
+  async getQr(organizationId: string, documentId: string) {
+    const doc = await this.documents.getById(organizationId, documentId);
+    if (!CPE_TYPES.has(doc.documentType))
+      throw AppError.validation("QR only applies to CPE", [], { httpStatus: 422 });
+    const xml = (
+      await this.documents.getArtifact(organizationId, documentId, "xml_signed")
+    ).body.toString("utf8");
+    const fiscal = readSignedCpeQr(xml);
+    if (fiscal) return buildQrImage(buildQrPayload(fiscal));
+    const input = await this.renderInput(organizationId, doc);
+    return buildQrImage(input.qrPayload);
+  }
+
+  async renderPreview(
+    organizationId: string,
+    companyId: string,
+    snapshot: Record<string, unknown>,
+    format?: PdfFormat,
+  ): Promise<Buffer> {
+    const company = await this.companies.requireCompany(organizationId, companyId);
+    const doc = {
+      companyId,
+      documentType: snapshot["document_type"],
+      serie: snapshot["serie"],
+      number: snapshot["number"],
+      issueDate: snapshot["issue_date"],
+      currency: snapshot["currency"],
+      totals: snapshot["totals"],
+      payload: {
+        _canonical: snapshot,
+        _print: {
+          format: format ?? company.pdfFormat ?? "A4",
+          template_version: PDF_TEMPLATE_VERSION,
+        },
+      },
+      logoSnapshot: { logo: company.logo ?? null },
+    } as Awaited<ReturnType<DocumentsService["getById"]>>;
+    const input = await this.renderInput(organizationId, doc, "");
+    return Buffer.from(
+      await this.renderer.render({ ...input, preview: true, digestValue: "", qrPayload: "" }),
+    );
+  }
+
+  private summaryInput(
+    doc: Awaited<ReturnType<DocumentsService["getById"]>>,
+    company: { ruc: string; legalName: string },
+    logoDataUrl?: string,
+    signedXml?: string,
+  ): PdfRenderInput {
+    const payload = (doc.payload ?? {}) as Record<string, unknown>;
+    const canonical = (payload["_canonical"] ?? readSummaryXml(signedXml ?? "")) as Record<
+      string,
+      unknown
+    >;
+    const supplier = canonical["supplier"] as Record<string, string>;
+    const rows = canonical["lines"] as Record<string, unknown>[];
+    return {
+      documentType: doc.documentType as PdfDocumentType,
+      informational: true,
+      format: "A4",
+      templateVersion: PDF_TEMPLATE_VERSION,
+      serieNumber: String(canonical["id"] ?? doc.serieNumber),
+      issueDate: String(canonical["issue_date"] ?? doc.issueDate),
+      currency: doc.currency ?? "PEN",
+      issuer: {
+        ruc: supplier?.["identity_number"] ?? company.ruc,
+        legalName: supplier?.["name"] ?? company.legalName,
+        logoDataUrl,
+      },
+      customer: { identityType: "", identityNumber: "", name: "" },
+      lines: rows.map((row) => ({
+        description: `${row["document_type"]} ${row["serie_number"] ?? `${row["serie"]}-${row["number"]}`}`,
+        quantity: "1",
+        unit: "DOC",
+        unitPrice: "",
+        igv: "",
+        amount: "",
+        details: [
+          ...(row["customer"]
+            ? [
+                `Adquirente: ${(row["customer"] as Record<string, string>)["identity_type"]} ${(row["customer"] as Record<string, string>)["identity_number"]}`,
+              ]
+            : []),
+          row["reason"]
+            ? `Motivo: ${row["reason"]}`
+            : `Operación RC: ${{ "1": "Alta", "2": "Modificación", "3": "Baja" }[String(row["status"])] ?? row["status"]}`,
+          ...(row["totals"]
+            ? Object.entries(row["totals"] as Record<string, unknown>)
+                .filter(([, value]) => typeof value === "number")
+                .map(([key, value]) => `${key}: ${moneyStr(value)}`)
+            : []),
+          ...(row["affected_document"]
+            ? [
+                `Documento afectado: ${(row["affected_document"] as Record<string, string>)["serie_number"]}`,
+              ]
+            : []),
+        ],
+      })),
+      totals: { total: "" },
+      digestValue: "",
+      qrPayload: "",
+      commercialSections: [
+        {
+          title: "Envío y resultado al generar este PDF",
+          entries: [
+            { label: "Fecha de referencia", value: String(canonical["reference_date"]) },
+            { label: "Ticket SUNAT", value: doc.sunatTicket ?? "Pendiente" },
+            { label: "Estado", value: doc.status },
+            { label: "Código SUNAT", value: doc.sunatResponseCode ?? "Pendiente" },
+            { label: "Resultado", value: doc.sunatResponseMessage ?? "Pendiente" },
+          ],
+        },
+      ],
+    };
+  }
+
+  private async renderInput(
+    organizationId: string,
+    doc: Awaited<ReturnType<DocumentsService["getById"]>>,
+    previewDigest?: string,
+  ): Promise<PdfRenderInput> {
+    const signedXml =
+      previewDigest === undefined
+        ? (await this.documents.getArtifact(organizationId, doc.id, "xml_signed")).body.toString(
+            "utf8",
+          )
+        : "";
+    const digest = previewDigest ?? extractDigestValue(signedXml);
+    if (digest === null) throw AppError.internal("Signed XML missing DigestValue");
     const company = await this.companies.requireCompany(organizationId, doc.companyId);
     const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
+    if (doc.documentType === "RC" || doc.documentType === "RA")
+      return this.summaryInput(
+        doc,
+        company,
+        documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
+        signedXml,
+      );
 
     const serie = doc.serie ?? doc.serieNumber?.split("-")[0] ?? "";
     const number = doc.number != null ? String(doc.number) : (doc.serieNumber?.split("-")[1] ?? "");
-    const totals = (doc.totals ?? {}) as Record<string, unknown>;
+
     const payload = (doc.payload ?? {}) as Record<string, unknown>;
     const snapshot = payload["_canonical"] as Record<string, unknown> | undefined;
+    const fiscalSerie = String(snapshot?.["serie"] ?? serie);
+    const fiscalNumber = snapshot ? String(snapshot["number"] ?? number).padStart(8, "0") : number;
+    const totals = (snapshot?.["totals"] ?? doc.totals ?? {}) as Record<string, unknown>;
     const snapshotSupplier = snapshot?.["supplier"] as Record<string, unknown> | undefined;
     const snapshotCustomer = snapshot?.["customer"] as Record<string, unknown> | undefined;
     const igv = moneyStr(
@@ -202,7 +367,7 @@ export class PdfService {
               typeof l["sunat_product_code"] === "string" ? l["sunat_product_code"] : undefined,
             quantity: String(l["quantity"] ?? "1"),
             unit: String(l["unit_code"] ?? l["unit"] ?? "NIU"),
-            unitPrice: moneyStr(l["unit_price"] ?? unitValue),
+            unitPrice: unitMoneyStr(l["unit_price"] ?? unitValue),
             igv: moneyStr(lineIgv),
             amount: moneyStr(lineExt),
             details: commercialLineDetails(l),
@@ -221,23 +386,37 @@ export class PdfService {
           },
         ];
 
-    const qrPayload = buildQrPayload({
-      ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
-      documentType: doc.documentType,
-      serie,
-      number,
-      igv,
-      total,
-      issueDate: doc.issueDate ?? "",
-      customerIdentityType: doc.customerIdentityType ?? "",
-      customerIdentityNumber: doc.customerIdentityNumber ?? "",
-      digestValue: digest,
-    });
+    const xmlQr = signedXml ? readSignedCpeQr(signedXml) : null;
+    const qrPayload = buildQrPayload(
+      xmlQr ?? {
+        ruc: String(snapshotSupplier?.["identity_number"] ?? company.ruc),
+        documentType: doc.documentType,
+        serie: fiscalSerie,
+        number: fiscalNumber,
+        igv,
+        total,
+        issueDate: String(snapshot?.["issue_date"] ?? doc.issueDate ?? ""),
+        customerIdentityType: String(
+          snapshotCustomer?.["identity_type"] ?? doc.customerIdentityType ?? "",
+        ),
+        customerIdentityNumber: String(
+          snapshotCustomer?.["identity_number"] ?? doc.customerIdentityNumber ?? "",
+        ),
+        digestValue: digest,
+      },
+    );
 
+    const print = payload["_print"] as
+      { format?: PdfFormat; template_version?: string } | undefined;
     const input: PdfRenderInput = {
+      format: print?.format ?? "A4",
+      templateVersion: print?.template_version ?? PDF_TEMPLATE_VERSION,
+      observations: snapshot?.["observations"] as string | undefined,
       documentType: doc.documentType as PdfDocumentType,
-      serieNumber: doc.serieNumber ?? `${serie}-${number}`,
-      issueDate: doc.issueDate ?? "",
+      serieNumber: snapshot
+        ? `${fiscalSerie}-${fiscalNumber}`
+        : (doc.serieNumber ?? `${serie}-${number}`),
+      issueDate: String(snapshot?.["issue_date"] ?? doc.issueDate ?? ""),
       issueTime: snapshot?.["issue_time"] as string | undefined,
       dueDate: snapshot?.["due_date"] as string | undefined,
       purchaseOrder: snapshot?.["purchase_order"] as string | undefined,
@@ -287,29 +466,7 @@ export class PdfService {
       qrPayload,
     };
 
-    const bytes = await this.renderer.render(input);
-    const body = Buffer.from(bytes);
-    const sha256 = createHash("sha256").update(body).digest("hex");
-    const objectKey = buildDocumentObjectKey({
-      organizationId,
-      companyId: doc.companyId,
-      documentId,
-      kind: "pdf",
-      sha256,
-      ext: "pdf",
-    });
-
-    await this.documents.putArtifact({
-      organizationId,
-      companyId: doc.companyId,
-      documentId,
-      kind: "pdf",
-      body,
-      contentType: "application/pdf",
-      objectKey,
-    });
-
-    return body;
+    return input;
   }
 }
 
@@ -331,12 +488,22 @@ function moneyStr(value: unknown, fallback = "0.00"): string {
 function addressLine(value: unknown): string | undefined {
   if (!value || typeof value !== "object") return undefined;
   const addr = value as Record<string, unknown>;
-  const parts = [addr["line"], addr["district"], addr["province"], addr["department"]].filter(
-    (part): part is string => typeof part === "string" && part.length > 0,
-  );
+  const parts = [
+    addr["line"],
+    addr["urbanization"],
+    addr["district"],
+    addr["province"],
+    addr["department"],
+    addr["country_code"],
+  ].filter((part): part is string => typeof part === "string" && part.length > 0);
   return parts.length ? parts.join(", ") : undefined;
 }
 
 function nonzeroMoney(value: unknown): string | undefined {
   return Number(value) > 0 ? moneyStr(value) : undefined;
+}
+
+function unitMoneyStr(value: unknown): string {
+  const number = Number(value);
+  return Number.isFinite(number) ? formatUnit(number) : String(value);
 }

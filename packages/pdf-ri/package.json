@@ -2,7 +2,7 @@
   "name": "@factosys/pdf-ri",
   "version": "0.0.0",
   "private": true,
-  "description": "Representación impresa (PDF) renderer",
+  "description": "Representaci\u00f3n impresa (PDF) renderer",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,15 +19,22 @@
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\""
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; try { rmSync('dist', { recursive: true, force: true }); } catch {}\"",
+    "test:print": "node scripts/verify-print.mjs"
   },
   "dependencies": {
-    "@factosys/shared": "workspace:*"
+    "@factosys/shared": "workspace:*",
+    "@xmldom/xmldom": "^0.9.12",
+    "qrcode": "^1.5.4"
   },
   "optionalDependencies": {
     "playwright": "^1.55.0"
   },
   "devDependencies": {
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
     "vitest": "^5.0.1"
   }
 }

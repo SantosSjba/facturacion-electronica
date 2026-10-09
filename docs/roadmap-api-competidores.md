@@ -101,13 +101,15 @@ Fuentes: A (`PaymentTerms`, `Cuota`, `Detraction`, `Prepayment`, descuentos/carg
 
 Fuentes: A (`/sale/qr`, rutas `/invoice/xml`, `/invoice/pdf`, equivalentes de notas/resúmenes/bajas/GRE); NJ págs. 8 y 14; NT págs. 7 y 13; NG pág. 9.
 
-- [ ] **F2-01. QR escaneable CPE.** Generar imagen QR con datos del comprobante definitivo y firma; exponer datos para representación propia y, si resulta útil, un recurso QR. Verificar contenido y dimensiones contra especificación oficial aplicable.
-- [ ] **F2-02. PDF fiel.** Dirección del emisor/adquirente, todas las líneas, códigos, observaciones, leyendas, compra, vencimiento, cuotas y descuentos/cargos implementados. En notas, motivo y documento afectado. Generar desde el mismo modelo fiscal persistido.
-- [ ] **F2-03. Formatos.** A4 y ticket de 80 mm primero; A5 y ticket de 58 mm según uso. Configuración por empresa y elección por documento. Versionar formato/plantilla y conservar el PDF histórico y el logo usado al emitir.
-- [ ] **F2-04. Prevalidación y preview.** Validar un payload y obtener XML/PDF de vista previa sin envío SUNAT ni consumo de correlativo. Marcar PDF como vista previa; no devolverlo como comprobante aceptado. Reutilizar el motor y permisos, con límites de tamaño/costo.
-- [ ] **F2-05. RC/RA.** Evaluar una representación de resumen/baja con ticket y resultado; distinguirla del PDF de una factura. Su prioridad depende de la necesidad de los integradores.
+- [x] **F2-01. QR escaneable CPE.** Generar imagen QR con datos del comprobante definitivo y firma; exponer datos para representación propia y, si resulta útil, un recurso QR. Verificar contenido y dimensiones contra especificación oficial aplicable.
+- [x] **F2-02. PDF fiel.** Dirección del emisor/adquirente, todas las líneas, códigos, observaciones, leyendas, compra, vencimiento, cuotas y descuentos/cargos implementados. En notas, motivo y documento afectado. Generar desde el mismo modelo fiscal persistido.
+- [x] **F2-03. Formatos.** A4 y ticket de 80 mm primero; A5 y ticket de 58 mm según uso. Configuración por empresa y elección por documento. Versionar formato/plantilla y conservar el PDF histórico y el logo usado al emitir.
+- [x] **F2-04. Prevalidación y preview.** Validar un payload y obtener XML/PDF de vista previa sin envío SUNAT ni consumo de correlativo. Marcar PDF como vista previa; no devolverlo como comprobante aceptado. Reutilizar el motor y permisos, con límites de tamaño/costo.
+- [x] **F2-05. RC/RA.** Evaluar una representación de resumen/baja con ticket y resultado; distinguirla del PDF de una factura. Su prioridad depende de la necesidad de los integradores.
 
 **Aceptación:** un lector de QR recupera los datos esperados; documentos largos y muchas líneas no se recortan en A4/ticket; las notas muestran su referencia; XML/PDF coinciden. Preview no cambia numeración, no envía a SUNAT y no genera eventos de aceptación. Cambiar el logo o la plantilla no altera PDFs históricos.
+
+Implementación y evidencia: [Fase 2 — PDFs y vistas previas](phase2-print-preview.md). QR leído desde PDFs rasterizados en los cuatro formatos; previsualización sin efectos de emisión; snapshots RC/RA y conservación del primer PDF bajo concurrencia.
 
 ## Fase 3. GRE remitente y transportista
 

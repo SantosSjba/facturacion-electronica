@@ -10,6 +10,7 @@ export class FakePdfRenderer implements PdfRendererPort {
     const html = buildRiHtml(input);
     const text = [
       "Factosys RI Fake PDF",
+      input.preview ? "VISTA PREVIA - SIN VALIDEZ TRIBUTARIA" : "",
       input.documentType,
       input.serieNumber,
       `DigestValue:${input.digestValue}`,

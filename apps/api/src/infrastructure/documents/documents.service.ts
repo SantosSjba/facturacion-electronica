@@ -2,13 +2,7 @@ import { createHash } from "node:crypto";
 
 import { Inject, Injectable, Optional } from "@nestjs/common";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, lt, or } from "drizzle-orm";
-import {
-  documentArtifacts,
-  documentEvents,
-  documents,
-  newId,
-  type Db,
-} from "@factosys/db";
+import { documentArtifacts, documentEvents, documents, newId, type Db } from "@factosys/db";
 import type { DocumentStatus } from "@factosys/domain";
 import { AppError } from "@factosys/shared";
 
@@ -37,12 +31,14 @@ export interface DocumentPublic {
   sunat_message: string | null;
   summary_status: string | null;
   error: DocumentPublicError | null;
+  printing?: { format: string; template_version: string };
   links: {
     self: string;
     xml: string;
     cdr: string;
     pdf: string;
     trace: string;
+    qr?: string;
   };
   created_at: Date;
   updated_at: Date;
@@ -103,12 +99,17 @@ export class DocumentsService {
       sunat_message: row.sunatResponseMessage ?? null,
       summary_status: resolveSummaryStatus(row),
       error: redactDocumentError(row.error),
+      printing: (row.payload as { _print?: { format: string; template_version: string } } | null)
+        ?._print,
       links: {
         self: `/v1/documents/${id}`,
         xml: `/v1/documents/${id}/xml`,
         cdr: `/v1/documents/${id}/cdr`,
         pdf: `/v1/documents/${id}/pdf`,
         trace: `/v1/documents/${id}/trace`,
+        ...(["01", "03", "07", "08"].includes(row.documentType)
+          ? { qr: `/v1/documents/${id}/qr` }
+          : {}),
       },
       created_at: row.createdAt,
       updated_at: row.updatedAt,
@@ -140,9 +141,7 @@ export class DocumentsService {
       conditions.push(lte(documents.issueDate, filters.dateTo));
     }
     if (filters.serieNumber?.trim()) {
-      conditions.push(
-        ilike(documents.serieNumber, `%${filters.serieNumber.trim()}%`),
-      );
+      conditions.push(ilike(documents.serieNumber, `%${filters.serieNumber.trim()}%`));
     }
 
     if (filters.cursor) {
@@ -152,24 +151,15 @@ export class DocumentsService {
           createdAt: documents.createdAt,
         })
         .from(documents)
-        .where(
-          and(
-            eq(documents.id, filters.cursor),
-            eq(documents.organizationId, organizationId),
-          ),
-        )
+        .where(and(eq(documents.id, filters.cursor), eq(documents.organizationId, organizationId)))
         .limit(1);
       const cursorRow = cursorRows[0];
       if (cursorRow) {
-        conditions.push(
-          or(
-            lt(documents.createdAt, cursorRow.createdAt),
-            and(
-              eq(documents.createdAt, cursorRow.createdAt),
-              lt(documents.id, cursorRow.id),
-            ),
-          )!,
+        const cursorFilter = or(
+          lt(documents.createdAt, cursorRow.createdAt),
+          and(eq(documents.createdAt, cursorRow.createdAt), lt(documents.id, cursorRow.id)),
         );
+        if (cursorFilter) conditions.push(cursorFilter);
       }
     }
 
@@ -229,14 +219,9 @@ export class DocumentsService {
       }
     }
     if (!row) {
-      throw AppError.notFound(
-        `Affected document ${input.documentType} ${serieNumber} not found`,
-      );
+      throw AppError.notFound(`Affected document ${input.documentType} ${serieNumber} not found`);
     }
-    if (
-      row.status !== "accepted" &&
-      row.status !== "accepted_with_observation"
-    ) {
+    if (row.status !== "accepted" && row.status !== "accepted_with_observation") {
       throw AppError.validation(
         "Affected document must be accepted before issuing NC/ND",
         [
@@ -258,12 +243,7 @@ export class DocumentsService {
     const rows = await this.db
       .select()
       .from(documents)
-      .where(
-        and(
-          eq(documents.id, documentId),
-          eq(documents.organizationId, organizationId),
-        ),
-      )
+      .where(and(eq(documents.id, documentId), eq(documents.organizationId, organizationId)))
       .limit(1);
     const row = rows[0];
     if (!row) {
@@ -340,9 +320,7 @@ export class DocumentsService {
 
     if (this.webhookFanout) {
       const sunatCode =
-        typeof input.data?.["sunat_code"] === "string"
-          ? input.data["sunat_code"]
-          : undefined;
+        typeof input.data?.["sunat_code"] === "string" ? input.data["sunat_code"] : undefined;
       void this.webhookFanout
         .onStatusChanged({
           organizationId: input.organizationId,
@@ -360,10 +338,7 @@ export class DocumentsService {
     return id;
   }
 
-  async patchPayload(
-    documentId: string,
-    patch: Record<string, unknown>,
-  ): Promise<void> {
+  async patchPayload(documentId: string, patch: Record<string, unknown>): Promise<void> {
     const rows = await this.db
       .select({ payload: documents.payload })
       .from(documents)
@@ -388,12 +363,7 @@ export class DocumentsService {
     const rows = await this.db
       .select()
       .from(documents)
-      .where(
-        and(
-          eq(documents.organizationId, organizationId),
-          eq(documents.companyId, companyId),
-        ),
-      );
+      .where(and(eq(documents.organizationId, organizationId), eq(documents.companyId, companyId)));
     const set = new Set(ids);
     return rows.filter((r) => set.has(r.id));
   }
@@ -415,10 +385,7 @@ export class DocumentsService {
       );
     return rows.filter((row) => {
       if (!["03", "07", "08"].includes(row.documentType)) return false;
-      if (
-        row.status !== "accepted" &&
-        row.status !== "accepted_with_observation"
-      ) {
+      if (row.status !== "accepted" && row.status !== "accepted_with_observation") {
         return false;
       }
       return resolveSummaryStatus(row) === "pending";
@@ -458,7 +425,69 @@ export class DocumentsService {
     body: Buffer;
     contentType: string;
     objectKey: string;
-  }): Promise<void> {
+  }): Promise<Buffer | undefined> {
+    if (input.kind === "pdf") {
+      // Serialize the first render across API/worker processes; preserve historical bytes.
+      return this.db.transaction(async (tx) => {
+        const [doc] = await tx
+          .select({ id: documents.id })
+          .from(documents)
+          .where(
+            and(
+              eq(documents.id, input.documentId),
+              eq(documents.organizationId, input.organizationId),
+              eq(documents.companyId, input.companyId),
+            ),
+          )
+          .for("update");
+        if (!doc) throw AppError.notFound("Document not found");
+        const [existing] = await tx
+          .select()
+          .from(documentArtifacts)
+          .where(
+            and(
+              eq(documentArtifacts.documentId, input.documentId),
+              eq(documentArtifacts.kind, "pdf"),
+            ),
+          );
+        if (existing?.objectKey) {
+          const stored = await this.storage.getObject(existing.objectKey);
+          if (
+            !stored.toString("latin1").includes("Factosys RI Fake PDF") ||
+            input.body.toString("latin1").includes("Factosys RI Fake PDF")
+          )
+            return stored;
+        }
+        const sha256 = createHash("sha256").update(input.body).digest("hex");
+        await this.storage.putObject(input.objectKey, input.body, input.contentType);
+        await tx
+          .insert(documentArtifacts)
+          .values({
+            id: newId(),
+            organizationId: input.organizationId,
+            companyId: input.companyId,
+            documentId: input.documentId,
+            kind: "pdf",
+            storageBackend: "s3",
+            bucket: this.storage.getBucket(),
+            objectKey: input.objectKey,
+            contentType: input.contentType,
+            sha256,
+            sizeBytes: input.body.length,
+          })
+          .onConflictDoUpdate({
+            target: [documentArtifacts.documentId, documentArtifacts.kind],
+            set: {
+              objectKey: input.objectKey,
+              sha256,
+              sizeBytes: input.body.length,
+              contentType: input.contentType,
+              bucket: this.storage.getBucket(),
+            },
+          });
+        return input.body;
+      });
+    }
     const sha256 = createHash("sha256").update(input.body).digest("hex");
     await this.storage.putObject(input.objectKey, input.body, input.contentType);
 
@@ -484,7 +513,7 @@ export class DocumentsService {
           sizeBytes: input.body.length,
         })
         .where(eq(documentArtifacts.id, existing[0].id));
-      return;
+      return undefined;
     }
 
     await this.db.insert(documentArtifacts).values({
@@ -500,12 +529,11 @@ export class DocumentsService {
       sha256,
       sizeBytes: input.body.length,
     });
+    return undefined;
   }
 }
 
-function resolveSummaryStatus(
-  row: typeof documents.$inferSelect,
-): string | null {
+function resolveSummaryStatus(row: typeof documents.$inferSelect): string | null {
   const payload = (row.payload ?? {}) as {
     include_in_daily_summary?: boolean;
     send_individually?: boolean;
@@ -528,9 +556,7 @@ function resolveSummaryStatus(
   return null;
 }
 
-function redactDocumentError(
-  raw: unknown,
-): DocumentPublicError | null {
+function redactDocumentError(raw: unknown): DocumentPublicError | null {
   if (!raw || typeof raw !== "object") return null;
   const err = raw as Record<string, unknown>;
   const out: DocumentPublicError = {};

@@ -44,5 +44,30 @@ export interface CpeDocument {
   totals: InvoiceTotals;
   currency: string;
   issue_date: string;
-  links: { self: string; xml: string; cdr: string; pdf: string; trace: string };
+  printing?: { format: "A4" | "A5" | "TICKET80" | "TICKET58"; template_version: string };
+  links: { qr?: string; self: string; xml: string; cdr: string; pdf: string; trace: string };
+}
+
+export type PreviewInput =
+  | { document_type: "01" | "03"; document: InvoiceInput | ReceiptInput }
+  | { document_type: "07" | "08"; document: NoteInput };
+export interface PreviewValidation {
+  preview: true;
+  signed: false;
+  sent_to_sunat: false;
+  numbering_reserved: false;
+  reference_number: 1;
+  document_type: string;
+  totals: InvoiceTotals;
+  validation: "local_business_rules";
+  sunat_acceptance: "not_checked";
+}
+export interface CpeQr {
+  payload: string;
+  data_url: string;
+  size_mm: number;
+  modules: number;
+  module_mm: number;
+  quiet_zone_mm: number;
+  error_correction: "Q";
 }

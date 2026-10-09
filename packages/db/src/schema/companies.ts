@@ -1,14 +1,5 @@
 import { sql } from "drizzle-orm";
-import {
-  char,
-  check,
-  index,
-  jsonb,
-  pgTable,
-  text,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { char, check, index, jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, idColumn, updatedAt } from "./columns";
 import { organizations } from "./organizations";
@@ -33,6 +24,10 @@ export const companies = pgTable(
     ruc: char("ruc", { length: 11 }).notNull(),
     legalName: text("legal_name").notNull(),
     tradeName: text("trade_name"),
+    pdfFormat: text("pdf_format")
+      .$type<"A4" | "A5" | "TICKET80" | "TICKET58">()
+      .notNull()
+      .default("A4"),
     logo: jsonb("logo").$type<CompanyLogo>(),
     environment: text("environment").notNull().default("sandbox"),
     address: jsonb("address"),
@@ -46,21 +41,15 @@ export const companies = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    uniqueIndex("companies_org_ruc_env_uidx").on(
-      t.organizationId,
-      t.ruc,
-      t.environment,
-    ),
+    uniqueIndex("companies_org_ruc_env_uidx").on(t.organizationId, t.ruc, t.environment),
     index("companies_org_id_idx").on(t.organizationId, t.id),
     index("companies_org_status_idx").on(t.organizationId, t.status),
+    check("companies_environment_check", sql`${t.environment} in ('sandbox', 'production')`),
     check(
-      "companies_environment_check",
-      sql`${t.environment} in ('sandbox', 'production')`,
+      "companies_pdf_format_check",
+      sql`${t.pdfFormat} in ('A4', 'A5', 'TICKET80', 'TICKET58')`,
     ),
     check("companies_ruc_len_check", sql`char_length(${t.ruc}) = 11`),
-    check(
-      "companies_status_check",
-      sql`${t.status} in ('active', 'disabled')`,
-    ),
+    check("companies_status_check", sql`${t.status} in ('active', 'disabled')`),
   ],
 );

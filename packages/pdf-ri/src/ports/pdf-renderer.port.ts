@@ -1,4 +1,4 @@
-export type PdfDocumentType = "01" | "03" | "07" | "08";
+export type PdfDocumentType = "01" | "03" | "07" | "08" | "RC" | "RA";
 
 export interface PdfLineItem {
   description: string;
@@ -14,7 +14,17 @@ export interface PdfLineItem {
   icbper?: string;
 }
 
+export type PdfFormat = "A4" | "A5" | "TICKET80" | "TICKET58";
+export const PDF_TEMPLATE_VERSION = "ri-v2";
+
 export interface PdfRenderInput {
+  format?: PdfFormat;
+  templateVersion?: string;
+  preview?: boolean;
+  observations?: string;
+  informational?: boolean;
+  qrDataUrl?: string;
+  qrSizeMm?: number;
   documentType: PdfDocumentType;
   serieNumber: string;
   issueDate: string;

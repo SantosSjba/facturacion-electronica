@@ -1,3 +1,4 @@
+import { PDF_TEMPLATE_VERSION } from "@factosys/pdf-ri";
 import { validatePrepayments } from "./prepayment-validation";
 import type { InvoiceCanonical } from "@factosys/sunat-ubl";
 import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
@@ -169,6 +170,13 @@ export class EmitDocumentOrchestrator {
                   totals: built.totals,
                   payload: {
                     ...(input.payload as Record<string, unknown>),
+                    _print: {
+                      format:
+                        (input.payload as { pdf_format?: string }).pdf_format ??
+                        company.pdfFormat ??
+                        "A4",
+                      template_version: PDF_TEMPLATE_VERSION,
+                    },
                     ...(built.canonicalSnapshot ? { _canonical: built.canonicalSnapshot } : {}),
                   },
                   payloadHash,

@@ -82,6 +82,7 @@ function buildNoteXml(
   root.ele("cbc:IssueDate").txt(canonical.issue_date).up();
   if (canonical.issue_time) root.ele("cbc:IssueTime").txt(canonical.issue_time);
   appendLegends(root, canonical);
+  if (canonical.observations) root.ele("cbc:Note").txt(canonical.observations).up();
   root.ele("cbc:DocumentCurrencyCode", ListUri.currency()).txt(cur).up();
 
   const discrepancy = root.ele("cac:DiscrepancyResponse");

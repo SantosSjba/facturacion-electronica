@@ -7,6 +7,9 @@ import type {
   ReceiptInput,
   NoteInput,
   CpeDocument,
+  PreviewInput,
+  PreviewValidation,
+  CpeQr,
 } from "./types";
 
 export class FactosysClient {
@@ -155,7 +158,18 @@ export class FactosysClient {
     create: (body: NoteInput, idempotencyKey: string) =>
       this.request<CpeDocument>("/v1/debit-notes", { method: "POST", body, idempotencyKey }),
   };
+  previews = {
+    validate: (body: PreviewInput) =>
+      this.request<PreviewValidation>("/v1/previews/validate", { method: "POST", body }),
+    getXml: (body: PreviewInput) =>
+      this.request<ArrayBuffer>("/v1/previews/xml", { method: "POST", body }),
+    getPdf: (body: PreviewInput) =>
+      this.request<ArrayBuffer>("/v1/previews/pdf", { method: "POST", body }),
+  };
   documents = {
+    getQr: (id: string) => this.request<CpeQr>(`/v1/documents/${encodeURIComponent(id)}/qr`),
+    getQrImage: (id: string) =>
+      this.request<ArrayBuffer>(`/v1/documents/${encodeURIComponent(id)}/qr.png`),
     get: (id: string) => this.request(`/v1/documents/${id}`),
     getXml: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/xml`),
     getPdf: (id: string) => this.request<ArrayBuffer>(`/v1/documents/${id}/pdf`),

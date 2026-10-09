@@ -124,3 +124,5 @@ export {
 } from "./types/commercial-fields";
 
 export { validateNoteReason } from "./hydrate/from-note-fixture";
+
+export { formatUnit } from "./adapters/cpe-xml";

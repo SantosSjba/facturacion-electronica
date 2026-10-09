@@ -1,3 +1,4 @@
+import { PDF_TEMPLATE_VERSION } from "@factosys/pdf-ri";
 import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
@@ -96,7 +97,7 @@ export class EmitDailySummaryUseCase {
     const documentId = newId();
     try {
       const ublId = `RC-${dateCompact}-${allocated.padded}`;
-      const { xml } = new XmlSummaryDocumentsBuilder().build({
+      const canonical: Parameters<XmlSummaryDocumentsBuilder["build"]>[0] = {
         id: ublId,
         reference_date: input.body.reference_date,
         issue_date: issueDate,
@@ -114,7 +115,8 @@ export class EmitDailySummaryUseCase {
           totals: l.totals,
           affected_document: l.affectedDocument,
         })),
-      });
+      };
+      const { xml } = new XmlSummaryDocumentsBuilder().build(canonical);
 
       const { signedXml } = await new XmlCryptoSignAdapter().sign({
         xml,
@@ -132,6 +134,8 @@ export class EmitDailySummaryUseCase {
       const pooledIds = poolLines.map((l) => l.documentId);
       const payload = {
         ...input.body,
+        _canonical: canonical,
+        _print: { format: "A4", template_version: PDF_TEMPLATE_VERSION },
         pooled_document_ids: pooledIds,
       };
 
@@ -162,6 +166,7 @@ export class EmitDailySummaryUseCase {
           totals: {},
           payload,
           payloadHash: hashRequestBody(payload),
+          logoSnapshot: { logo: company.logo ?? null },
           idempotencyKey: input.idempotencyKey,
           ublProfile: "2.0",
         }),

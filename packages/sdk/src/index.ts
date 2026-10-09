@@ -35,3 +35,5 @@ export async function getRuleset(baseUrl: string): Promise<{
 export { FactosysClient as default };
 
 export type { InvoiceInput, ReceiptInput, NoteInput, CpeDocument } from "./types";
+
+export type { PreviewInput, PreviewValidation, CpeQr } from "./types";

@@ -2,12 +2,9 @@ import "reflect-metadata";
 
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
-import {
-  DocumentBuilder,
-  SwaggerModule,
-  type OpenAPIObject,
-} from "@nestjs/swagger";
+import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
+import { json } from "express";
 
 import { AppModule } from "./app.module";
 import type { Env } from "./infrastructure/config/env.schema";
@@ -53,6 +50,7 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
 
+  app.use("/v1/previews", json({ limit: "200kb" }));
   app.useLogger(app.get(Logger));
 
   const config = app.get(ConfigService<Env, true>);
@@ -62,12 +60,7 @@ async function bootstrap(): Promise<void> {
     origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Idempotency-Key",
-      "X-Request-Id",
-    ],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "X-Request-Id"],
   });
 
   // OpenAPI público: solo API de facturación electrónica (sin SaaS / auth / platform).
@@ -118,21 +111,13 @@ async function bootstrap(): Promise<void> {
     .addTag("Boletas", "Emisión de boletas electrónicas (tipo 03).")
     .addTag("Notas de crédito", "Notas de crédito electrónicas (tipo 07).")
     .addTag("Notas de débito", "Notas de débito electrónicas (tipo 08).")
-    .addTag(
-      "Comunicaciones de baja",
-      "Comunicación de baja RA (SendSummary + consulta).",
-    )
-    .addTag(
-      "Resúmenes diarios",
-      "Resumen diario RC (pool automático + envío SUNAT).",
-    )
+    .addTag("Comunicaciones de baja", "Comunicación de baja RA (SendSummary + consulta).")
+    .addTag("Resúmenes diarios", "Resumen diario RC (pool automático + envío SUNAT).")
     .addTag("Guías de remisión", "GRE 09/31 (OAuth + sendDespatch + poll).")
-    .addTag(
-      "Documentos",
-      "Listado, detalle, traza, XML, CDR y PDF de documentos emitidos.",
-    )
+    .addTag("Documentos", "Listado, detalle, traza, XML, CDR y PDF de documentos emitidos.")
     .addTag("Webhooks", "Endpoints de notificación y entregas firmadas HMAC.")
     .addTag("Validaciones", "Consulta de validez de CPE.")
+    .addTag("Vistas previas", "Prevalidación local y XML/PDF sin firma ni consumo de correlativo.")
     .addTag("Empresas", "Configuración del logo de los comprobantes por empresa.")
     .addTag("Meta / Reglas", "Ruleset y pines de catálogo SUNAT (ADR-005).")
     .addBearerAuth(
@@ -140,8 +125,7 @@ async function bootstrap(): Promise<void> {
         type: "http",
         scheme: "bearer",
         bearerFormat: "API Key",
-        description:
-          "API key de la organización. Enviar como `Authorization: Bearer <api_key>`.",
+        description: "API key de la organización. Enviar como `Authorization: Bearer <api_key>`.",
       },
       "bearer",
     )
@@ -149,13 +133,7 @@ async function bootstrap(): Promise<void> {
   const document = enrichInvoicingRequestBodies(
     keepInvoicingPaths(
       SwaggerModule.createDocument(app, swaggerConfig, {
-        include: [
-          DocumentsModule,
-          WebhooksModule,
-          ValidationsModule,
-          MetaModule,
-          CompaniesModule,
-        ],
+        include: [DocumentsModule, WebhooksModule, ValidationsModule, MetaModule, CompaniesModule],
       }),
     ),
   );

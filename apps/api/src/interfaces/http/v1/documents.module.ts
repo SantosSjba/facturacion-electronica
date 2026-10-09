@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Module,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from "@nestjs/common";
+import { Inject, Module, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { Worker, type ConnectionOptions } from "bullmq";
 
 import { EmitDocumentOrchestrator } from "../../../infrastructure/documents/emit-document.orchestrator";
@@ -21,30 +16,27 @@ import { CredentialsResolver } from "../../../infrastructure/documents/credentia
 import { DocumentsService } from "../../../infrastructure/documents/documents.service";
 import { GreTokenCacheService } from "../../../infrastructure/gre/gre-token-cache.service";
 import { IdempotencyModule } from "../../../infrastructure/idempotency/idempotency.module";
-import {
-  BULLMQ_CONNECTION,
-  type QueueJobData,
-} from "../../../infrastructure/queues/queue.tokens";
+import { BULLMQ_CONNECTION, type QueueJobData } from "../../../infrastructure/queues/queue.tokens";
 import { SunatSendProcessor } from "../../../infrastructure/queues/sunat-send.processor";
 import { SunatPollProcessor } from "../../../infrastructure/queues/sunat-poll.processor";
 import { CompaniesModule } from "../companies/companies.module";
 import { WebhooksModule } from "./webhooks.module";
 import { DocumentsController } from "./documents.controller";
 import { InvoicesController } from "./invoices.controller";
-import {
-  CreditNotesController,
-  DebitNotesController,
-} from "./notes.controller";
+import { CreditNotesController, DebitNotesController } from "./notes.controller";
 import { ReceiptsController } from "./receipts.controller";
 import { VoidedDocumentsController } from "./voided-documents.controller";
 import { DailySummariesController } from "./daily-summaries.controller";
 import { DespatchAdvicesController } from "./despatch-advices.controller";
 import { PdfRenderProcessor } from "../../../infrastructure/pdf/pdf-render.processor";
+import { PreviewService } from "../../../infrastructure/pdf/preview.service";
+import { PreviewsController } from "./previews.controller";
 import { PdfService } from "../../../infrastructure/pdf/pdf.service";
 
 @Module({
   imports: [CompaniesModule, IdempotencyModule, WebhooksModule],
   controllers: [
+    PreviewsController,
     InvoicesController,
     ReceiptsController,
     CreditNotesController,
@@ -69,6 +61,7 @@ import { PdfService } from "../../../infrastructure/pdf/pdf.service";
     SummaryPoolService,
     SunatSendProcessor,
     SunatPollProcessor,
+    PreviewService,
     PdfService,
     PdfRenderProcessor,
   ],
@@ -81,6 +74,7 @@ import { PdfService } from "../../../infrastructure/pdf/pdf.service";
     EmitVoidedDocumentUseCase,
     EmitDailySummaryUseCase,
     EmitDespatchAdviceUseCase,
+    PreviewService,
     PdfService,
   ],
 })
@@ -97,21 +91,18 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.workers.push(
-      new Worker<QueueJobData>(
-        "sunat-send",
-        async (job) => this.sunatSend.process(job),
-        { connection: this.connection, concurrency: 2 },
-      ),
-      new Worker<QueueJobData>(
-        "sunat-poll",
-        async (job) => this.sunatPoll.process(job),
-        { connection: this.connection, concurrency: 2 },
-      ),
-      new Worker<QueueJobData>(
-        "pdf-render",
-        async (job) => this.pdfRender.process(job),
-        { connection: this.connection, concurrency: 1 },
-      ),
+      new Worker<QueueJobData>("sunat-send", async (job) => this.sunatSend.process(job), {
+        connection: this.connection,
+        concurrency: 2,
+      }),
+      new Worker<QueueJobData>("sunat-poll", async (job) => this.sunatPoll.process(job), {
+        connection: this.connection,
+        concurrency: 2,
+      }),
+      new Worker<QueueJobData>("pdf-render", async (job) => this.pdfRender.process(job), {
+        connection: this.connection,
+        concurrency: 1,
+      }),
     );
   }
 

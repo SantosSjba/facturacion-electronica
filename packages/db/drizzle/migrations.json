@@ -103,5 +103,12 @@
     "tag": "company_logo",
     "up": "0015_company_logo.sql",
     "down": "0015_company_logo.down.sql"
+  },
+  {
+    "id": "0016_company_pdf_format",
+    "when": 16,
+    "tag": "company_pdf_format",
+    "up": "0016_company_pdf_format.sql",
+    "down": "0016_company_pdf_format.down.sql"
   }
 ]

@@ -55,6 +55,15 @@ export function OverviewTab() {
     },
   });
 
+  const formatMutation = useMutation({
+    mutationFn: (pdf_format: NonNullable<Company["pdf_format"]>) =>
+      patchCompany(company.id, { pdf_format }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["companies"] });
+      await qc.invalidateQueries({ queryKey: ["company", company.id] });
+    },
+  });
+
   const certOk = company.certificate_status === "active";
   const address = (company.address ?? {}) as Record<string, unknown>;
   const addressLine = typeof address.line === "string" && address.line.trim() ? address.line : null;
@@ -178,6 +187,28 @@ export function OverviewTab() {
           </InfoGrid>
         </SectionCard>
       </section>
+      <SectionCard icon={Building2} title="Formato de impresión">
+        <label htmlFor="company-pdf-format">Formato predeterminado para nuevos comprobantes</label>
+        <select
+          id="company-pdf-format"
+          className="mt-2 block rounded-md border bg-background p-2"
+          value={company.pdf_format ?? "A4"}
+          disabled={!canWrite || formatMutation.isPending}
+          onChange={(event) =>
+            formatMutation.mutate(event.target.value as NonNullable<Company["pdf_format"]>)
+          }
+        >
+          <option value="A4">A4</option>
+          <option value="A5">A5</option>
+          <option value="TICKET80">Ticket de 80 mm</option>
+          <option value="TICKET58">Ticket de 58 mm</option>
+        </select>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Los documentos emitidos conservan su formato. Puedes elegir otro formato al emitir
+          mediante la API.
+        </p>
+        {formatMutation.error ? <p role="alert">{formatMutation.error.message}</p> : null}
+      </SectionCard>
       <CompanyLogoCard key={company.id} company={company} />
     </div>
   );

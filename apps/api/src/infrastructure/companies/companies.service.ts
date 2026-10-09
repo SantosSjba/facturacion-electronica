@@ -14,6 +14,8 @@ import { AppError } from "@factosys/shared";
 import { DB } from "../persistence/db.tokens";
 import { withPlanCapacity } from "../saas/plan-capacity";
 
+import type { PdfFormat } from "@factosys/pdf-ri";
+
 export type CompanyEnvironment = "sandbox" | "production";
 export type CompanyStatus = "active" | "disabled";
 
@@ -46,6 +48,7 @@ export interface CompanyPublic {
   address: unknown;
   catalog_pin: Record<string, string>;
   timezone: string;
+  pdf_format: PdfFormat;
   created_at: Date;
   updated_at: Date;
   certificate_status: "missing" | "active" | "expired" | "revoked";
@@ -85,6 +88,7 @@ export class CompaniesService {
       environment: CompanyEnvironment;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      pdfFormat?: PdfFormat;
       seedDefaultSeries?: boolean;
     },
   ): Promise<CompanyPublic> {
@@ -120,6 +124,7 @@ export class CompaniesService {
         environment: input.environment,
         address: input.address ?? null,
         timezone: input.timezone ?? "America/Lima",
+        pdfFormat: input.pdfFormat ?? "A4",
         status: "active",
       });
 
@@ -169,6 +174,7 @@ export class CompaniesService {
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      pdfFormat?: PdfFormat;
       status?: CompanyStatus;
     },
   ): Promise<CompanyPublic> {
@@ -179,12 +185,14 @@ export class CompaniesService {
       tradeName?: string | null;
       address?: Record<string, unknown> | null;
       timezone?: string;
+      pdfFormat?: PdfFormat;
       status?: CompanyStatus;
       updatedAt: Date;
     } = { updatedAt: new Date() };
     if (input.legalName !== undefined) patch.legalName = input.legalName;
     if (input.tradeName !== undefined) patch.tradeName = input.tradeName;
     if (input.address !== undefined) patch.address = input.address;
+    if (input.pdfFormat !== undefined) patch.pdfFormat = input.pdfFormat;
     if (input.timezone !== undefined) patch.timezone = input.timezone;
     if (input.status !== undefined) patch.status = input.status;
     if (input.environment !== undefined) patch.environment = input.environment;
@@ -283,19 +291,22 @@ export class CompaniesService {
       ruc: row.ruc,
       legal_name: row.legalName,
       trade_name: row.tradeName,
-      logo: row.logo ? {
-        content_type: row.logo.contentType,
-        size_bytes: row.logo.sizeBytes,
-        width: row.logo.width,
-        height: row.logo.height,
-        sha256: row.logo.sha256,
-        updated_at: row.logo.updatedAt,
-      } : null,
+      logo: row.logo
+        ? {
+            content_type: row.logo.contentType,
+            size_bytes: row.logo.sizeBytes,
+            width: row.logo.width,
+            height: row.logo.height,
+            sha256: row.logo.sha256,
+            updated_at: row.logo.updatedAt,
+          }
+        : null,
       environment: row.environment,
       status: (row.status === "disabled" ? "disabled" : "active") as CompanyStatus,
       address: row.address,
       catalog_pin: (row.catalogPin ?? {}) as Record<string, string>,
       timezone: row.timezone,
+      pdf_format: row.pdfFormat,
       created_at: row.createdAt,
       updated_at: row.updatedAt,
       certificate_status,

@@ -1,3 +1,4 @@
+import { PDF_TEMPLATE_VERSION } from "@factosys/pdf-ri";
 import { assertPlanCapacity, withPlanCapacity } from "../saas/plan-capacity";
 import { createHash } from "node:crypto";
 
@@ -156,7 +157,7 @@ export class EmitVoidedDocumentUseCase {
     const documentId = newId();
     try {
       const ublId = `RA-${dateCompact}-${allocated.padded}`;
-      const { xml } = new XmlVoidedDocumentsBuilder().build({
+      const canonical: Parameters<XmlVoidedDocumentsBuilder["build"]>[0] = {
         id: ublId,
         reference_date: input.body.reference_date,
         issue_date: issueDate,
@@ -166,7 +167,8 @@ export class EmitVoidedDocumentUseCase {
           name: company.legalName,
         },
         lines,
-      });
+      };
+      const { xml } = new XmlVoidedDocumentsBuilder().build(canonical);
       const { signedXml } = await new XmlCryptoSignAdapter().sign({
         xml,
         certificate: pfx,
@@ -182,6 +184,8 @@ export class EmitVoidedDocumentUseCase {
 
       const payload = {
         ...input.body,
+        _canonical: canonical,
+        _print: { format: "A4", template_version: PDF_TEMPLATE_VERSION },
         affected_document_ids: affectedIds,
       };
 
@@ -204,6 +208,7 @@ export class EmitVoidedDocumentUseCase {
           totals: {},
           payload,
           payloadHash: hashRequestBody(payload),
+          logoSnapshot: { logo: company.logo ?? null },
           idempotencyKey: input.idempotencyKey,
           ublProfile: "2.0",
         }),

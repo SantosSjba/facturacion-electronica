@@ -2,15 +2,16 @@ import type { PdfRendererPort } from "./ports/pdf-renderer.port";
 import { FakePdfRenderer } from "./adapters/fake-pdf-renderer";
 import { PlaywrightPdfRenderer } from "./adapters/playwright-pdf-renderer";
 
-export type { PdfDocumentType, PdfLineItem, PdfRenderInput, PdfRendererPort } from "./ports/pdf-renderer.port";
+export type {
+  PdfDocumentType,
+  PdfLineItem,
+  PdfRenderInput,
+  PdfRendererPort,
+} from "./ports/pdf-renderer.port";
 export { FakePdfRenderer } from "./adapters/fake-pdf-renderer";
 export { PlaywrightPdfRenderer } from "./adapters/playwright-pdf-renderer";
 export { buildRiHtml } from "./templates/ri-cpe.html";
-export {
-  buildQrPayload,
-  extractDigestValue,
-  type QrPayloadInput,
-} from "./qr/build-qr-payload";
+export { buildQrPayload, extractDigestValue, type QrPayloadInput } from "./qr/build-qr-payload";
 
 export const PACKAGE_NAME = "@factosys/pdf-ri" as const;
 
@@ -22,3 +23,8 @@ export function createPdfRenderer(mode: PdfRiMode = "fake"): PdfRendererPort {
   }
   return new FakePdfRenderer();
 }
+
+export { buildQrImage } from "./qr/qr-image";
+export { PDF_TEMPLATE_VERSION, type PdfFormat } from "./ports/pdf-renderer.port";
+
+export { readSignedCpeQr, readSummaryXml } from "./qr/read-signed-xml";

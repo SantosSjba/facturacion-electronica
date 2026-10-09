@@ -221,3 +221,72 @@ describe("commercial PDF snapshot", () => {
     },
   );
 });
+
+describe("phase 2 persisted printing and preview", () => {
+  it("uses the emission format even after the company default changes", async () => {
+    const { service, documents, companies } = fixture(false);
+    const canonical = hydrateFromFixtureRequest(loadGravadaFixtureRequest());
+    documents.getById.mockResolvedValue({
+      companyId: "company",
+      documentType: "01",
+      totals: canonical.totals,
+      payload: { _canonical: canonical, _print: { format: "TICKET58", template_version: "ri-v2" } },
+    });
+    companies.requireCompany.mockResolvedValue({
+      ruc: "20100070970",
+      legalName: "Changed",
+      logo: null,
+      pdfFormat: "A4",
+    });
+    const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+    await service.renderAndStore("org", "document");
+    expect(render.mock.calls[0]?.[0]).toMatchObject({
+      format: "TICKET58",
+      templateVersion: "ri-v2",
+    });
+  });
+  it("renders preview from canonical totals without document reads, signed XML or artifact writes", async () => {
+    const { service, documents } = fixture(false);
+    const canonical = hydrateFromFixtureRequest(loadGravadaFixtureRequest());
+    const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+    await service.renderPreview(
+      "org",
+      "company",
+      canonical as unknown as Record<string, unknown>,
+      "A5",
+    );
+    expect(render.mock.calls[0]?.[0]).toMatchObject({
+      preview: true,
+      format: "A5",
+      digestValue: "",
+      qrPayload: "",
+    });
+    expect(documents.getById).not.toHaveBeenCalled();
+    expect(documents.getArtifact).not.toHaveBeenCalled();
+    expect(documents.putArtifact).not.toHaveBeenCalled();
+  });
+  it("exposes fiscal QR data only to the scoped document lookup", async () => {
+    const { service, documents } = fixture(false);
+    documents.getById.mockRejectedValue(AppError.notFound("Document not found"));
+    await expect(service.getQr("other-org", "document")).rejects.toMatchObject({ httpStatus: 404 });
+    expect(documents.getArtifact).not.toHaveBeenCalled();
+  });
+  it("preserves the XML precision of unit prices instead of printing zero for small unit values", async () => {
+    const { service, documents } = fixture(false);
+    const base = loadGravadaFixtureRequest();
+    const first = required(base.lines[0]);
+    const canonical = hydrateFromFixtureRequest({
+      ...base,
+      lines: [{ ...first, quantity: 100000, unit_value: 0.000001, unit_price: undefined }],
+    });
+    documents.getById.mockResolvedValue({
+      companyId: "company",
+      documentType: "01",
+      payload: { _canonical: canonical },
+      totals: canonical.totals,
+    });
+    const render = vi.spyOn(FakePdfRenderer.prototype, "render");
+    await service.renderAndStore("org", "document");
+    expect(render.mock.calls[0]?.[0].lines[0]?.unitPrice).toBe("0.00000118");
+  });
+});

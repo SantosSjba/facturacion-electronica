@@ -337,6 +337,8 @@ export function toCanonical(params: {
     issue_time: params.request.issue_time,
     due_date: params.request.due_date,
     purchase_order: params.request.purchase_order,
+    observations: params.request.observations,
+    pdf_format: params.request.pdf_format,
     legends: [
       ...(params.request.legends ?? []),
       ...(params.lines.every((line) => line.is_free) &&

@@ -93,3 +93,7 @@ const document = await client.invoices.create(input, operationId);
 ```
 
 Ver [contrato y ejemplos](../../docs/phase1-commercial-cpe.md). El cambio se proporciona explícitamente y no convierte los precios del request. Las cuotas describen el crédito, no los pagos cobrados.
+
+## PDFs, QR y vistas previas
+
+Consulta [el contrato de Fase 2](../../docs/phase2-print-preview.md). `client.previews.validate/getXml/getPdf` acepta el tipo de comprobante y su payload sin reservar correlativos. `client.documents.getQr/getQrImage` obtiene el QR definitivo. La emisión admite `pdf_format` y `observations`.
