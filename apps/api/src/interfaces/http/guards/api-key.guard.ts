@@ -140,7 +140,7 @@ export class ApiKeyGuard implements CanActivate {
       if (!company) throw AppError.notFound("Company not found");
       environment = company.environment;
     } else if (
-      /^\/v1\/(documents|despatch-advices)\//.test(path) &&
+      /^\/v1\/(documents|despatch-advices|reversions)\//.test(path) &&
       typeof req.params["id"] === "string" &&
       /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(req.params["id"])
     ) {

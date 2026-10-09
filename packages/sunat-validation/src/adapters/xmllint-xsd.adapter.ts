@@ -33,7 +33,7 @@ function loadSchemaBundle(documentType: SupportedXsdDocumentType): {
 } {
   const cacheRoot = resolveXsdCacheRoot();
   const rootPath = resolveRootXsdPath(documentType);
-  const commonDir = resolveCommonXsdDir();
+  const commonDir = resolveCommonXsdDir(undefined, documentType);
 
   if (!existsSync(rootPath) || !existsSync(commonDir)) {
     throw validationError("XSD cache missing. Run `pnpm sunat:unpack-schemas` first.", {
@@ -86,7 +86,10 @@ export class XmllintXsdValidationAdapter implements SunatValidationPort {
       input.documentType !== "07" &&
       input.documentType !== "08" &&
       input.documentType !== "09" &&
-      input.documentType !== "31"
+      input.documentType !== "31" &&
+      input.documentType !== "20" &&
+      input.documentType !== "40" &&
+      input.documentType !== "RR"
     ) {
       throw validationError(
         `documentType '${input.documentType}' is not supported (use 01, 03, 07, 08, 09, 31)`,

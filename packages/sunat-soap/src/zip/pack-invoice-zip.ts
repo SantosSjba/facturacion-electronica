@@ -4,7 +4,7 @@ import { soapTransportError } from "../errors";
 
 export interface PackInvoiceZipInput {
   ruc: string;
-  documentType: "01" | "03" | "07" | "08";
+  documentType: "01" | "03" | "07" | "08" | "20" | "40";
   serie: string;
   number: number;
   xml: string;

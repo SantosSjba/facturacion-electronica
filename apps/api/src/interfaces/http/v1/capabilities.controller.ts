@@ -16,15 +16,24 @@ export class CapabilitiesController {
   })
   get() {
     return {
-      version: "phase4",
-      emission: ["01", "03", "07", "08", "09", "31", "RC", "RA"],
+      version: "phase5",
+      emission: ["01", "03", "07", "08", "09", "31", "RC", "RA", "20", "40", "RR"],
       cdr_recovery_by_identifiers: {
         document_types: ["01", "07", "08"],
         series_prefix: "F",
         environment: "production",
         max_cycles: 3,
       },
-      ticket_consultation: ["RC", "RA", "09", "31"],
+      ticket_consultation: ["RC", "RA", "09", "31", "RR"],
+      tax_agents: {
+        enabled_per_company: true,
+        retention_rate: 3,
+        perception_rates: { "01": 2, "02": 1, "03": 0.5 },
+        xsd: "SUNAT UBL 2.0",
+        excel_gate: false,
+        production_endpoint: "otroscpe-gem",
+        identifier_recovery: false,
+      },
       delivery: {
         policy: "accepted_or_accepted_with_observation_only",
         summary_acceptance_supported: true,
@@ -47,16 +56,9 @@ export class CapabilitiesController {
         hard_delete: false,
       },
       formats: ["A4", "A5", "TICKET80", "TICKET58"],
-      unsupported: [
-        "retention_document",
-        "perception_document",
-        "reversion",
-        "GRE_void_REST",
-        "CDR_identifier_recovery_for_boletas",
-        "TXT",
-        "offline",
-      ],
+      unsupported: ["GRE_void_REST", "CDR_identifier_recovery_for_boletas", "TXT", "offline"],
       modes: {
+        tax_agent: this.config.get("SUNAT_AGENT_MODE", { infer: true }),
         bill: this.config.get("SUNAT_BILL_MODE", { infer: true }),
         gre: this.config.get("SUNAT_GRE_MODE", { infer: true }),
         email: this.config.get("EMAIL_DRIVER", { infer: true }),

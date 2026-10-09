@@ -34,6 +34,7 @@ export interface Company {
   address: Record<string, unknown> | null;
   catalog_pin: Record<string, string>;
   timezone: string;
+  tax_agent_settings?: { retention: boolean; perception_regimes: ("01" | "02" | "03")[] };
   pdf_format?: "A4" | "A5" | "TICKET80" | "TICKET58";
   created_at: string;
   updated_at: string;
@@ -64,6 +65,7 @@ export interface CreateCompanyInput {
   environment: CompanyEnvironment;
   address?: Record<string, unknown> | null;
   timezone?: string;
+  tax_agent_settings?: { retention: boolean; perception_regimes: ("01" | "02" | "03")[] };
   pdf_format?: "A4" | "A5" | "TICKET80" | "TICKET58";
   /** Defaults to true on the API — seeds F001/B001/FC01/FD01/T001/V001. */
   seed_default_series?: boolean;
@@ -75,6 +77,7 @@ export interface PatchCompanyInput {
   trade_name?: string | null;
   address?: Record<string, unknown> | null;
   timezone?: string;
+  tax_agent_settings?: { retention: boolean; perception_regimes: ("01" | "02" | "03")[] };
   pdf_format?: "A4" | "A5" | "TICKET80" | "TICKET58";
   status?: CompanyStatus;
 }

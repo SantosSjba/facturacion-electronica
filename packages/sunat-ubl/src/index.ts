@@ -3,6 +3,18 @@
  * Unsigned XML only; signing is `@factosys/sunat-sign` (ADR-003).
  */
 
+export {
+  taxAgentSettingsSchema,
+  retentionInputSchema,
+  perceptionInputSchema,
+  toTaxAgentCanonical,
+  PERCEPTION_RATES,
+  type TaxAgentInput,
+  type TaxAgentCanonical,
+  type TaxAgentReference,
+} from "./types/tax-agent-canonical";
+export { XmlTaxAgentBuilder } from "./adapters/tax-agent-xml.builder";
+
 export const PACKAGE_NAME = "@factosys/sunat-ubl" as const;
 export {
   cpeAddressSchema,

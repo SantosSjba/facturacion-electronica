@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { taxAgentSettingsSchema } from "@factosys/sunat-ubl";
 import { z } from "zod";
 import { AppError } from "@factosys/shared";
 
@@ -16,6 +17,7 @@ export const createSchema = z.object({
   environment: z.enum(["sandbox", "production"]),
   address: z.record(z.string(), z.unknown()).nullable().optional(),
   timezone: z.string().min(1).optional(),
+  tax_agent_settings: taxAgentSettingsSchema.optional(),
   pdf_format: z.enum(["A4", "A5", "TICKET80", "TICKET58"]).optional(),
   /** When true (default), creates F001/B001/FC01/FD01/T001/V001. */
   seed_default_series: z.boolean().optional().default(true),
@@ -27,6 +29,7 @@ export const patchSchema = z.object({
   trade_name: z.string().nullable().optional(),
   address: z.record(z.string(), z.unknown()).nullable().optional(),
   timezone: z.string().min(1).optional(),
+  tax_agent_settings: taxAgentSettingsSchema.optional(),
   pdf_format: z.enum(["A4", "A5", "TICKET80", "TICKET58"]).optional(),
   status: z.enum(["active", "disabled"]).optional(),
 });
@@ -64,6 +67,7 @@ export class CompaniesController {
       address: body.address,
       timezone: body.timezone,
       pdfFormat: body.pdf_format,
+      taxAgentSettings: body.tax_agent_settings,
       seedDefaultSeries: body.seed_default_series,
     });
   }
@@ -92,6 +96,7 @@ export class CompaniesController {
       address: body.address,
       timezone: body.timezone,
       pdfFormat: body.pdf_format,
+      taxAgentSettings: body.tax_agent_settings,
       status: body.status,
     });
   }

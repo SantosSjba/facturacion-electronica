@@ -13,6 +13,9 @@ export const DOCUMENT_TYPES = [
   "08",
   "09",
   "31",
+  "20",
+  "40",
+  "RR",
   "RA",
   "RC",
 ] as const;
@@ -51,7 +54,7 @@ export class SeriesService {
     },
   ) {
     await this.companies.requireCompany(organizationId, companyId);
-    if (input.documentType === "RA" || input.documentType === "RC") {
+    if (["RA", "RC", "RR"].includes(input.documentType)) {
       if (!/^\d{8}$/.test(input.serie)) {
         throw AppError.validation("Invalid serie", [
           {
@@ -66,10 +69,16 @@ export class SeriesService {
       ]);
     }
 
-    const serie =
-      input.documentType === "RA" || input.documentType === "RC"
-        ? input.serie
-        : input.serie.toUpperCase();
+    if (
+      ["20", "40"].includes(input.documentType) &&
+      !new RegExp(input.documentType === "20" ? "^R[A-Z0-9]{3}$" : "^P[A-Z0-9]{3}$").test(
+        input.serie.toUpperCase(),
+      )
+    )
+      throw AppError.validation("Invalid tax-agent series", []);
+    const serie = ["RA", "RC", "RR"].includes(input.documentType)
+      ? input.serie
+      : input.serie.toUpperCase();
     const existing = await this.db
       .select({ id: documentSeries.id })
       .from(documentSeries)
@@ -162,10 +171,18 @@ export class SeriesService {
     documentType: string;
     serie: string;
   }): Promise<{ number: number; padded: string; seriesId: string }> {
-    const serie =
-      input.documentType === "RA" || input.documentType === "RC"
-        ? input.serie
-        : input.serie.toUpperCase();
+    if (input.documentType === "RR" && !/^\d{8}$/.test(input.serie))
+      throw AppError.validation("RR series must be the generation date YYYYMMDD", []);
+    if (
+      ["20", "40"].includes(input.documentType) &&
+      !new RegExp(input.documentType === "20" ? "^R[A-Z0-9]{3}$" : "^P[A-Z0-9]{3}$").test(
+        input.serie.toUpperCase(),
+      )
+    )
+      throw AppError.validation("Invalid tax-agent series", []);
+    const serie = ["RA", "RC", "RR"].includes(input.documentType)
+      ? input.serie
+      : input.serie.toUpperCase();
     return this.db.transaction(async (tx) => {
       let locked = await tx
         .select()
@@ -181,17 +198,20 @@ export class SeriesService {
         .for("update")
         .limit(1);
 
-      if (!locked[0] && (input.documentType === "RA" || input.documentType === "RC")) {
-        await tx.insert(documentSeries).values({
-          id: newId(),
-          organizationId: input.organizationId,
-          companyId: input.companyId,
-          documentType: input.documentType,
-          serie,
-          nextNumber: 1,
-          padding: 5,
-          isActive: true,
-        });
+      if (!locked[0] && ["RA", "RC", "RR"].includes(input.documentType)) {
+        await tx
+          .insert(documentSeries)
+          .values({
+            id: newId(),
+            organizationId: input.organizationId,
+            companyId: input.companyId,
+            documentType: input.documentType,
+            serie,
+            nextNumber: 1,
+            padding: 5,
+            isActive: true,
+          })
+          .onConflictDoNothing();
         locked = await tx
           .select()
           .from(documentSeries)
@@ -216,6 +236,11 @@ export class SeriesService {
       }
 
       const number = series.nextNumber;
+      if (
+        (input.documentType === "RR" && number > 99999) ||
+        (["20", "40"].includes(input.documentType) && number > 99999999)
+      )
+        throw AppError.conflict("Tax-agent correlative exhausted");
       await tx
         .update(documentSeries)
         .set({ nextNumber: number + 1, updatedAt: new Date() })
@@ -239,10 +264,16 @@ export class SeriesService {
     serie: string;
     number: number;
   }): Promise<void> {
-    const serie =
-      input.documentType === "RA" || input.documentType === "RC"
-        ? input.serie
-        : input.serie.toUpperCase();
+    if (
+      ["20", "40"].includes(input.documentType) &&
+      !new RegExp(input.documentType === "20" ? "^R[A-Z0-9]{3}$" : "^P[A-Z0-9]{3}$").test(
+        input.serie.toUpperCase(),
+      )
+    )
+      throw AppError.validation("Invalid tax-agent series", []);
+    const serie = ["RA", "RC", "RR"].includes(input.documentType)
+      ? input.serie
+      : input.serie.toUpperCase();
     await this.db.transaction(async (tx) => {
       const locked = await tx
         .select()

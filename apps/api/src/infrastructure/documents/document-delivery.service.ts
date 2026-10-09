@@ -30,7 +30,7 @@ export class DocumentDeliveryService {
         .where(and(eq(documents.id, docId), eq(documents.organizationId, org)))
         .for("update");
       if (!doc) throw AppError.notFound("Document not found");
-      if (!["01", "03", "07", "08", "09", "31"].includes(doc.documentType))
+      if (!["01", "03", "07", "08", "09", "31", "20", "40"].includes(doc.documentType))
         throw AppError.validation("Only CPE and GRE can be delivered", [], { httpStatus: 422 });
       if (this.blocked(doc))
         throw AppError.conflict("Rejected or cancelled document cannot be delivered");

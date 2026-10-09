@@ -49,6 +49,7 @@ export interface CompanyPublic {
   catalog_pin: Record<string, string>;
   timezone: string;
   pdf_format: PdfFormat;
+  tax_agent_settings: { retention: boolean; perception_regimes: ("01" | "02" | "03")[] };
   created_at: Date;
   updated_at: Date;
   certificate_status: "missing" | "active" | "expired" | "revoked";
@@ -89,6 +90,7 @@ export class CompaniesService {
       address?: Record<string, unknown> | null;
       timezone?: string;
       pdfFormat?: PdfFormat;
+      taxAgentSettings?: CompanyPublic["tax_agent_settings"];
       seedDefaultSeries?: boolean;
     },
   ): Promise<CompanyPublic> {
@@ -125,6 +127,7 @@ export class CompaniesService {
         address: input.address ?? null,
         timezone: input.timezone ?? "America/Lima",
         pdfFormat: input.pdfFormat ?? "A4",
+        taxAgentSettings: input.taxAgentSettings,
         status: "active",
       });
 
@@ -175,6 +178,7 @@ export class CompaniesService {
       address?: Record<string, unknown> | null;
       timezone?: string;
       pdfFormat?: PdfFormat;
+      taxAgentSettings?: CompanyPublic["tax_agent_settings"];
       status?: CompanyStatus;
     },
   ): Promise<CompanyPublic> {
@@ -186,12 +190,14 @@ export class CompaniesService {
       address?: Record<string, unknown> | null;
       timezone?: string;
       pdfFormat?: PdfFormat;
+      taxAgentSettings?: CompanyPublic["tax_agent_settings"];
       status?: CompanyStatus;
       updatedAt: Date;
     } = { updatedAt: new Date() };
     if (input.legalName !== undefined) patch.legalName = input.legalName;
     if (input.tradeName !== undefined) patch.tradeName = input.tradeName;
     if (input.address !== undefined) patch.address = input.address;
+    if (input.taxAgentSettings !== undefined) patch.taxAgentSettings = input.taxAgentSettings;
     if (input.pdfFormat !== undefined) patch.pdfFormat = input.pdfFormat;
     if (input.timezone !== undefined) patch.timezone = input.timezone;
     if (input.status !== undefined) patch.status = input.status;
@@ -307,6 +313,7 @@ export class CompaniesService {
       catalog_pin: (row.catalogPin ?? {}) as Record<string, string>,
       timezone: row.timezone,
       pdf_format: row.pdfFormat,
+      tax_agent_settings: row.taxAgentSettings,
       created_at: row.createdAt,
       updated_at: row.updatedAt,
       certificate_status,

@@ -117,5 +117,12 @@
     "tag": "document_delivery",
     "up": "0017_document_delivery.sql",
     "down": "0017_document_delivery.down.sql"
+  },
+  {
+    "id": "0018_tax_agent",
+    "when": 18,
+    "tag": "tax_agent",
+    "up": "0018_tax_agent.sql",
+    "down": "0018_tax_agent.down.sql"
   }
 ]

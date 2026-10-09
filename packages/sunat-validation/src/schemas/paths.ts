@@ -14,7 +14,7 @@ export const DEBIT_NOTE_XSD_RELATIVE = "Archivos XSD/2.1/maindoc/UBL-DebitNote-2
 /** Common schemas directory (imports of Invoice XSD). */
 export const COMMON_XSD_DIR_RELATIVE = "Archivos XSD/2.1/common" as const;
 
-export type SupportedXsdDocumentType = "01" | "03" | "07" | "08" | "09" | "31";
+export type SupportedXsdDocumentType = "01" | "03" | "07" | "08" | "09" | "31" | "20" | "40" | "RR";
 
 const ROOT_BY_TYPE: Record<SupportedXsdDocumentType, string> = {
   "01": INVOICE_XSD_RELATIVE,
@@ -23,6 +23,9 @@ const ROOT_BY_TYPE: Record<SupportedXsdDocumentType, string> = {
   "08": DEBIT_NOTE_XSD_RELATIVE,
   "09": "Archivos XSD/2.1/maindoc/UBL-DespatchAdvice-2.1.xsd",
   "31": "Archivos XSD/2.1/maindoc/UBL-DespatchAdvice-2.1.xsd",
+  "20": "Archivos XSD/2.0/maindoc/UBLPE-Retention-1.0.xsd",
+  "40": "Archivos XSD/2.0/maindoc/UBLPE-Perception-1.0.xsd",
+  RR: "Archivos XSD/2.0/maindoc/UBLPE-VoidedDocuments-1.0.xsd",
 };
 
 export function resolveXsdCacheRoot(packageRoot = resolvePackageRoot()): string {
@@ -36,6 +39,14 @@ export function resolveRootXsdPath(
   return join(resolveXsdCacheRoot(packageRoot), ROOT_BY_TYPE[documentType]);
 }
 
-export function resolveCommonXsdDir(packageRoot = resolvePackageRoot()): string {
-  return join(resolveXsdCacheRoot(packageRoot), COMMON_XSD_DIR_RELATIVE);
+export function resolveCommonXsdDir(
+  packageRoot = resolvePackageRoot(),
+  documentType?: SupportedXsdDocumentType,
+): string {
+  return join(
+    resolveXsdCacheRoot(packageRoot),
+    documentType && ["20", "40", "RR"].includes(documentType)
+      ? "Archivos XSD/2.0/common"
+      : COMMON_XSD_DIR_RELATIVE,
+  );
 }

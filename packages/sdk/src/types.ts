@@ -102,6 +102,21 @@ export interface GreDocument {
   links: CpeDocument["links"];
 }
 
+export type TaxAgentCreate = import("@factosys/sunat-ubl").TaxAgentInput & { company_id: string };
+export interface ReversionInput {
+  company_id: string;
+  document_type: "20" | "40";
+  issue_date: string;
+  reference_date: string;
+  communicated_on: string;
+  documents: { document_id: string; reason: string }[];
+}
+export type TaxAgentDocument = Omit<CpeDocument, "document_type" | "totals"> & {
+  document_type: "20" | "40" | "RR";
+  totals: { tax_amount?: number; settlement_amount?: number };
+  sunat_ticket?: string | null;
+};
+
 export interface CompanyInput {
   ruc: string;
   legal_name: string;
@@ -110,13 +125,14 @@ export interface CompanyInput {
   address?: Record<string, unknown> | null;
   timezone?: string;
   pdf_format?: "A4" | "A5" | "TICKET80" | "TICKET58";
+  tax_agent_settings?: { retention: boolean; perception_regimes: ("01" | "02" | "03")[] };
   seed_default_series?: boolean;
 }
 export type CompanyPatch = Partial<Omit<CompanyInput, "ruc" | "seed_default_series">> & {
   status?: "active" | "disabled";
 };
 export interface SeriesInput {
-  document_type: "01" | "03" | "07" | "08" | "09" | "31" | "RA" | "RC";
+  document_type: "01" | "03" | "07" | "08" | "09" | "31" | "RA" | "RC" | "20" | "40" | "RR";
   serie: string;
   next_number?: number;
   padding?: number;
@@ -146,16 +162,20 @@ export interface DocumentDelivery {
   provider_message_id: string | null;
   error: string | null;
 }
-export type DocumentDetails = (CpeDocument | GreDocument) & {
+export type DocumentDetails = (CpeDocument | GreDocument | TaxAgentDocument) & {
   artifacts: Record<string, { status: string; sha256: string | null; content_type: string | null }>;
   observations: string[];
   qr: { status: string; source: string; digest: string | null };
   relations: {
     affected_document_id: string | null;
+    reversion_document_id?: string | null;
+    affected_document_ids?: string[];
     summary_document_id: string | null;
     cancellation_document_id: string | null;
   };
   cancellation_status: string;
   collection_status: "not_managed";
   reconciliation: unknown;
+  reversion?: { status: string; document_id?: string; pending_id?: string } | null;
+  tax_agent?: { simulated: boolean | null; reconciliation_required?: boolean; reason?: string };
 };

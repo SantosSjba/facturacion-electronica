@@ -1,8 +1,7 @@
 import { create } from "xmlbuilder2";
 
 const NS = {
-  voided:
-    "urn:sunat:names:specification:ubl:peru:schema:xsd:VoidedDocuments-1",
+  voided: "urn:sunat:names:specification:ubl:peru:schema:xsd:VoidedDocuments-1",
   cac: "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
   cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
   ds: "http://www.w3.org/2000/09/xmldsig#",
@@ -45,17 +44,14 @@ export class XmlVoidedDocumentsBuilder {
       throw new Error("VoidedDocuments requires at least one line");
     }
 
-    const root = create({ version: "1.0", encoding: "UTF-8" }).ele(
-      "VoidedDocuments",
-      {
-        xmlns: NS.voided,
-        "xmlns:cac": NS.cac,
-        "xmlns:cbc": NS.cbc,
-        "xmlns:ds": NS.ds,
-        "xmlns:ext": NS.ext,
-        "xmlns:sac": NS.sac,
-      },
-    );
+    const root = create({ version: "1.0", encoding: "UTF-8" }).ele("VoidedDocuments", {
+      xmlns: NS.voided,
+      "xmlns:cac": NS.cac,
+      "xmlns:cbc": NS.cbc,
+      "xmlns:ds": NS.ds,
+      "xmlns:ext": NS.ext,
+      "xmlns:sac": NS.sac,
+    });
 
     root.ele("cbc:UBLVersionID").txt("2.0").up();
     root.ele("cbc:CustomizationID").txt("1.0").up();
@@ -67,12 +63,7 @@ export class XmlVoidedDocumentsBuilder {
     const sig = root.ele("cac:Signature");
     sig.ele("cbc:ID").txt("SignFactosys").up();
     const sigParty = sig.ele("cac:SignatoryParty").ele("cac:PartyIdentification");
-    sigParty
-      .ele("cbc:ID")
-      .txt(input.supplier.identity_number)
-      .up()
-      .up()
-      .up();
+    sigParty.ele("cbc:ID").txt(input.supplier.identity_number).up().up().up();
     sig
       .ele("cac:DigitalSignatureAttachment")
       .ele("cac:ExternalReference")
@@ -83,14 +74,8 @@ export class XmlVoidedDocumentsBuilder {
       .up();
 
     const supplier = root.ele("cac:AccountingSupplierParty");
-    supplier
-      .ele("cbc:CustomerAssignedAccountID")
-      .txt(input.supplier.identity_number)
-      .up();
-    supplier
-      .ele("cbc:AdditionalAccountID")
-      .txt(input.supplier.identity_type)
-      .up();
+    supplier.ele("cbc:CustomerAssignedAccountID").txt(input.supplier.identity_number).up();
+    supplier.ele("cbc:AdditionalAccountID").txt(input.supplier.identity_type).up();
     supplier
       .ele("cac:Party")
       .ele("cac:PartyLegalEntity")
@@ -109,9 +94,10 @@ export class XmlVoidedDocumentsBuilder {
       node.ele("sac:VoidReasonDescription").txt(line.reason).up();
     }
 
-    const dateCompact = input.reference_date.replace(/-/g, "");
+    const kind = input.id.startsWith("RR-") ? "RR" : "RA";
+    const dateCompact = (kind === "RR" ? input.issue_date : input.reference_date).replace(/-/g, "");
     const correlative = input.id.split("-").pop() ?? "1";
-    const fileStem = `${input.supplier.identity_number}-RA-${dateCompact}-${Number(correlative)}`;
+    const fileStem = `${input.supplier.identity_number}-${kind}-${dateCompact}-${Number(correlative)}`;
 
     const xml = root.end({ prettyPrint: true, indent: "  ", newline: "\n" });
     return { xml, fileStem, id: input.id };

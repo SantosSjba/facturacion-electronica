@@ -1,0 +1,37 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "serie": "P001",
+  "issue_date": "2026-10-08",
+  "currency": "PEN",
+  "regime": "01",
+  "customer": {
+    "identity_type": "6",
+    "identity_number": "20131312955",
+    "name": "CLIENTE DE EJEMPLO"
+  },
+  "documents": [
+    {
+      "document_type": "01",
+      "serie_number": "F001-10",
+      "issue_date": "2026-10-01",
+      "currency": "USD",
+      "total_amount": 1180,
+      "credit_notes": [
+        { "serie_number": "FC01-2", "issue_date": "2026-10-02", "total_amount": 180 }
+      ],
+      "payments": [
+        {
+          "number": 1,
+          "date": "2026-10-08",
+          "amount": 1000,
+          "exchange_rate": {
+            "source_currency": "USD",
+            "target_currency": "PEN",
+            "rate": 3.75,
+            "date": "2026-10-08"
+          }
+        }
+      ]
+    }
+  ]
+}

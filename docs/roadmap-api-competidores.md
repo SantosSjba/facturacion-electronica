@@ -56,15 +56,15 @@ Antes de implementar cada escenario fiscal, contrastar sus códigos, tasas, plaz
 
 ## 3. Orden de implementación
 
-| Fase | Prioridad | Resultado esperado                                                 | Dependencia                                        |
-| ---- | --------- | ------------------------------------------------------------------ | -------------------------------------------------- |
-| 0    | P0        | Solicitud, XML y totales coherentes; datos soportados sin pérdidas | Ninguna                                            |
-| 1    | P1        | Casos comerciales habituales y fiscalidad ampliada                 | Fase 0                                             |
-| 2    | P1        | PDF útil, QR real, formatos y vistas previas                       | 2026-10-08; [evidencia](./phase2-print-preview.md) |
-| 3    | P1        | GRE más completa y representación con QR oficial                   | 2026-10-08; [evidencia](./phase3-gre.md)           |
-| 4    | P1/P2     | Consulta/reconciliación, entrega al cliente y mejor integración    | 2026-10-08; [evidencia](./phase4-integration.md)   |
-| 5    | P2        | Documentos de retención, percepción y reversión                    | Motor de fase 1 y demanda confirmada               |
-| 6    | P3        | Compatibilidad TXT y extensiones de mercado seleccionadas          | Contrato JSON estable                              |
+| Fase | Prioridad                        | Resultado esperado                                                                             | Dependencia                                        |
+| ---- | -------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| 0    | P0                               | Solicitud, XML y totales coherentes; datos soportados sin pérdidas                             | Ninguna                                            |
+| 1    | P1                               | Casos comerciales habituales y fiscalidad ampliada                                             | Fase 0                                             |
+| 2    | P1                               | PDF útil, QR real, formatos y vistas previas                                                   | 2026-10-08; [evidencia](./phase2-print-preview.md) |
+| 3    | P1                               | GRE más completa y representación con QR oficial                                               | 2026-10-08; [evidencia](./phase3-gre.md)           |
+| 4    | P1/P2                            | Consulta/reconciliación, entrega al cliente y mejor integración                                | 2026-10-08; [evidencia](./phase4-integration.md)   |
+| 5    | Implementada; verificación local | Retención/percepción, RR, firma/XSD, pagos concurrentes y PDF; aceptación SUNAT real pendiente | 2026-10-08; [evidencia](./phase5-tax-agents.md)    |
+| 6    | P3                               | Compatibilidad TXT y extensiones de mercado seleccionadas                                      | Contrato JSON estable                              |
 
 Los IDs siguientes son tareas propuestas. Cada casilla se marca cuando hay evidencia del criterio de aceptación, no solo cuando existe un endpoint.
 
@@ -146,9 +146,9 @@ Implementación y evidencia local: [Fase 4 — integración, consulta y entrega]
 
 Fuente principal: A (`Retention`, `Perception`, `Reversion` y sus rutas). NJ menciona manuales separados de retención/percepción en la pág. 1, pero no contiene sus contratos completos.
 
-- [ ] **F5-01. Retención electrónica.** Modelo propio, documentos afectados, pagos, monedas/tipo de cambio, totales, XML/firma/transporte, consulta, CDR y PDF.
-- [ ] **F5-02. Percepción electrónica.** Mismo ciclo con reglas específicas de percepción; no reutilizar fórmulas de retención por semejanza de campos.
-- [ ] **F5-03. Reversión.** Modelo y flujo vinculados a los documentos que permiten reversión, con ticket/consulta y trazabilidad.
+- [x] **F5-01. Retención electrónica.** Modelo propio, documentos afectados, pagos, monedas/tipo de cambio, totales, XML/firma/transporte, consulta, CDR y PDF.
+- [x] **F5-02. Percepción electrónica.** Mismo ciclo con reglas específicas de percepción; no reutilizar fórmulas de retención por semejanza de campos.
+- [x] **F5-03. Reversión.** Modelo y flujo vinculados a los documentos que permiten reversión, con ticket/consulta y trazabilidad.
 
 **Aceptación:** contratos oficiales revisados, escenarios positivos/negativos, validación fiscal, artefactos y evidencia de envío real. Confirmar necesidad de clientes y condiciones del emisor antes de activar estos módulos. Distinguir retención/percepción asociadas a una factura (fase 1) de sus comprobantes electrónicos independientes (fase 5).
 
@@ -181,5 +181,5 @@ Fuentes: NT págs. 3-5 y 13-18; NJ págs. 2, 7 y 9; A ejemplos de contingencia y
 | 2    | Implementada; verificación local            | QR leído, formatos revisados y preview sin emisión                                                        | 2026-10-08; [evidencia](./phase2-print-preview.md)     |
 | 3    | Implementada; verificación local            | Campos avanzados, QR oficial y PDF GRE                                                                    | 2026-10-08; [evidencia](./phase3-gre.md)               |
 | 4    | Implementada; verificación local            | Reconciliación, entrega, scopes y ejemplos                                                                | 2026-10-08; [evidencia](./phase4-integration.md)       |
-| 5    | Pendiente; sujeto a demanda                 | Documentos propios validados                                                                              | Por completar                                          |
+| 5    | Implementada; verificación local            | Retención/percepción, RR, firma/XSD, pagos concurrentes y PDF; aceptación SUNAT real pendiente            | 2026-10-08; [evidencia](./phase5-tax-agents.md)        |
 | 6    | Opcional                                    | Necesidad confirmada y criterios de cada extensión                                                        | Por completar                                          |

@@ -1,0 +1,32 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "serie": "R001",
+  "issue_date": "2026-10-08",
+  "currency": "PEN",
+  "regime": "01",
+  "totals_mode": "strict",
+  "customer": {
+    "identity_type": "6",
+    "identity_number": "20131312955",
+    "name": "PROVEEDOR DE EJEMPLO"
+  },
+  "documents": [
+    {
+      "document_type": "01",
+      "serie_number": "F001-10",
+      "issue_date": "2026-10-01",
+      "currency": "PEN",
+      "total_amount": 1180,
+      "payments": [
+        {
+          "number": 1,
+          "date": "2026-10-08",
+          "amount": 1180,
+          "tax_amount": 35.4,
+          "settlement_amount": 1144.6
+        }
+      ]
+    }
+  ],
+  "totals": { "tax_amount": 35.4, "settlement_amount": 1144.6 }
+}

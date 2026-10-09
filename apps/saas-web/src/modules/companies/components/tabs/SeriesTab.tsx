@@ -54,7 +54,7 @@ import { toast } from "@/shared/ui/toaster";
 import { createSeries, fetchSeries, patchSeries } from "../../api";
 import { DEFAULT_COMPANY_SERIES } from "../../default-series";
 
-const DOC_TYPES = ["01", "03", "07", "08", "09", "31", "RA", "RC"] as const;
+const DOC_TYPES = ["01", "03", "07", "08", "09", "31", "20", "40", "RR", "RA", "RC"] as const;
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   "01": "Factura",
@@ -63,6 +63,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   "08": "Nota de débito",
   "09": "GRE remitente",
   "31": "GRE transportista",
+  "20": "Retención electrónica",
+  "40": "Percepción electrónica",
+  RR: "Resumen de reversiones",
   RA: "Comunicación de baja",
   RC: "Resumen diario",
 };

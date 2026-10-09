@@ -1,6 +1,9 @@
 import type { PdfRenderInput } from "../ports/pdf-renderer.port";
 
 const TYPE_LABEL: Record<string, string> = {
+  "20": "COMPROBANTE DE RETENCIÓN ELECTRÓNICO",
+  "40": "COMPROBANTE DE PERCEPCIÓN ELECTRÓNICO",
+  RR: "RESUMEN DE REVERSIONES — DOCUMENTO INFORMATIVO",
   "09": "GUÍA DE REMISIÓN ELECTRÓNICA — REMITENTE",
   "31": "GUÍA DE REMISIÓN ELECTRÓNICA — TRANSPORTISTA",
   RC: "RESUMEN DIARIO — DOCUMENTO INFORMATIVO",
@@ -20,6 +23,8 @@ function esc(s: string): string {
 }
 
 export function buildRiHtml(input: PdfRenderInput): string {
+  const tax = input.taxAgent;
+  const taxLabel = input.documentType === "20" ? "Retención" : "Percepción";
   const gre = input.documentType === "09" || input.documentType === "31";
   const ticket = input.format === "TICKET80" || input.format === "TICKET58";
   const linesHtml = input.lines
@@ -27,7 +32,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
       (l, i) => `
       <tr>
         <td class="index">${i + 1}</td>
-        <td>${esc(l.description)}${ticket && !input.informational && !gre ? `<br>P.U.: ${esc(l.unitPrice)} · IGV / IVAP: ${esc(l.igv)}` : ""}${l.productCode ? `<br>Código: ${esc(l.productCode)}` : ""}${l.sunatProductCode ? `<br>SUNAT: ${esc(l.sunatProductCode)}` : ""}${(l.details ?? []).map((detail) => `<br>${esc(detail)}`).join("")}${l.isc ? `<br>ISC: ${esc(l.isc)}` : ""}${l.icbper ? `<br>ICBPER: ${esc(l.icbper)}` : ""}</td>
+        <td>${esc(l.description)}${ticket && !input.informational && !gre && !tax ? `<br>P.U.: ${esc(l.unitPrice)} · IGV / IVAP: ${esc(l.igv)}` : ""}${l.productCode ? `<br>Código: ${esc(l.productCode)}` : ""}${l.sunatProductCode ? `<br>SUNAT: ${esc(l.sunatProductCode)}` : ""}${(l.details ?? []).map((detail) => `<br>${esc(detail)}`).join("")}${l.isc ? `<br>ISC: ${esc(l.isc)}` : ""}${l.icbper ? `<br>ICBPER: ${esc(l.icbper)}` : ""}</td>
         ${
           !input.informational
             ? `<td>${esc(l.quantity)} ${esc(l.unit)}</td>
@@ -94,7 +99,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
   </div>
   ${
     !input.informational
-      ? `<p><strong>${gre ? "Destinatario" : "Adquirente"}:</strong> ${esc(input.customer.identityType)} ${esc(input.customer.identityNumber)} — ${esc(input.customer.name)}</p>
+      ? `<p><strong>${gre ? "Destinatario" : input.documentType === "20" ? "Proveedor" : "Adquirente"}:</strong> ${esc(input.customer.identityType)} ${esc(input.customer.identityNumber)} — ${esc(input.customer.name)}</p>
   ${input.customer.address ? `<p>Dirección: ${esc(input.customer.address)}</p>` : ""}
   `
       : ""
@@ -104,7 +109,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
   ${noteBlock}
   <table>
     <thead>
-      ${gre ? `<tr><th class="index">#</th><th>Bienes a trasladar</th><th>Cantidad / unidad</th></tr>` : input.informational ? `<tr><th>#</th><th>Comprobante / operación y motivo</th></tr>` : `<tr><th class="index">#</th><th>Descripción</th><th>Cant.</th><th class="price">P.U.</th><th class="tax">IGV / IVAP</th><th class="amount">Importe</th></tr>`}
+      ${gre ? `<tr><th class="index">#</th><th>Bienes a trasladar</th><th>Cantidad / unidad</th></tr>` : input.informational ? `<tr><th>#</th><th>Comprobante / operación y motivo</th></tr>` : `<tr><th class="index">#</th><th>Descripción</th><th>${tax ? "Pago Nº" : "Cant."}</th><th class="price">${tax ? "Base origen" : "P.U."}</th><th class="tax">${tax ? taxLabel + " PEN" : "IGV / IVAP"}</th><th class="amount">${tax ? "Pago / cobro PEN" : "Importe"}</th></tr>`}
     </thead>
     <tbody>${linesHtml}</tbody>
   </table>
@@ -124,7 +129,7 @@ export function buildRiHtml(input: PdfRenderInput): string {
     ${input.totals.discounts ? `<div>Descuentos sin efecto tributario: ${esc(input.totals.discounts)}</div>` : ""}
     ${input.totals.charges ? `<div>Cargos sin efecto tributario: ${esc(input.totals.charges)}</div>` : ""}
     ${input.totals.prepaid ? `<div>Importe antes de anticipos: ${esc(input.totals.gross ?? "")}</div><div>Anticipos aplicados: ${esc(input.totals.prepaid)}</div>` : ""}
-    <div><strong>Total: ${esc(input.totals.total)}</strong></div>
+    <div><strong>${tax ? "Total " + taxLabel.toLowerCase() + " PEN" : "Total"}: ${esc(input.totals.total)}</strong></div>
   </div>
   `
       : ""

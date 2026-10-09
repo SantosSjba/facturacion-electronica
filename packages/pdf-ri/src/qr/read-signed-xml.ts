@@ -24,16 +24,24 @@ function parse(xml: string): Element {
 export function readSignedCpeQr(xml: string): QrPayloadInput | null {
   const root = parse(xml);
   const type = (
-    { Invoice: text(root, "InvoiceTypeCode"), CreditNote: "07", DebitNote: "08" } as Record<
-      string,
-      string
-    >
+    {
+      Invoice: text(root, "InvoiceTypeCode"),
+      CreditNote: "07",
+      DebitNote: "08",
+      Retention: "20",
+      Perception: "40",
+    } as Record<string, string>
   )[root.localName ?? ""];
   if (!type) return null;
   const id = text(root, "ID");
   const split = id.lastIndexOf("-");
-  const supplier = child(child(root, "AccountingSupplierParty"), "Party");
-  const customer = child(child(root, "AccountingCustomerParty"), "Party");
+  const agent = type === "20" || type === "40";
+  const supplier = agent
+    ? child(root, "AgentParty")
+    : child(child(root, "AccountingSupplierParty"), "Party");
+  const customer = agent
+    ? child(root, "ReceiverParty")
+    : child(child(root, "AccountingCustomerParty"), "Party");
   const supplierId = child(child(supplier, "PartyIdentification"), "ID");
   const customerId = child(child(customer, "PartyIdentification"), "ID");
   const monetary = child(root, "LegalMonetaryTotal") ?? child(root, "RequestedMonetaryTotal");
@@ -41,16 +49,17 @@ export function readSignedCpeQr(xml: string): QrPayloadInput | null {
     .flatMap((total) => children(total, "TaxSubtotal"))
     .filter((sub) => text(child(child(sub, "TaxCategory"), "TaxScheme"), "ID") === "1000")
     .reduce((sum, sub) => sum + Number(text(sub, "TaxAmount")), 0);
+  const total = agent ? text(root, "TotalInvoiceAmount") : text(monetary, "PayableAmount");
   const digest = extractDigestValue(xml);
-  if (split < 1 || !supplierId?.textContent || !digest || !text(monetary, "PayableAmount"))
+  if (split < 1 || !supplierId?.textContent || !digest || !total)
     throw new Error("Signed CPE XML is missing QR fields");
   return {
     ruc: supplierId.textContent.trim(),
     documentType: type,
     serie: id.slice(0, split),
     number: id.slice(split + 1),
-    igv: igv.toFixed(2),
-    total: text(monetary, "PayableAmount"),
+    igv: agent ? "" : igv.toFixed(2),
+    total,
     issueDate: text(root, "IssueDate"),
     customerIdentityType: customerId?.getAttribute("schemeID") ?? "",
     customerIdentityNumber: customerId?.textContent?.trim() ?? "",

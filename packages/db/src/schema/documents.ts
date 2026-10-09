@@ -77,27 +77,19 @@ export const documents = pgTable(
     uniqueIndex("documents_org_company_idempotency_uidx")
       .on(t.organizationId, t.companyId, t.idempotencyKey)
       .where(sql`${t.idempotencyKey} is not null`),
-    index("documents_org_company_created_idx").on(
-      t.organizationId,
-      t.companyId,
-      t.createdAt,
-    ),
-    index("documents_org_company_status_idx").on(
-      t.organizationId,
-      t.companyId,
-      t.status,
-    ),
+    index("documents_org_company_created_idx").on(t.organizationId, t.companyId, t.createdAt),
+    index("documents_org_company_status_idx").on(t.organizationId, t.companyId, t.status),
     index("documents_company_ticket_idx")
       .on(t.companyId, t.sunatTicket)
       .where(sql`${t.sunatTicket} is not null`),
     index("documents_company_serie_number_idx").on(t.companyId, t.serieNumber),
+    index("documents_tax_agent_ledger_idx")
+      .on(t.companyId, t.documentType)
+      .where(sql`${t.documentType} in ('20','40','RR')`),
     check(
       "documents_status_check",
       sql`${t.status} in ('draft', 'validated', 'queued', 'sent', 'ticket_pending', 'accepted', 'accepted_with_observation', 'rejected', 'failed', 'cancelled')`,
     ),
-    check(
-      "documents_environment_check",
-      sql`${t.environment} in ('sandbox', 'production')`,
-    ),
+    check("documents_environment_check", sql`${t.environment} in ('sandbox', 'production')`),
   ],
 );

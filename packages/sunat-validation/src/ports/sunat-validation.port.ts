@@ -4,7 +4,8 @@
 export const SUNAT_VALIDATION_PORT: unique symbol = Symbol("SunatValidationPort");
 
 /** Invoice (01), Boleta (03), NC (07), ND (08). */
-export type SunatValidationDocumentType = "01" | "03" | "07" | "08" | "09" | "31";
+export type SunatValidationDocumentType =
+  "01" | "03" | "07" | "08" | "09" | "31" | "20" | "40" | "RR";
 export type SunatValidationStage = "xsd" | "excel";
 
 export interface SunatValidationIssue {

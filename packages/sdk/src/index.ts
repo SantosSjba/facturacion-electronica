@@ -12,6 +12,8 @@ export {
 export { verifyWebhookSignature } from "./helpers/webhook-hmac";
 export type { FactosysClientOptions, RequestOptions, CompanyLogoResponse } from "./types";
 
+export type { TaxAgentCreate, TaxAgentDocument, ReversionInput } from "./types";
+
 export const PACKAGE_NAME = "@factosys/sdk" as const;
 
 /** Convenience: fetch platform ruleset without API key (public endpoint). */

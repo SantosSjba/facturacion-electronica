@@ -35,6 +35,7 @@ export const envSchema = z.object({
   MINIO_BUCKET: z.string().min(1).default("factosys-dev"),
   MINIO_REGION: z.string().min(1).default("us-east-1"),
   MINIO_PRESIGN_TTL_SEC: z.coerce.number().int().positive().default(300),
+  SUNAT_AGENT_MODE: z.enum(["fake", "real"]).default("fake"),
   SUNAT_BILL_MODE: z.enum(["fake", "beta"]).default("fake"),
   SUNAT_GRE_MODE: z.enum(["fake", "beta"]).default("fake"),
   SUNAT_VALIDEZ_MODE: z.enum(["fake", "beta"]).default("fake"),

@@ -1,3 +1,4 @@
+import { taxAgentPdfInput } from "./tax-agent-pdf";
 import { greQrUrl, grePdfInput } from "./gre-pdf";
 import { commercialSections, commercialLineDetails } from "./commercial-pdf";
 import { createHash } from "node:crypto";
@@ -27,8 +28,8 @@ import { DocumentsService } from "../documents/documents.service";
 import { QueueProducer } from "../queues/queue.producer";
 import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 
-const CPE_TYPES = new Set(["01", "03", "07", "08"]);
-const PDF_TYPES = new Set([...CPE_TYPES, "RC", "RA", "09", "31"]);
+const CPE_TYPES = new Set(["01", "03", "07", "08", "20", "40"]);
+const PDF_TYPES = new Set([...CPE_TYPES, "RC", "RA", "RR", "09", "31"]);
 
 @Injectable()
 export class PdfService {
@@ -295,7 +296,13 @@ export class PdfService {
     const documentLogo = doc.logoSnapshot ? doc.logoSnapshot.logo : company.logo;
     if (["09", "31"].includes(doc.documentType))
       return grePdfInput(doc, documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined);
-    if (doc.documentType === "RC" || doc.documentType === "RA")
+    if (["20", "40"].includes(doc.documentType))
+      return taxAgentPdfInput(
+        doc,
+        signedXml,
+        documentLogo ? await this.logos.getDataUrl(documentLogo) : undefined,
+      );
+    if (["RC", "RA", "RR"].includes(doc.documentType))
       return this.summaryInput(
         doc,
         company,

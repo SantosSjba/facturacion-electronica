@@ -1,0 +1,13 @@
+{
+  "company_id": "00000000-0000-4000-8000-000000000001",
+  "document_type": "20",
+  "reference_date": "2026-10-08",
+  "issue_date": "2026-10-08",
+  "communicated_on": "2026-10-08",
+  "documents": [
+    {
+      "document_id": "00000000-0000-4000-8000-000000000002",
+      "reason": "Error en datos consignados; comunicado al proveedor"
+    }
+  ]
+}

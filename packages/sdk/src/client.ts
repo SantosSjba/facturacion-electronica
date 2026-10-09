@@ -36,8 +36,13 @@ export class FactosysClient {
 
   /** Returns a shallow clone that always sends Idempotency-Key. */
   withIdempotencyKey(key: string): FactosysClient {
-    const clone = Object.create(Object.getPrototypeOf(this)) as FactosysClient;
-    Object.assign(clone, this);
+    // Resource methods close over their owning client; construct them on the new instance.
+    const clone = new FactosysClient({
+      apiKey: this.apiKey,
+      baseUrl: this.baseUrl,
+      timeoutMs: this.timeoutMs,
+      maxRetries: this.maxRetries,
+    });
     clone.idempotencyKey = key;
     return clone;
   }
@@ -125,6 +130,35 @@ export class FactosysClient {
     },
   };
 
+  retentions = {
+    create: (body: import("./types").TaxAgentCreate, key?: string) =>
+      this.request<import("./types").TaxAgentDocument>("/v1/retentions", {
+        method: "POST",
+        body,
+        idempotencyKey: key,
+      }),
+  };
+  perceptions = {
+    create: (body: import("./types").TaxAgentCreate, key?: string) =>
+      this.request<import("./types").TaxAgentDocument>("/v1/perceptions", {
+        method: "POST",
+        body,
+        idempotencyKey: key,
+      }),
+  };
+  reversions = {
+    create: (body: import("./types").ReversionInput, key?: string) =>
+      this.request<import("./types").TaxAgentDocument>("/v1/reversions", {
+        method: "POST",
+        body,
+        idempotencyKey: key,
+      }),
+    reconcileTicket: (id: string) =>
+      this.request<import("./types").DocumentDetails>(
+        `/v1/reversions/${encodeURIComponent(id)}/reconcile-ticket`,
+        { method: "POST" },
+      ),
+  };
   companies = {
     list: () => this.request("/v1/companies"),
     get: (id: string) => this.request(`/v1/companies/${encodeURIComponent(id)}`),

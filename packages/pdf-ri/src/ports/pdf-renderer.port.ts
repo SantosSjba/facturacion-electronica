@@ -1,4 +1,5 @@
-export type PdfDocumentType = "01" | "03" | "07" | "08" | "RC" | "RA" | "09" | "31";
+export type PdfDocumentType =
+  "01" | "03" | "07" | "08" | "RC" | "RA" | "09" | "31" | "20" | "40" | "RR";
 
 export interface PdfLineItem {
   description: string;
@@ -23,6 +24,7 @@ export interface PdfRenderInput {
   preview?: boolean;
   observations?: string;
   informational?: boolean;
+  taxAgent?: boolean;
   qrDataUrl?: string;
   qrSizeMm?: number;
   documentType: PdfDocumentType;

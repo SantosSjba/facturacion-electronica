@@ -1,5 +1,6 @@
 export const QUEUE_NAMES = [
   "sunat-send",
+  "tax-agent",
   "sunat-poll",
   "webhooks",
   "pdf-render",

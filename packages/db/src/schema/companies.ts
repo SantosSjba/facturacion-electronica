@@ -28,6 +28,10 @@ export const companies = pgTable(
       .$type<"A4" | "A5" | "TICKET80" | "TICKET58">()
       .notNull()
       .default("A4"),
+    taxAgentSettings: jsonb("tax_agent_settings")
+      .$type<{ retention: boolean; perception_regimes: ("01" | "02" | "03")[] }>()
+      .notNull()
+      .default(sql`'{"retention":false,"perception_regimes":[]}'::jsonb`),
     logo: jsonb("logo").$type<CompanyLogo>(),
     environment: text("environment").notNull().default("sandbox"),
     address: jsonb("address"),

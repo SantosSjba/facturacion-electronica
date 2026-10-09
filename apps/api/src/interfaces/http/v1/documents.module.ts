@@ -1,3 +1,5 @@
+import { TaxAgentService } from "../../../infrastructure/documents/tax-agent.service";
+import { TaxAgentsController } from "./tax-agents.controller";
 import { Inject, Module, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { Worker, type ConnectionOptions } from "bullmq";
 
@@ -49,6 +51,7 @@ import { CapabilitiesController } from "./capabilities.controller";
     DocumentIntegrationController,
     SharedDocumentsController,
     CapabilitiesController,
+    TaxAgentsController,
     InvoicesController,
     ReceiptsController,
     CreditNotesController,
@@ -59,6 +62,7 @@ import { CapabilitiesController } from "./capabilities.controller";
     DocumentsController,
   ],
   providers: [
+    TaxAgentService,
     DocumentsService,
     CredentialsResolver,
     GreTokenCacheService,
@@ -82,6 +86,7 @@ import { CapabilitiesController } from "./capabilities.controller";
     PdfRenderProcessor,
   ],
   exports: [
+    TaxAgentService,
     DocumentsService,
     EmitInvoiceUseCase,
     EmitReceiptUseCase,
@@ -102,6 +107,7 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(BULLMQ_CONNECTION)
     private readonly connection: ConnectionOptions,
+    private readonly agents: TaxAgentService,
     private readonly sunatSend: SunatSendProcessor,
     private readonly sunatPoll: SunatPollProcessor,
     private readonly pdfRender: PdfRenderProcessor,
@@ -110,6 +116,10 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.workers.push(
+      new Worker<QueueJobData>("tax-agent", async (job) => this.agents.process(job), {
+        connection: this.connection,
+        concurrency: 2,
+      }),
       new Worker<QueueJobData>("document-delivery", async (job) => this.delivery.process(job), {
         connection: this.connection,
         concurrency: 2,
@@ -131,7 +141,7 @@ export class DocumentsModule implements OnModuleInit, OnModuleDestroy {
       if (this.sweeping) return;
       this.sweeping = true;
       try {
-        await this.delivery.sweep();
+        await Promise.allSettled([this.delivery.sweep(), this.agents.sweep()]);
       } catch {
         /* Durable outbox retries next sweep. */
       } finally {

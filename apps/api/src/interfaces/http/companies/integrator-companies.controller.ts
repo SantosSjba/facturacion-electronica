@@ -86,6 +86,7 @@ export class IntegratorCompaniesController {
       address: body.address,
       timezone: body.timezone,
       pdfFormat: body.pdf_format,
+      taxAgentSettings: body.tax_agent_settings,
       seedDefaultSeries: body.seed_default_series,
     });
     await this.record(auth, result.id, "company.created");
@@ -107,6 +108,7 @@ export class IntegratorCompaniesController {
       address: body.address,
       timezone: body.timezone,
       pdfFormat: body.pdf_format,
+      taxAgentSettings: body.tax_agent_settings,
       status: body.status,
     });
     await this.record(auth, id, "company.updated", { changed_fields: Object.keys(body) });

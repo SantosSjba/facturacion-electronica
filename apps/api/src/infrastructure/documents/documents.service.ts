@@ -117,7 +117,7 @@ export class DocumentsService {
         cdr: `/v1/documents/${id}/cdr`,
         pdf: `/v1/documents/${id}/pdf`,
         trace: `/v1/documents/${id}/trace`,
-        ...(["01", "03", "07", "08", "09", "31"].includes(row.documentType)
+        ...(["01", "03", "07", "08", "09", "31", "20", "40"].includes(row.documentType)
           ? { qr: `/v1/documents/${id}/qr` }
           : {}),
       },
@@ -295,7 +295,7 @@ export class DocumentsService {
       .find((e) => (e.data as { voided_document_id?: string })?.voided_document_id);
     const stored = (kind: string) => artifacts.find((a) => a.kind === kind);
     let digest: string | undefined;
-    if (stored("xml_signed") && ["01", "03", "07", "08"].includes(row.documentType)) {
+    if (stored("xml_signed") && ["01", "03", "07", "08", "20", "40"].includes(row.documentType)) {
       const xml = (await this.getArtifact(organizationId, documentId, "xml_signed")).body.toString(
         "utf8",
       );
@@ -322,13 +322,22 @@ export class DocumentsService {
       ),
       observations: payload._sunat?.observations ?? [],
       qr: {
-        status: gre?.qr_status ?? (digest ? "available" : "pending"),
+        status: ["RA", "RC", "RR"].includes(row.documentType)
+          ? "not_applicable"
+          : (gre?.qr_status ?? (digest ? "available" : "pending")),
         source: gre ? "sunat_cdr" : "signed_xml",
         digest: digest ?? null,
       },
       relations: {
         affected_document_id: row.relatedDocumentId,
         summary_document_id: payload.summary_document_id ?? null,
+        reversion_document_id:
+          (row.payload as { _reversion?: { document_id?: string; pending_id?: string } })
+            ?._reversion?.document_id ??
+          (row.payload as { _reversion?: { pending_id?: string } })?._reversion?.pending_id ??
+          null,
+        affected_document_ids:
+          (row.payload as { affected_document_ids?: string[] })?.affected_document_ids ?? [],
         cancellation_document_id:
           payload.cancellation_document_id ??
           (voided?.data as { voided_document_id?: string } | undefined)?.voided_document_id ??
@@ -336,6 +345,10 @@ export class DocumentsService {
       },
       cancellation_status:
         row.status === "cancelled" ? "cancelled" : (payload.cancellation_status ?? "not_cancelled"),
+      reversion: (row.payload as { _reversion?: unknown })?._reversion ?? null,
+      tax_agent: ["20", "40", "RR"].includes(row.documentType)
+        ? ((row.payload as { _agent?: unknown })?._agent ?? { simulated: null })
+        : undefined,
       collection_status: "not_managed",
       reconciliation: payload._reconciliation ?? null,
     };
@@ -384,18 +397,21 @@ export class DocumentsService {
     };
   }
 
-  async appendEvent(input: {
-    organizationId: string;
-    companyId: string;
-    documentId: string;
-    status: string;
-    fromStatus?: string | null;
-    detail?: string;
-    source: "api" | "worker" | "sunat" | "system";
-    data?: Record<string, unknown>;
-  }): Promise<string> {
+  async appendEvent(
+    input: {
+      organizationId: string;
+      companyId: string;
+      documentId: string;
+      status: string;
+      fromStatus?: string | null;
+      detail?: string;
+      source: "api" | "worker" | "sunat" | "system";
+      data?: Record<string, unknown>;
+    },
+    tx?: Parameters<Parameters<Db["transaction"]>[0]>[0],
+  ): Promise<string> {
     const id = newId();
-    await this.db.insert(documentEvents).values({
+    await (tx ?? this.db).insert(documentEvents).values({
       id,
       organizationId: input.organizationId,
       companyId: input.companyId,
@@ -406,7 +422,10 @@ export class DocumentsService {
       source: input.source,
       data: input.data ?? {},
     });
-
+    if (!tx) this.publishEvent(input, id);
+    return id;
+  }
+  publishEvent(input: Parameters<DocumentsService["appendEvent"]>[0], id: string): void {
     if (this.webhookFanout) {
       const sunatCode =
         typeof input.data?.["sunat_code"] === "string" ? input.data["sunat_code"] : undefined;
@@ -423,8 +442,6 @@ export class DocumentsService {
         })
         .catch(() => undefined);
     }
-
-    return id;
   }
 
   async patchPayload(documentId: string, patch: Record<string, unknown>): Promise<void> {

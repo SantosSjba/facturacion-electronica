@@ -65,6 +65,7 @@ export class QueuesModule implements OnModuleInit, OnModuleDestroy {
     for (const name of QUEUE_NAMES) {
       if (
         name === "sunat-send" ||
+        name === "tax-agent" ||
         name === "sunat-poll" ||
         name === "webhooks" ||
         name === "pdf-render" ||

@@ -18,9 +18,12 @@ import { buildDocumentObjectKey } from "../storage/object-storage.keys";
 import { CredentialsResolver } from "./credentials-resolver";
 import { DocumentsService, type DocumentPublic } from "./documents.service";
 
-export type EmitDocumentType = "01" | "03" | "07" | "08";
+export type EmitDocumentType = "01" | "03" | "07" | "08" | "20" | "40" | "RR";
 
 export interface EmitBuiltPayload {
+  documentIdentifier?: string;
+  validationSnapshot?: Record<string, unknown>;
+  rulesetVersion?: string;
   serie: string;
   number: number;
   padded: string;
@@ -46,6 +49,12 @@ export interface EmitDocumentParams {
   payload: unknown;
   idempotencyKey: string;
   relatedDocumentId?: string;
+  ublProfile?: string;
+  sendQueue?: "sunat-send" | "tax-agent";
+  beforePersist?: (
+    tx: Parameters<Parameters<Db["transaction"]>[0]>[0],
+    documentId: string,
+  ) => Promise<void>;
   build: (ctx: {
     company: { id: string; ruc: string; legalName: string; environment: string; address?: unknown };
     allocated: { number: number; padded: string };
@@ -115,6 +124,7 @@ export class EmitDocumentOrchestrator {
         const documentId = newId();
         rootSpan.setAttribute("factosys.document_id", documentId);
 
+        let persisted = false;
         let liberated = false;
         const liberate = async () => {
           if (!liberated) {
@@ -142,7 +152,8 @@ export class EmitDocumentOrchestrator {
               }),
           );
 
-          const serieNumber = `${built.serie.toUpperCase()}-${built.padded}`;
+          const serieNumber =
+            built.documentIdentifier ?? `${built.serie.toUpperCase()}-${built.padded}`;
           const payloadHash = hashRequestBody(input.payload);
 
           await withSpan("emit.persist", { "factosys.step": "persist_artifacts" }, async () => {
@@ -152,7 +163,7 @@ export class EmitDocumentOrchestrator {
               "documents_this_month",
               async (tx) => {
                 if (prepayments.length) await validatePrepayments(tx, advanceInput, true);
-                return tx.insert(documents).values({
+                await tx.insert(documents).values({
                   id: documentId,
                   organizationId: input.organizationId,
                   companyId: company.id,
@@ -178,16 +189,20 @@ export class EmitDocumentOrchestrator {
                       template_version: PDF_TEMPLATE_VERSION,
                     },
                     ...(built.canonicalSnapshot ? { _canonical: built.canonicalSnapshot } : {}),
+                    ...(built.validationSnapshot ? { _validation: built.validationSnapshot } : {}),
                   },
                   payloadHash,
                   logoSnapshot: { logo: company.logo ?? null },
                   idempotencyKey: input.idempotencyKey,
-                  ublProfile: "2.1",
+                  ublProfile: input.ublProfile ?? "2.1",
+                  rulesetVersion: built.rulesetVersion,
                   relatedDocumentId: built.relatedDocumentId ?? input.relatedDocumentId ?? null,
                 });
+                await input.beforePersist?.(tx, documentId);
               },
             );
 
+            persisted = true;
             await this.documents.appendEvent({
               organizationId: input.organizationId,
               companyId: company.id,
@@ -260,7 +275,7 @@ export class EmitDocumentOrchestrator {
           });
 
           await withSpan("emit.enqueue", { "factosys.queue": "sunat-send" }, async () => {
-            await this.queues.enqueue("sunat-send", {
+            await this.queues.enqueue(input.sendQueue ?? "sunat-send", {
               organizationId: input.organizationId,
               companyId: company.id,
               documentId,
@@ -270,7 +285,7 @@ export class EmitDocumentOrchestrator {
           const row = await this.documents.getById(input.organizationId, documentId);
           return this.documents.toPublic(row);
         } catch (cause) {
-          await liberate();
+          if (!persisted) await liberate();
           if (cause instanceof AppError) {
             throw cause;
           }

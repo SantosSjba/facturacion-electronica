@@ -2,7 +2,7 @@ import AdmZip from "adm-zip";
 
 import { soapTransportError } from "../errors";
 
-export type SummaryDocumentKind = "RA" | "RC";
+export type SummaryDocumentKind = "RA" | "RC" | "RR";
 
 export interface PackSummaryZipInput {
   ruc: string;
@@ -22,9 +22,7 @@ export interface PackSummaryZipResult {
 /**
  * SUNAT summary ZIP: `{RUC}-RA|RC-{YYYYMMDD}-{N}.zip` with matching XML entry.
  */
-export function packSummaryZip(
-  input: PackSummaryZipInput,
-): PackSummaryZipResult {
+export function packSummaryZip(input: PackSummaryZipInput): PackSummaryZipResult {
   const ruc = input.ruc.trim();
   if (!/^\d{11}$/.test(ruc)) {
     throw soapTransportError("Invalid RUC for ZIP pack (expected 11 digits)", {

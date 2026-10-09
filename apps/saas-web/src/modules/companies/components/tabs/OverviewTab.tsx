@@ -64,6 +64,16 @@ export function OverviewTab() {
     },
   });
 
+  const agentSettings = company.tax_agent_settings ?? { retention: false, perception_regimes: [] };
+  const agentMutation = useMutation({
+    mutationFn: (tax_agent_settings: NonNullable<Company["tax_agent_settings"]>) =>
+      patchCompany(company.id, { tax_agent_settings }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["companies"] });
+      await qc.invalidateQueries({ queryKey: ["company", company.id] });
+    },
+  });
+
   const certOk = company.certificate_status === "active";
   const address = (company.address ?? {}) as Record<string, unknown>;
   const addressLine = typeof address.line === "string" && address.line.trim() ? address.line : null;
@@ -208,6 +218,53 @@ export function OverviewTab() {
           mediante la API.
         </p>
         {formatMutation.error ? <p role="alert">{formatMutation.error.message}</p> : null}
+      </SectionCard>
+      <SectionCard icon={ShieldCheck} title="Agente de retención y percepción">
+        <p className="text-sm text-muted-foreground">
+          Habilita únicamente los regímenes para los que esta empresa está designada por SUNAT. Esta
+          configuración no verifica ni concede esa designación.
+        </p>
+        <label className="mt-3 flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={agentSettings.retention}
+            disabled={!canWrite || agentMutation.isPending}
+            onChange={(e) =>
+              agentMutation.mutate({ ...agentSettings, retention: e.target.checked })
+            }
+          />{" "}
+          Retención electrónica (20): 3%
+        </label>
+        {(["01", "02", "03"] as const).map((regime) => (
+          <label key={regime} className="mt-2 flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={agentSettings.perception_regimes.includes(regime)}
+              disabled={!canWrite || agentMutation.isPending}
+              onChange={(e) =>
+                agentMutation.mutate({
+                  ...agentSettings,
+                  perception_regimes: e.target.checked
+                    ? [...agentSettings.perception_regimes, regime]
+                    : agentSettings.perception_regimes.filter((r) => r !== regime),
+                })
+              }
+            />{" "}
+            Percepción {regime}:{" "}
+            {
+              {
+                "01": "Ventas internas, 2%",
+                "02": "Combustibles, 1%",
+                "03": "Cliente agente, 0.5%",
+              }[regime]
+            }
+          </label>
+        ))}
+        <p className="mt-3 text-sm text-muted-foreground">
+          Crea las series R001 o P001 en la pestaña Series. La API permite emitir y revertir estos
+          comprobantes; el RR conserva los originales y su numeración.
+        </p>
+        {agentMutation.error ? <p role="alert">{agentMutation.error.message}</p> : null}
       </SectionCard>
       <CompanyLogoCard key={company.id} company={company} />
     </div>
