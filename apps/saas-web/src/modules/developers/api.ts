@@ -8,6 +8,7 @@ import type {
   CreateWebhookResult,
   WebhookDelivery,
   WebhookEndpoint,
+  WebhookCompany,
 } from "./types";
 
 /** API returns camelCase for API keys (Nest service shape). */
@@ -75,6 +76,10 @@ export function assignApiKeyCompanies(id: string, company_ids: string[], multi: 
 
 export function fetchWebhooks(): Promise<WebhookEndpoint[]> {
   return apiRequest("/v1/webhook-endpoints");
+}
+
+export function fetchWebhookCompanies(): Promise<WebhookCompany[]> {
+  return apiRequest("/v1/webhook-endpoints/companies");
 }
 
 export function createWebhook(input: CreateWebhookInput): Promise<CreateWebhookResult> {

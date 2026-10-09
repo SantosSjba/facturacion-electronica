@@ -1,9 +1,10 @@
 import { Spinner } from "@factosys/ui";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Plus, X } from "lucide-react";
 
 import { ApiError } from "@/shared/api/errors";
+import { environmentLabel } from "@/shared/ui/display-labels";
 import {
   Button,
   ButtonLabel,
@@ -15,24 +16,34 @@ import {
   DialogHeader,
   Input,
   Label,
+  Select,
   ErrorState,
   FieldError,
 } from "@factosys/ui";
 
-import { createWebhook } from "../api";
-import { webhookFormSchema, zodFieldErrors } from "../validation";
+import { createWebhook, fetchWebhookCompanies } from "../api";
+import { createWebhookFormSchema, zodFieldErrors } from "../validation";
 
 export const WEBHOOK_EVENTS = ["document.status_changed"] as const;
 
 export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const [url, setUrl] = useState("");
+  const [scope, setScope] = useState<"company" | "global">("company");
+  const [companyId, setCompanyId] = useState("");
+  const companies = useQuery({
+    queryKey: ["webhook-companies"],
+    queryFn: fetchWebhookCompanies,
+    enabled: open,
+  });
   const [events, setEvents] = useState<string[]>(["document.status_changed"]);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const fieldErrors = zodFieldErrors(webhookFormSchema.safeParse({ url, events }));
+  const fieldErrors = zodFieldErrors(
+    createWebhookFormSchema.safeParse({ url, events, scope, companyId }),
+  );
 
   const mutation = useMutation({
     mutationFn: createWebhook,
@@ -50,6 +61,8 @@ export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose:
 
   function resetAndClose() {
     setUrl("");
+    setScope("company");
+    setCompanyId("");
     setEvents(["document.status_changed"]);
     setError(null);
     setTouched(false);
@@ -63,7 +76,9 @@ export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose:
     setError(null);
     setTouched(true);
     if (Object.keys(fieldErrors).length > 0) return;
-    mutation.mutate({ url: url.trim(), events });
+    if (mutation.isPending || (scope === "company" && (companies.isPending || companies.isError)))
+      return;
+    mutation.mutate({ url: url.trim(), events, company_id: scope === "global" ? null : companyId });
   }
 
   async function copySecret() {
@@ -86,6 +101,11 @@ export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose:
             onClose={resetAndClose}
           />
           <DialogBody className="space-y-3">
+            <p className="text-sm">
+              {scope === "global"
+                ? "Alcance: todas las empresas de la organización"
+                : `Empresa: ${companies.data?.find((company) => company.id === companyId)?.legal_name ?? companyId}`}
+            </p>
             <div className="space-y-1.5">
               <Label>Secret</Label>
               <div className="flex gap-2">
@@ -117,6 +137,55 @@ export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose:
           />
           <DialogBody className="space-y-4">
             {error ? <ErrorState message={error} /> : null}
+            <div className="space-y-1.5">
+              <Label htmlFor="wh-scope">Alcance del webhook</Label>
+              <Select
+                id="wh-scope"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as "company" | "global")}
+              >
+                <option value="company">Una empresa</option>
+                <option value="global">Todas las empresas (global)</option>
+              </Select>
+            </div>
+            {scope === "company" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="wh-company">Empresa</Label>
+                <Select
+                  id="wh-company"
+                  value={companyId}
+                  disabled={companies.isPending || companies.isError}
+                  aria-invalid={touched && Boolean(fieldErrors.companyId)}
+                  onChange={(e) => setCompanyId(e.target.value)}
+                >
+                  <option value="">Selecciona la empresa</option>
+                  {companies.data?.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.legal_name} · {company.ruc} · {environmentLabel(company.environment)}
+                    </option>
+                  ))}
+                </Select>
+                {companies.isPending ? <p className="text-sm">Cargando empresas…</p> : null}
+                {companies.isError ? (
+                  <ErrorState
+                    message="No se pudieron cargar las empresas"
+                    onRetry={() => void companies.refetch()}
+                  />
+                ) : null}
+                {companies.data?.length === 0 ? (
+                  <p className="text-sm">Primero registra una empresa para crear su webhook.</p>
+                ) : null}
+                <FieldError message={touched ? fieldErrors.companyId : undefined} />
+                <p className="text-sm text-gray-500">
+                  Solo recibirá eventos de documentos de esta empresa.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-warning-600 dark:text-orange-400">
+                Recibirá eventos de todas las empresas de esta organización, incluidas las que
+                registres después.
+              </p>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="wh-url">URL (https)</Label>
               <Input
@@ -168,7 +237,10 @@ export function CreateWebhookDialog({ open, onClose }: { open: boolean; onClose:
               type="submit"
               size="icon-label-sm"
               aria-label="Crear"
-              disabled={mutation.isPending}
+              disabled={
+                mutation.isPending ||
+                (scope === "company" && (companies.isPending || companies.isError))
+              }
             >
               {mutation.isPending ? (
                 <Spinner className={buttonIconClassName} />

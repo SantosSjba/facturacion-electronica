@@ -14,6 +14,16 @@ export const webhookFormSchema = z.object({
   events: z.array(z.string()).min(1, "Selecciona al menos un evento"),
 });
 
+export const createWebhookFormSchema = webhookFormSchema
+  .extend({
+    scope: z.enum(["company", "global"]).default("company"),
+    companyId: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.scope === "company" && !z.string().uuid().safeParse(value.companyId).success)
+      ctx.addIssue({ code: "custom", path: ["companyId"], message: "Selecciona una empresa" });
+  });
+
 export function zodFieldErrors(result: {
   success: boolean;
   error?: { issues: { message: string; path: PropertyKey[] }[] };

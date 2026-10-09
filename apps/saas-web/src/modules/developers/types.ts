@@ -48,6 +48,13 @@ export interface CreateApiKeyResult {
 
 export type WebhookStatus = "active" | "disabled";
 
+export interface WebhookCompany {
+  id: string;
+  legal_name: string;
+  ruc: string;
+  environment: string;
+}
+
 export interface WebhookEndpoint {
   id: string;
   organization_id: string;

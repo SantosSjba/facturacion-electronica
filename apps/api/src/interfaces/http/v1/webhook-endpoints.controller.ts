@@ -83,6 +83,15 @@ export class WebhookEndpointsController {
     return created;
   }
 
+  @Get("companies")
+  @ApiKeyAuth()
+  @RequireScopes("webhooks:manage")
+  @ApiOperation({ summary: "Empresas disponibles para suscribir webhooks" })
+  async availableCompanies(@CurrentAuth() auth: AuthContext) {
+    const rows = await this.webhooks.availableCompanies(this.orgId(auth));
+    return auth.kind === "api_key" ? rows.filter((row) => auth.companyIds.includes(row.id)) : rows;
+  }
+
   @Get(":id")
   @ApiKeyAuth()
   @RequireScopes("webhooks:manage")

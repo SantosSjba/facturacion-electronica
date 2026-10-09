@@ -351,6 +351,30 @@ it("hides global webhooks and prevents accessing other emitters' endpoints", asy
     .send({ url: "https://example.com/hook" })
     .expect(403);
 });
+
+it("webhook company catalog respects the key allowlist and console organization", async () => {
+  const scoped = await http()
+    .get("/v1/webhook-endpoints/companies")
+    .auth(single, { type: "bearer" })
+    .expect(200);
+  expect(scoped.body.map((company: { id: string }) => company.id)).toEqual([a]);
+  const console = await http()
+    .get("/v1/webhook-endpoints/companies")
+    .auth(admin, { type: "bearer" })
+    .expect(200);
+  expect(console.body.map((company: { id: string }) => company.id).sort()).toEqual(
+    [a, b, prod].sort(),
+  );
+  await http().get("/v1/webhook-endpoints/companies").auth(reader, { type: "bearer" }).expect(403);
+  await http()
+    .post("/v1/webhook-endpoints")
+    .auth(admin, { type: "bearer" })
+    .send({ company_id: foreign, url: "https://example.com/hook" })
+    .expect(400);
+  expect(
+    await db.select().from(webhookEndpoints).where(eq(webhookEndpoints.companyId, foreign)),
+  ).toHaveLength(0);
+});
 it("legacy keys fail closed until an administrator assigns companies without rotating secrets", async () => {
   const legacy = await keys.create({
     organizationId: org,

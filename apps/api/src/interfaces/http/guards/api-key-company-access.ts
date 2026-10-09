@@ -73,6 +73,7 @@ export async function enforceApiKeyCompanies(
     return;
   }
   if (path === "/v1/documents" && req.query["cursor"]) await assertDocument(req.query["cursor"]);
+  if (req.method === "GET" && path === "/v1/webhook-endpoints/companies") return;
   if (/^\/v1\/webhook-endpoints\//.test(path)) {
     const id = req.params["id"];
     if (typeof id !== "string" || !UUID.test(id)) throw AppError.validation("Invalid webhook ID");

@@ -200,6 +200,7 @@ async function preparePortal(
       organization_id: "portal-org", plan: { name: "Starter" },
       limits: { max_companies: 3, max_users: 2, max_documents_per_month: 100, max_api_keys: 1 }, usage: { companies: 1, users: 1, documents_this_month: 0, api_keys: 0 },
     };
+    else if (pathname === "/v1/webhook-endpoints/companies" || pathname === "/organizations/me/api-keys/companies") json = [company];
     else if (pathname === "/companies") json = req.method() === "POST" ? company : [company];
     else if (pathname === `/companies/${companyId}`) json = company;
     else if (pathname.endsWith("/series")) json = [];
@@ -360,6 +361,7 @@ test("API keys and webhook deliveries work without a separate console", async ({
   await page.goto("/app/developers/api-keys");
   await page.getByRole("button", { name: "Nueva API key", exact: true }).first().click();
   await page.getByLabel("Nombre", { exact: true }).fill("ERP");
+  await page.getByLabel("Empresa autorizada", { exact: true }).selectOption(companyId);
   await page.getByRole("button", { name: "Crear", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue("fixture-key-secret");
   expect(writes.find((w) => w.path === "/organizations/me/api-keys")?.body).toContain(
@@ -369,6 +371,58 @@ test("API keys and webhook deliveries work without a separate console", async ({
   await page.getByRole("link", { name: "Ver entregas", exact: true }).click();
   await expect(page).toHaveURL("/app/developers/webhooks/webhook-1/deliveries");
   await expect(page.getByRole("heading", { name: "Entregas del webhook" })).toBeVisible();
+});
+
+test("webhook creation requires an emitter and global scope is an explicit choice", async ({ page }, testInfo) => {
+  const writes = await preparePortal(page);
+  const secondId = "22222222-2222-4222-8222-222222222222";
+  const second = { ...company, id: secondId, legal_name: "Segunda Empresa SAC", ruc: "20601234567" };
+  const headers = { "access-control-allow-origin": "http://localhost:5184", "access-control-allow-headers": "authorization,content-type", "access-control-allow-methods": "GET,POST,OPTIONS" };
+  const hooks: Record<string, unknown>[] = [];
+  await page.route("http://localhost:3000/v1/webhook-endpoints/companies", route => route.fulfill({ headers, json: [company, second] }));
+  await page.route("http://localhost:3000/v1/webhook-endpoints", async route => {
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (route.request().method() === "POST") {
+      const body = route.request().postDataJSON();
+      writes.push({ path: "/v1/webhook-endpoints", body: JSON.stringify(body), contentType: "application/json" });
+      const hook = { ...body, id: `hook-${hooks.length}`, status: "active", secret_hint: "test", consecutive_failures: 0, last_success_at: null };
+      hooks.push(hook);
+      return route.fulfill({ status: 201, headers, json: { ...hook, secret: "webhook-test-secret" } });
+    }
+    return route.fulfill({ headers, json: hooks });
+  });
+  await page.goto("/app/developers/webhooks");
+  await page.getByRole("button", { name: "Nuevo webhook", exact: true }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel("Alcance del webhook")).toHaveValue("company");
+  await dialog.getByLabel("URL (https)").fill("https://example.com/empresa-b");
+  await dialog.getByRole("button", { name: "Crear", exact: true }).click();
+  await expect(dialog.getByText("Selecciona una empresa", { exact: true })).toBeVisible();
+  expect(writes.filter(write => write.path === "/v1/webhook-endpoints")).toHaveLength(0);
+  await dialog.getByLabel("Empresa", { exact: true }).selectOption(secondId);
+  await page.screenshot({ path: testInfo.outputPath("webhook-company-form.png"), animations: "disabled" });
+  await dialog.getByRole("button", { name: "Crear", exact: true }).click();
+  await expect(dialog.getByRole("textbox")).toHaveValue("webhook-test-secret");
+  await expect(dialog).toContainText("Segunda Empresa SAC");
+  expect(JSON.parse(writes.find(write => write.path === "/v1/webhook-endpoints")?.body ?? "{}").company_id).toBe(secondId);
+  await dialog.getByRole("button", { name: "Entendido", exact: true }).click();
+  await expect(page.getByRole("row").filter({ hasText: "https://example.com/empresa-b" })).toContainText("Segunda Empresa SAC");
+  await page.getByRole("button", { name: "Nuevo webhook", exact: true }).first().click();
+  await expect(dialog.getByLabel("Alcance del webhook")).toHaveValue("company");
+  await expect(dialog.getByLabel("Empresa", { exact: true })).toHaveValue("");
+  await dialog.getByLabel("Alcance del webhook").selectOption("global");
+  await expect(dialog.getByLabel("Empresa", { exact: true })).toHaveCount(0);
+  await expect(dialog).toContainText("incluidas las que registres después");
+  await dialog.getByLabel("URL (https)").fill("https://example.com/global");
+  await dialog.getByRole("button", { name: "Crear", exact: true }).click();
+  await expect(dialog.getByRole("textbox")).toHaveValue("webhook-test-secret");
+  const saved = writes.filter(write => write.path === "/v1/webhook-endpoints");
+  expect(JSON.parse(saved[1].body).company_id).toBeNull();
+  await dialog.getByRole("button", { name: "Entendido", exact: true }).click();
+  await expect(page.getByRole("row").filter({ hasText: "https://example.com/global" })).toContainText("Global · todas las empresas");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("webhooks-scope-mobile.png"), fullPage: true, animations: "disabled" });
 });
 
 test("viewer cannot manage keys using a direct URL", async ({ page }) => {

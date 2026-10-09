@@ -2,12 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq } from "drizzle-orm";
-import {
-  newId,
-  webhookDeliveries,
-  webhookEndpoints,
-  type Db,
-} from "@factosys/db";
+import { companies, newId, webhookDeliveries, webhookEndpoints, type Db } from "@factosys/db";
 import { AppError } from "@factosys/shared";
 
 import { Argon2Hasher } from "../crypto/argon2-hasher";
@@ -46,6 +41,18 @@ export class WebhooksService {
     url: string;
     events?: string[];
   }): Promise<WebhookEndpointPublic & { secret: string }> {
+    if (input.companyId) {
+      const [company] = await this.db
+        .select({ id: companies.id })
+        .from(companies)
+        .where(
+          and(
+            eq(companies.id, input.companyId),
+            eq(companies.organizationId, input.organizationId),
+          ),
+        );
+      if (!company) throw AppError.validation("Company does not belong to this organization");
+    }
     await assertSafeWebhookUrl(input.url);
     const events = normalizeEvents(input.events);
     const secret = generateWebhookSecret();
@@ -79,10 +86,19 @@ export class WebhooksService {
     return rows.map((r) => this.toPublic(r));
   }
 
-  async get(
-    organizationId: string,
-    endpointId: string,
-  ): Promise<WebhookEndpointPublic> {
+  async availableCompanies(organizationId: string) {
+    return this.db
+      .select({
+        id: companies.id,
+        legal_name: companies.legalName,
+        ruc: companies.ruc,
+        environment: companies.environment,
+      })
+      .from(companies)
+      .where(eq(companies.organizationId, organizationId));
+  }
+
+  async get(organizationId: string, endpointId: string): Promise<WebhookEndpointPublic> {
     const row = await this.requireEndpoint(organizationId, endpointId);
     return this.toPublic(row);
   }
@@ -117,10 +133,7 @@ export class WebhooksService {
       }
     }
 
-    await this.db
-      .update(webhookEndpoints)
-      .set(updates)
-      .where(eq(webhookEndpoints.id, row.id));
+    await this.db.update(webhookEndpoints).set(updates).where(eq(webhookEndpoints.id, row.id));
 
     if (nextStatus === "active" && row.status === "disabled") {
       // already reset above
@@ -163,9 +176,7 @@ export class WebhooksService {
     if (!row?.secretEncrypted) {
       throw AppError.notFound("Webhook endpoint secret not found");
     }
-    const payload = this.vault.decryptJson<{ secret: string }>(
-      row.secretEncrypted,
-    );
+    const payload = this.vault.decryptJson<{ secret: string }>(row.secretEncrypted);
     return payload.secret;
   }
 
@@ -187,9 +198,7 @@ export class WebhooksService {
       .limit(100);
   }
 
-  toPublic(
-    row: typeof webhookEndpoints.$inferSelect,
-  ): WebhookEndpointPublic {
+  toPublic(row: typeof webhookEndpoints.$inferSelect): WebhookEndpointPublic {
     return {
       id: row.id,
       organization_id: row.organizationId,
@@ -236,9 +245,7 @@ function normalizeEvents(events?: string[]): string[] {
   const list = events?.length ? events : [WEBHOOK_EVENT];
   for (const e of list) {
     if (e !== WEBHOOK_EVENT) {
-      throw AppError.validation(`Unsupported webhook event: ${e}`, [
-        { path: "events", issue: e },
-      ]);
+      throw AppError.validation(`Unsupported webhook event: ${e}`, [{ path: "events", issue: e }]);
     }
   }
   return [...new Set(list)];

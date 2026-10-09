@@ -19,7 +19,7 @@ import {
   PageHeader,
 } from "@factosys/ui";
 
-import { fetchWebhooks, patchWebhook, rotateWebhookSecret } from "../api";
+import { fetchWebhooks, fetchWebhookCompanies, patchWebhook, rotateWebhookSecret } from "../api";
 import { CreateWebhookDialog } from "../components/CreateWebhookDialog";
 import { EditWebhookDialog } from "../components/EditWebhookDialog";
 import { WebhooksTable, type WebhookPendingAction } from "../components/WebhooksTable";
@@ -39,6 +39,11 @@ export function WebhooksListPage() {
   const query = useQuery({
     queryKey: ["webhooks"],
     queryFn: fetchWebhooks,
+  });
+  const companies = useQuery({
+    queryKey: ["webhook-companies"],
+    queryFn: fetchWebhookCompanies,
+    enabled: canManage,
   });
 
   const patchMutation = useMutation({
@@ -105,7 +110,7 @@ export function WebhooksListPage() {
       <PageHeader
         icon={Webhook}
         title="Webhooks"
-        description="Suscripciones a eventos. Desactiva con PATCH; no hay DELETE."
+        description="Recibe eventos de una empresa o de toda la organización. Puedes desactivar las suscripciones."
         actions={createButton}
       />
 
@@ -135,6 +140,7 @@ export function WebhooksListPage() {
         ) : (
           <WebhooksTable
             endpoints={query.data ?? []}
+            companies={companies.data ?? []}
             canManage={canManage}
             onRotate={setRotateTarget}
             onToggleStatus={onToggleStatus}

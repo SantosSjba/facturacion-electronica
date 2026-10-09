@@ -1,4 +1,4 @@
-import { formatDateTime, statusLabel } from "@/shared/ui/display-labels";
+import { environmentLabel, formatDateTime, statusLabel } from "@/shared/ui/display-labels";
 import { ActionLink } from "@/shared/ui/components/action-link";
 import { StatusBadge } from "@/shared/ui/status-badge";
 import {
@@ -27,12 +27,13 @@ import {
   TR,
 } from "@factosys/ui";
 
-import type { WebhookEndpoint } from "../types";
+import type { WebhookCompany, WebhookEndpoint } from "../types";
 
 export type WebhookPendingAction = { id: string; action: "rotate" | "toggle" } | null;
 
 export function WebhooksTable({
   endpoints,
+  companies = [],
   canManage,
   onRotate,
   onToggleStatus,
@@ -40,6 +41,7 @@ export function WebhooksTable({
   pending,
 }: {
   endpoints: WebhookEndpoint[];
+  companies?: WebhookCompany[];
   canManage: boolean;
   onRotate: (ep: WebhookEndpoint) => void;
   onToggleStatus: (ep: WebhookEndpoint) => void;
@@ -51,6 +53,7 @@ export function WebhooksTable({
       <THead>
         <TR>
           <TH>Endpoint</TH>
+          <TH>Empresa / alcance</TH>
           <TH>Eventos</TH>
           <TH>Estado</TH>
           <TH>Secret</TH>
@@ -62,6 +65,7 @@ export function WebhooksTable({
         {endpoints.map((ep) => {
           const busy = pending?.id === ep.id;
           const isActive = ep.status === "active";
+          const company = companies.find((company) => company.id === ep.company_id);
           return (
             <TR key={ep.id}>
               <TD label="Endpoint">
@@ -90,6 +94,20 @@ export function WebhooksTable({
                     )
                   }
                 />
+              </TD>
+              <TD label="Empresa / alcance">
+                {ep.company_id ? (
+                  <div>
+                    <span>{company?.legal_name ?? ep.company_id}</span>
+                    {company ? (
+                      <p className="text-theme-xs text-gray-500">
+                        {company.ruc} · {environmentLabel(company.environment)}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <Badge variant="outline">Global · todas las empresas</Badge>
+                )}
               </TD>
               <TD label="Eventos">
                 <div className="flex flex-wrap gap-1 max-md:justify-end">
