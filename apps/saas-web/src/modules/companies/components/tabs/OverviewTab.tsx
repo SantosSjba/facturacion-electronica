@@ -25,8 +25,11 @@ import {
   ActionButton,
   Badge,
   ConfirmDialog,
+  Checkbox,
   InfoField,
   InfoGrid,
+  Label,
+  Select,
   SectionCard,
   StatCard,
 } from "@factosys/ui";
@@ -198,47 +201,48 @@ export function OverviewTab() {
         </SectionCard>
       </section>
       <SectionCard icon={Building2} title="Formato de impresión">
-        <label htmlFor="company-pdf-format">Formato predeterminado para nuevos comprobantes</label>
-        <select
-          id="company-pdf-format"
-          className="mt-2 block rounded-md border bg-background p-2"
-          value={company.pdf_format ?? "A4"}
-          disabled={!canWrite || formatMutation.isPending}
-          onChange={(event) =>
-            formatMutation.mutate(event.target.value as NonNullable<Company["pdf_format"]>)
-          }
-        >
-          <option value="A4">A4</option>
-          <option value="A5">A5</option>
-          <option value="TICKET80">Ticket de 80 mm</option>
-          <option value="TICKET58">Ticket de 58 mm</option>
-        </select>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <div className="max-w-sm space-y-2">
+          <Label htmlFor="company-pdf-format">
+            Formato predeterminado para nuevos comprobantes
+          </Label>
+          <Select
+            id="company-pdf-format"
+            value={company.pdf_format ?? "A4"}
+            disabled={!canWrite || formatMutation.isPending}
+            onChange={(event) =>
+              formatMutation.mutate(event.target.value as NonNullable<Company["pdf_format"]>)
+            }
+          >
+            <option value="A4">A4</option>
+            <option value="A5">A5</option>
+            <option value="TICKET80">Ticket de 80 mm</option>
+            <option value="TICKET58">Ticket de 58 mm</option>
+          </Select>
+        </div>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Los documentos emitidos conservan su formato. Puedes elegir otro formato al emitir
           mediante la API.
         </p>
         {formatMutation.error ? <p role="alert">{formatMutation.error.message}</p> : null}
       </SectionCard>
       <SectionCard icon={ShieldCheck} title="Agente de retención y percepción">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Habilita únicamente los regímenes para los que esta empresa está designada por SUNAT. Esta
           configuración no verifica ni concede esa designación.
         </p>
-        <label className="mt-3 flex items-center gap-2">
-          <input
-            type="checkbox"
+        <div className="mt-3 flex flex-col gap-3">
+          <Checkbox
+            label="Retención electrónica (20): 3%"
             checked={agentSettings.retention}
             disabled={!canWrite || agentMutation.isPending}
             onChange={(e) =>
               agentMutation.mutate({ ...agentSettings, retention: e.target.checked })
             }
-          />{" "}
-          Retención electrónica (20): 3%
-        </label>
-        {(["01", "02", "03"] as const).map((regime) => (
-          <label key={regime} className="mt-2 flex items-center gap-2">
-            <input
-              type="checkbox"
+          />
+          {(["01", "02", "03"] as const).map((regime) => (
+            <Checkbox
+              key={regime}
+              label={`Percepción ${regime}: ${{ "01": "Ventas internas, 2%", "02": "Combustibles, 1%", "03": "Cliente agente, 0.5%" }[regime]}`}
               checked={agentSettings.perception_regimes.includes(regime)}
               disabled={!canWrite || agentMutation.isPending}
               onChange={(e) =>
@@ -249,18 +253,10 @@ export function OverviewTab() {
                     : agentSettings.perception_regimes.filter((r) => r !== regime),
                 })
               }
-            />{" "}
-            Percepción {regime}:{" "}
-            {
-              {
-                "01": "Ventas internas, 2%",
-                "02": "Combustibles, 1%",
-                "03": "Cliente agente, 0.5%",
-              }[regime]
-            }
-          </label>
-        ))}
-        <p className="mt-3 text-sm text-muted-foreground">
+            />
+          ))}
+        </div>
+        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
           Crea las series R001 o P001 en la pestaña Series. La API permite emitir y revertir estos
           comprobantes; el RR conserva los originales y su numeración.
         </p>
